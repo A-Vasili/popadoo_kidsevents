@@ -1,0 +1,70 @@
+/* Page-specific styles for contact.html. */
+
+/* Contact page */
+.booking-section {
+    max-width: 58rem;
+    padding: clamp(1.35rem, 3vw, 2.25rem);
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-card);
+}
+
+.booking-section h2 {
+    margin-bottom: 1.25rem;
+}
+
+.booking-form {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-heading);
+    font-weight: 800;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.form-field input:hover,
+.form-field select:hover,
+.form-field textarea:hover {
+    border-color: var(--pastel-lavender);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+}
+
+.form-field textarea {
+    resize: vertical;
+}
+
+.form-field-full-width {
+    grid-column: 1 / -1;
+}
+
+.primary-button {
+    border: 0;
+}
+
+@media (min-width: 48rem) {
+    .booking-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

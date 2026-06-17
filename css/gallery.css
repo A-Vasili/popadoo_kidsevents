@@ -1,0 +1,22 @@
+/* Page-specific styles for gallery.html. */
+
+/* Gallery page */
+.gallery-placeholder {
+    min-height: 22rem;
+    display: grid;
+    place-items: center;
+    padding: 2rem;
+    border: 2px dashed var(--color-primary);
+    border-radius: 1.25rem;
+    background:
+        radial-gradient(circle at 18% 22%, var(--surface-pink), transparent 10rem),
+        radial-gradient(circle at 82% 74%, var(--surface-mint), transparent 12rem),
+        var(--color-surface-raised);
+    color: var(--color-muted);
+    text-align: center;
+    box-shadow: var(--shadow-card);
+}
+
+.gallery-placeholder p {
+    margin-bottom: 0;
+}

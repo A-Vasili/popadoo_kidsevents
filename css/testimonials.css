@@ -1,0 +1,46 @@
+/* Page-specific styles for testimonials.html. */
+
+/* Testimonials page */
+.testimonial-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.testimonial-card {
+    min-height: 13rem;
+    padding: 1.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--surface-lavender);
+    box-shadow: var(--shadow-card);
+}
+
+.testimonial-card:nth-child(2) { background: var(--surface-mint); }
+.testimonial-card:nth-child(3) { background: var(--surface-peach); }
+
+.testimonial-card blockquote {
+    margin-bottom: 1.25rem;
+    font-size: 1.15rem;
+}
+
+.testimonial-card blockquote::before {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-secondary);
+    content: "“";
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 0.75;
+}
+
+.testimonial-attribution {
+    margin-bottom: 0;
+    color: var(--color-muted);
+    font-weight: 800;
+}
+
+@media (min-width: 48rem) {
+    .testimonial-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

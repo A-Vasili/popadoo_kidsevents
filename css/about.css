@@ -1,0 +1,77 @@
+/* Page-specific styles for about.html. */
+
+/* About page */
+.content-section h1,
+.content-section h2 {
+    margin-bottom: 1rem;
+}
+
+.team-grid,
+.quote-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.team-card {
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    overflow: hidden;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-card);
+}
+
+.team-card:nth-child(1) { border-top: 0.35rem solid var(--pastel-lavender); }
+.team-card:nth-child(2) { border-top: 0.35rem solid var(--pastel-mint); }
+.team-card:nth-child(3) { border-top: 0.35rem solid var(--pastel-peach); }
+
+.team-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+html[data-theme="dark"] .team-card img {
+    filter: brightness(0.86) saturate(0.9);
+}
+
+.team-card-content {
+    padding: 1.35rem;
+}
+
+.team-card-content p:last-child {
+    margin-bottom: 0;
+}
+
+.team-role {
+    color: var(--color-primary-strong);
+    font-weight: 800;
+}
+
+.quote-card {
+    margin: 0;
+    padding: 1.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1.1rem;
+    background: var(--surface-pink);
+    box-shadow: var(--shadow-card);
+}
+
+.quote-card:nth-child(2) {
+    background: var(--surface-sky);
+}
+
+.quote-card p {
+    margin-bottom: 0;
+    font-size: 1.1rem;
+}
+
+@media (min-width: 48rem) {
+    .team-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .quote-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
