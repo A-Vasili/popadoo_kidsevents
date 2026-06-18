@@ -51,20 +51,43 @@
 
                             <div class="form-field">
                                 <label for="booking-email"><span data-i18n="contact.email">Email address</span> <span aria-hidden="true">*</span></label>
-                                <input class="form-control" id="booking-email" name="email" type="email" autocomplete="email" required/>
+                                <input
+                                    class="form-control"
+                                    id="booking-email"
+                                    name="email"
+                                    type="email"
+                                    autocomplete="email"
+                                    inputmode="email"
+                                    maxlength="254"
+                                    pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                                    required
+                                />
                                 <div class="invalid-feedback" data-i18n="contact.invalidEmail">Enter a valid email address.</div>
                             </div>
 
                             <div class="form-field">
                                 <label for="booking-phone"><span data-i18n="contact.phone">Phone number</span> <span aria-hidden="true">*</span></label>
-                                <input class="form-control" id="booking-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required/>
-                                <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
+                                <input
+                                    class="form-control"
+                                    id="booking-phone"
+                                    name="phone"
+                                    type="tel"
+                                    autocomplete="tel"
+                                    inputmode="tel"
+                                    maxlength="24"
+                                    pattern="\+?[0-9\s().-]{7,24}"
+                                    aria-describedby="phone-help"
+                                    required
+                                />
+                                <p class="form-text" id="phone-help" data-i18n="contact.phoneHelp">Use digits and common phone separators only, for example +30 210 123 4567.</p>
+                                <div class="invalid-feedback" data-i18n="contact.invalidPhone">Enter a valid phone number.</div>
                             </div>
 
                             <div class="form-field">
                                 <label for="booking-date"><span data-i18n="contact.date">Preferred event date</span> <span aria-hidden="true">*</span></label>
-                                <input class="form-control" id="booking-date" name="eventDate" type="date" required/>
-                                <div class="invalid-feedback" data-i18n="contact.invalidDate">Choose a future event date.</div>
+                                <input class="form-control" id="booking-date" name="eventDate" type="date" aria-describedby="date-help" required/>
+                                <p class="form-text" id="date-help" data-i18n="contact.dateHelp">Past dates are not accepted.</p>
+                                <div class="invalid-feedback" data-i18n="contact.invalidDate">Choose today or a future event date.</div>
                             </div>
 
                             <div class="form-field">
@@ -85,6 +108,18 @@
                             </div>
 
                             <div class="form-field">
+                                <label for="booking-package"><span data-i18n="contact.package">Package of interest</span> <span aria-hidden="true">*</span></label>
+                                <select class="form-select" id="booking-package" name="package" required>
+                                    <option value="" selected disabled data-i18n="contact.selectPackage">Select a package</option>
+                                    <option value="mini-party" data-i18n="packages.miniName">Mini Party</option>
+                                    <option value="adventure-party" data-i18n="packages.adventureName">Adventure Party</option>
+                                    <option value="premium-celebration" data-i18n="packages.premiumName">Premium Celebration</option>
+                                    <option value="not-sure" data-i18n="contact.notSurePackage">Not sure yet</option>
+                                </select>
+                                <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
+                            </div>
+
+                            <div class="form-field">
                                 <label for="booking-guest-count" data-i18n="contact.guests">Estimated number of guests</label>
                                 <input class="form-control" id="booking-guest-count" name="guestCount" type="number" min="1" inputmode="numeric"/>
                             </div>
@@ -94,6 +129,22 @@
                                 <input class="form-control" id="booking-location" name="location" type="text" autocomplete="street-address" aria-describedby="location-help" required/>
                                 <p class="form-text" id="location-help" data-i18n="contact.locationHelp">Popadoo travels to the client-specified location; there is no fixed party venue.</p>
                                 <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
+                            </div>
+
+                            <div class="form-field">
+                                <label for="booking-postal-code"><span data-i18n="contact.postalCode">Postal code</span> <span aria-hidden="true">*</span></label>
+                                <input
+                                    class="form-control"
+                                    id="booking-postal-code"
+                                    name="postalCode"
+                                    type="text"
+                                    autocomplete="postal-code"
+                                    inputmode="text"
+                                    maxlength="10"
+                                    pattern="[A-Za-z0-9][A-Za-z0-9\s-]{2,9}"
+                                    required
+                                />
+                                <div class="invalid-feedback" data-i18n="contact.invalidPostalCode">Enter a valid postal code.</div>
                             </div>
 
                             <div class="form-field form-field-full-width">
@@ -132,19 +183,20 @@
                             </ul>
                         </div>
 
-                        <div class="map-frame">
+                        <div class="map-frame" aria-live="polite">
                             <iframe
-                                title="Map of Greece for event-location orientation"
+                                id="booking-map"
+                                title="Map preview for the entered event location"
                                 data-i18n-title="contact.mapTitle"
-                                src="https://www.openstreetmap.org/export/embed.html?bbox=19.2%2C34.6%2C29.9%2C42.2&amp;layer=mapnik"
+                                src="https://www.google.com/maps?q=Greece&amp;output=embed"
                                 loading="lazy"
                                 referrerpolicy="no-referrer-when-downgrade"
                             ></iframe>
                         </div>
 
                         <div class="card-body location-card-footer">
-                            <p class="map-caption" data-i18n="contact.mapCaption">This map is an orientation aid, not a fixed business address. Service availability is confirmed after we review your venue.</p>
-                            <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer" data-i18n="contact.openMap">Open an interactive map</a>
+                            <p class="map-caption" data-i18n="contact.mapCaption">The map updates as you enter the event address and postal code. Service availability is confirmed after we review your venue.</p>
+                            <a id="booking-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Greece" target="_blank" rel="noopener noreferrer" data-i18n="contact.openMap">Open this location in Google Maps</a>
                             <a href="https://www.instagram.com/popadoo_kidsevents/" target="_blank" rel="noopener noreferrer" data-i18n="contact.instagram">Follow Popadoo on Instagram</a>
                         </div>
                     </div>
