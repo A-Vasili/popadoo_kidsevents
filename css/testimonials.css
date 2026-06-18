@@ -1,46 +1,33 @@
 /* Page-specific styles for testimonials.html. */
 
-/* Testimonials page */
 .testimonial-grid {
-    display: grid;
-    gap: 1.5rem;
+    margin-top: 2rem;
 }
 
 .testimonial-card {
-    min-height: 13rem;
-    padding: 1.75rem;
+    min-height: 14rem;
     border: 1px solid var(--color-border);
     border-radius: 1.25rem;
     background: var(--surface-lavender);
+    color: var(--color-text);
     box-shadow: var(--shadow-card);
 }
 
-.testimonial-card:nth-child(2) { background: var(--surface-mint); }
-.testimonial-card:nth-child(3) { background: var(--surface-peach); }
+.testimonial-grid > div:nth-child(2) .testimonial-card { background: var(--surface-mint); }
+.testimonial-grid > div:nth-child(3) .testimonial-card { background: var(--surface-peach); }
 
-.testimonial-card blockquote {
-    margin-bottom: 1.25rem;
-    font-size: 1.15rem;
+.feedback-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--color-surface-raised);
+    color: var(--color-primary-strong);
+    font-weight: 900;
 }
 
-.testimonial-card blockquote::before {
-    display: block;
-    margin-bottom: 0.4rem;
-    color: var(--color-secondary);
-    content: "“";
-    font-size: 3rem;
-    font-weight: 800;
-    line-height: 0.75;
-}
-
-.testimonial-attribution {
+.testimonial-card p {
     margin-bottom: 0;
-    color: var(--color-muted);
-    font-weight: 800;
-}
-
-@media (min-width: 48rem) {
-    .testimonial-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
 }

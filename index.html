@@ -3,91 +3,24 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="author" content="Popadoo Kids Events"/>
+    <meta name="theme-color" content="#fff9fc"/>
     <meta name="description" content="Plan joyful children’s events with Popadoo Kids Events."/>
     <title>Home | Popadoo Kids Events</title>
 
     <script src="javascript/theme-init.js"></script>
+    <link rel="icon" href="assets/svg/popadoo-logo.svg" type="image/svg+xml"/>
+    <!-- Bootstrap provides the required framework grid, forms, cards, and utilities. -->
+    <link rel="stylesheet" href="bootstrap/bootstrap.css"/>
+    <!-- Custom CSS loads after Bootstrap so the Popadoo design system remains intact. -->
     <link rel="stylesheet" href="css/styles.css"/>
     <link rel="stylesheet" href="css/index.css"/>
 </head>
 
 <body data-page="index">
     <a class="visually-hidden-focusable" href="#main-content" data-i18n="common.skipLink">Skip to main content</a>
-
-    <header class="site-header">
-        <div class="container">
-            <nav class="site-navigation" aria-label="Primary navigation" data-i18n-aria-label="nav.primaryLabel">
-                <a class="site-logo" href="index.html" aria-label="Popadoo Kids Events home" data-i18n-aria-label="nav.logoLabel">
-                    <img
-                        class="site-logo-mark"
-                        src="assets/svg/popadoo-logo.svg"
-                        alt=""
-                        width="128"
-                        height="128"
-                    />
-                    <span class="site-logo-text">Popadoo Kids Events</span>
-                </a>
-
-                <button
-                    class="site-navigation-toggle"
-                    type="button"
-                    aria-controls="primary-navigation"
-                    aria-expanded="false"
-                    aria-label="Open primary navigation"
-                >
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                </button>
-
-                <div class="site-navigation-menu" id="primary-navigation">
-                    <ul class="site-navigation-links">
-                        <li><a class="site-navigation-link active" href="index.html" aria-current="page" data-i18n="nav.home">Home</a></li>
-                        <li><a class="site-navigation-link" href="gallery.html" data-i18n="nav.gallery">Gallery</a></li>
-                        <li><a class="site-navigation-link" href="packages.html" data-i18n="nav.packages">Packages</a></li>
-                        <li><a class="site-navigation-link" href="about.html" data-i18n="nav.about">About Us</a></li>
-                        <li><a class="site-navigation-link" href="testimonials.html" data-i18n="nav.testimonials">Testimonials</a></li>
-                    </ul>
-
-                    <div class="site-controls">
-                        <div class="language-control">
-                            <label class="visually-hidden" for="language-selector" data-i18n="language.label">Language</label>
-                            <select
-                                class="language-selector"
-                                id="language-selector"
-                                aria-label="Language"
-                                data-i18n-aria-label="language.label"
-                            >
-                                <option value="en" lang="en" data-i18n="language.english">English</option>
-                                <option value="el" lang="el" data-i18n="language.greek">Greek</option>
-                            </select>
-                        </div>
-
-                        <button
-                            class="theme-toggle"
-                            id="theme-toggle"
-                            type="button"
-                            role="switch"
-                            aria-checked="false"
-                            aria-label="Switch to dark mode"
-                        >
-                            <span class="theme-toggle-track" aria-hidden="true">
-                                <span class="theme-toggle-stars"></span>
-                                <span class="theme-toggle-clouds"></span>
-                                <span class="theme-toggle-knob">
-                                    <img class="theme-toggle-icon theme-toggle-icon-moon" src="assets/svg/moon-toggle.svg" alt="" width="82" height="82"/>
-                                    <img class="theme-toggle-icon theme-toggle-icon-sun" src="assets/svg/sun-toggle.svg" alt="" width="82" height="82"/>
-                                </span>
-                            </span>
-                            <span class="visually-hidden" data-theme-status>Light mode</span>
-                        </button>
-
-                        <a class="book-now-button" href="contact.html" data-i18n="nav.bookNow">Book Now</a>
-                    </div>
-                </div>
-            </nav>
-        </div>
-    </header>
+    <!-- Shared navigation is rendered by assets/javascript/components.js. -->
+    <popadoo-header></popadoo-header>
 
     <main id="main-content">
         <section class="hero-carousel" aria-labelledby="welcome-heading">
@@ -110,7 +43,7 @@
                 <div class="container">
                     <div class="hero-carousel-content">
                         <h1 id="welcome-heading" data-i18n="home.welcomeHeading">Welcome to Popadoo Kids Events</h1>
-                        <p data-i18n="home.welcomeText">A simple workspace for organizing children’s events, assigning tasks, and tracking every detail from idea to celebration.</p>
+                        <p data-i18n="home.welcomeText">Creative children’s parties planned around your family, your theme, and the venue you choose.</p>
                     </div>
                 </div>
             </div>
@@ -135,17 +68,12 @@
             </div>
         </section>
     </main>
+    <!-- Shared footer is rendered once from the reusable component. -->
+    <popadoo-footer></popadoo-footer>
 
-    <footer class="site-footer">
-        <div class="container site-footer-content">
-            <strong>Popadoo Kids Events</strong>
-            <a href="mailto:hello@popadookidsevents.gr">hello@popadookidsevents.gr</a>
-            <a href="style-guide.html" data-i18n="footer.styleGuide">Pastel style guide</a>
-            <p data-i18n="footer.copyright">© 2026 Popadoo Kids Events</p>
-        </div>
-    </footer>
-
-    <script src="assets/javascript/translations.js" defer></script>
-    <script src="assets/javascript/main.js" defer></script>
+    <script src="bootstrap/bootstrap.js" defer></script>
+    <script src="javascript/components.js" defer></script>
+    <script src="javascript/translations.js" defer></script>
+    <script src="javascript/main.js" defer></script>
 </body>
 </html>

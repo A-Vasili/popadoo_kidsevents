@@ -11,6 +11,10 @@
     const themeToggle = document.querySelector("#theme-toggle");
     const themeStatus = document.querySelector("[data-theme-status]");
     const metaDescription = document.querySelector('meta[name="description"]');
+    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    const bookingForm = document.querySelector("#booking-form");
+    const bookingConfirmation = document.querySelector("#booking-confirmation");
+    const bookingDate = document.querySelector("#booking-date");
 
     let currentLanguage = "en";
 
@@ -62,6 +66,10 @@
 
         if (themeStatus) {
             themeStatus.textContent = translate(isDark ? "theme.dark" : "theme.light");
+        }
+
+        if (themeColorMeta) {
+            themeColorMeta.setAttribute("content", isDark ? "#15111c" : "#fff9fc");
         }
     };
 
@@ -172,6 +180,55 @@
             document.documentElement.setAttribute("data-theme", nextTheme);
             storeValue(themeStorageKey, nextTheme);
             updateThemeControl();
+        });
+    }
+
+
+    /*
+     * Contact-form enhancement.
+     * Native HTML validation remains the source of truth; Bootstrap's
+     * was-validated class adds visible feedback, and the live region confirms
+     * a successful demonstration submission without pretending to use a server.
+     */
+    if (bookingDate) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const year = tomorrow.getFullYear();
+        const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
+        const day = String(tomorrow.getDate()).padStart(2, "0");
+        bookingDate.min = `${year}-${month}-${day}`;
+    }
+
+    if (bookingForm) {
+        bookingForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            bookingForm.classList.add("was-validated");
+
+            if (!bookingForm.checkValidity()) {
+                bookingForm.querySelector(":invalid")?.focus();
+                return;
+            }
+
+            bookingForm.reset();
+            bookingForm.classList.remove("was-validated");
+
+            if (bookingConfirmation) {
+                bookingConfirmation.hidden = false;
+                bookingConfirmation.focus();
+                const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                bookingConfirmation.scrollIntoView({
+                    behavior: prefersReducedMotion ? "auto" : "smooth",
+                    block: "center"
+                });
+            }
+        });
+
+        bookingForm.addEventListener("input", () => {
+            if (bookingConfirmation && !bookingConfirmation.hidden) {
+                bookingConfirmation.hidden = true;
+            }
         });
     }
 

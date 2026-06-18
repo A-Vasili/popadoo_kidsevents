@@ -1,21 +1,32 @@
 /* Page-specific styles for contact.html. */
 
-/* Contact page */
-.booking-section {
-    max-width: 58rem;
-    padding: clamp(1.35rem, 3vw, 2.25rem);
+/* Two-column booking area: Bootstrap supplies responsive columns and gaps. */
+.booking-section,
+.location-card {
     border: 1px solid var(--color-border);
     border-radius: 1.25rem;
     background: var(--color-surface-raised);
+    color: var(--color-text);
     box-shadow: var(--shadow-card);
 }
 
-.booking-section h2 {
-    margin-bottom: 1.25rem;
+.booking-section {
+    padding: clamp(1.35rem, 3vw, 2.25rem);
 }
 
+.booking-section h2 {
+    margin-bottom: 0.5rem;
+}
+
+.form-intro {
+    margin-bottom: 1.5rem;
+    color: var(--color-muted);
+}
+
+/* Custom grid remains as a fallback while Bootstrap form classes are used. */
 .booking-form {
     display: grid;
+    grid-template-columns: 1fr;
     gap: 1.25rem;
 }
 
@@ -26,45 +37,152 @@
     font-weight: 800;
 }
 
-.form-field input,
-.form-field select,
-.form-field textarea {
+.form-field .form-control,
+.form-field .form-select {
     width: 100%;
+    min-height: 3rem;
     padding: 0.8rem 0.9rem;
     border: 1px solid var(--color-border);
     border-radius: 0.75rem;
-    background: var(--color-surface);
+    background-color: var(--color-surface);
     color: var(--color-text);
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.form-field input:hover,
-.form-field select:hover,
-.form-field textarea:hover {
+.form-field textarea.form-control {
+    min-height: 9rem;
+    resize: vertical;
+}
+
+.form-field .form-control:hover,
+.form-field .form-select:hover {
     border-color: var(--pastel-lavender);
 }
 
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
+.form-field .form-control:focus,
+.form-field .form-select:focus,
+.form-check-input:focus {
     border-color: var(--color-primary);
+    background-color: var(--color-surface);
+    color: var(--color-text);
     box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
 }
 
-.form-field textarea {
-    resize: vertical;
+.form-field .form-select {
+    color-scheme: light dark;
+}
+
+.form-text {
+    color: var(--color-muted);
 }
 
 .form-field-full-width {
     grid-column: 1 / -1;
 }
 
+.form-check-input {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.form-check-input:checked {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+}
+
+.form-check-label {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
 .primary-button {
     border: 0;
+}
+
+.secondary-form-link {
+    color: var(--color-primary-strong);
+    font-weight: 700;
+}
+
+.booking-confirmation {
+    margin-bottom: 1.5rem;
+    border-color: var(--pastel-mint);
+    background: var(--surface-mint);
+    color: var(--color-text);
+}
+
+.booking-confirmation[hidden] {
+    display: none !important;
+}
+
+/* Location card and embedded OpenStreetMap. */
+.location-card {
+    overflow: hidden;
+    border-top: 0.35rem solid var(--pastel-sky);
+}
+
+.location-card .card-body {
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.location-checklist {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+}
+
+.location-checklist li + li {
+    margin-top: 0.65rem;
+}
+
+.map-frame {
+    min-height: 20rem;
+    border-block: 1px solid var(--color-border);
+    background: var(--surface-sky);
+}
+
+.map-frame iframe {
+    width: 100%;
+    min-height: 20rem;
+    display: block;
+    border: 0;
+}
+
+.location-card-footer {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.location-card-footer a {
+    color: var(--color-primary-strong);
+    font-weight: 800;
+}
+
+.map-caption {
+    margin-bottom: 0;
+    color: var(--color-muted);
+    font-size: 0.95rem;
 }
 
 @media (min-width: 48rem) {
     .booking-form {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 35rem) {
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .form-actions .primary-button {
+        width: 100%;
     }
 }

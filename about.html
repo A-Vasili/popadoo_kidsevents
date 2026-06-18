@@ -3,161 +3,156 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <meta name="description" content="Learn about Popadoo Kids Events, its purpose, features, and team."/>
+    <meta name="author" content="Popadoo Kids Events"/>
+    <meta name="theme-color" content="#fff9fc"/>
+    <meta name="description" content="Meet the mobile Popadoo Kids Events team and learn how we bring children’s celebrations to client-selected venues."/>
     <title>About | Popadoo Kids Events</title>
 
     <script src="javascript/theme-init.js"></script>
+    <link rel="icon" href="assets/svg/popadoo-logo.svg" type="image/svg+xml"/>
+    <!-- Bootstrap provides the required framework grid, forms, cards, and utilities. -->
+    <link rel="stylesheet" href="bootstrap/bootstrap.css"/>
+    <!-- Custom CSS loads after Bootstrap so the Popadoo design system remains intact. -->
     <link rel="stylesheet" href="css/styles.css"/>
     <link rel="stylesheet" href="css/about.css"/>
 </head>
 
 <body data-page="about">
     <a class="visually-hidden-focusable" href="#main-content" data-i18n="common.skipLink">Skip to main content</a>
-
-    <header class="site-header">
-        <div class="container">
-            <nav class="site-navigation" aria-label="Primary navigation" data-i18n-aria-label="nav.primaryLabel">
-                <a class="site-logo" href="index.html" aria-label="Popadoo Kids Events home" data-i18n-aria-label="nav.logoLabel">
-                    <img
-                        class="site-logo-mark"
-                        src="assets/svg/popadoo-logo.svg"
-                        alt=""
-                        width="128"
-                        height="128"
-                    />
-                    <span class="site-logo-text">Popadoo Kids Events</span>
-                </a>
-
-                <button
-                    class="site-navigation-toggle"
-                    type="button"
-                    aria-controls="primary-navigation"
-                    aria-expanded="false"
-                    aria-label="Open primary navigation"
-                >
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                    <span class="site-navigation-toggle-line" aria-hidden="true"></span>
-                </button>
-
-                <div class="site-navigation-menu" id="primary-navigation">
-                    <ul class="site-navigation-links">
-                        <li><a class="site-navigation-link" href="index.html" data-i18n="nav.home">Home</a></li>
-                        <li><a class="site-navigation-link" href="gallery.html" data-i18n="nav.gallery">Gallery</a></li>
-                        <li><a class="site-navigation-link" href="packages.html" data-i18n="nav.packages">Packages</a></li>
-                        <li><a class="site-navigation-link active" href="about.html" aria-current="page" data-i18n="nav.about">About Us</a></li>
-                        <li><a class="site-navigation-link" href="testimonials.html" data-i18n="nav.testimonials">Testimonials</a></li>
-                    </ul>
-
-                    <div class="site-controls">
-                        <div class="language-control">
-                            <label class="visually-hidden" for="language-selector" data-i18n="language.label">Language</label>
-                            <select
-                                class="language-selector"
-                                id="language-selector"
-                                aria-label="Language"
-                                data-i18n-aria-label="language.label"
-                            >
-                                <option value="en" lang="en" data-i18n="language.english">English</option>
-                                <option value="el" lang="el" data-i18n="language.greek">Greek</option>
-                            </select>
-                        </div>
-
-                        <button
-                            class="theme-toggle"
-                            id="theme-toggle"
-                            type="button"
-                            role="switch"
-                            aria-checked="false"
-                            aria-label="Switch to dark mode"
-                        >
-                            <span class="theme-toggle-track" aria-hidden="true">
-                                <span class="theme-toggle-stars"></span>
-                                <span class="theme-toggle-clouds"></span>
-                                <span class="theme-toggle-knob">
-                                    <img class="theme-toggle-icon theme-toggle-icon-moon" src="assets/svg/moon-toggle.svg" alt="" width="82" height="82"/>
-                                    <img class="theme-toggle-icon theme-toggle-icon-sun" src="assets/svg/sun-toggle.svg" alt="" width="82" height="82"/>
-                                </span>
-                            </span>
-                            <span class="visually-hidden" data-theme-status>Light mode</span>
-                        </button>
-
-                        <a class="book-now-button" href="contact.html" data-i18n="nav.bookNow">Book Now</a>
-                    </div>
-                </div>
-            </nav>
-        </div>
-    </header>
+    <!-- Shared navigation is rendered by assets/javascript/components.js. -->
+    <popadoo-header></popadoo-header>
 
     <main id="main-content">
+        <!-- Page introduction: explains the real service rather than a software concept. -->
         <section class="content-section" aria-labelledby="about-heading">
             <div class="container narrow-content">
+                <p class="section-kicker" data-i18n="about.kicker">Mobile children’s event planning</p>
                 <h1 id="about-heading" data-i18n="about.heading">About Popadoo</h1>
-                <p class="lead" data-i18n="about.lead">Popadoo Kids Events is designed to simplify event planning through accessible task management, progress tracking, and clear communication.</p>
-                <h2 data-i18n="about.purposeHeading">Purpose and features</h2>
-                <p data-i18n="about.purposeText">We help families and event teams keep ideas, tasks, schedules, and suppliers in one clear place, from the first concept to the final celebration.</p>
+                <p class="lead" data-i18n="about.lead">Popadoo Kids Events creates playful, well-organized celebrations for children and families. We help shape the theme, activities, timing, and practical details so hosts can enjoy the day with their guests.</p>
             </div>
         </section>
 
-        <section class="content-section section-surface" aria-labelledby="team-heading">
+        <!-- The service model is made explicit because Popadoo has no fixed party venue. -->
+        <section class="content-section section-surface" aria-labelledby="mobile-service-heading">
             <div class="container">
-                <h2 id="team-heading" data-i18n="about.teamHeading">Meet the team</h2>
-                <div class="team-grid">
-                    <article class="team-card">
-                        <img src="assets/images/team-member-1.jpg" alt="Portrait placeholder for team member one" data-i18n-alt="about.memberOneAlt"/>
-                        <div class="team-card-content">
-                            <h3 data-i18n="about.memberOneName">Team Member One</h3>
-                            <p class="team-role" data-i18n="about.memberOneRole">Project Coordinator</p>
-                            <p data-i18n="about.memberOneText">Coordinates schedules, suppliers, and communication across every event.</p>
+                <div class="row g-4 align-items-center mobile-service-layout">
+                    <div class="col-lg-7">
+                        <p class="section-kicker" data-i18n="about.mobileKicker">Your venue, our team</p>
+                        <h2 id="mobile-service-heading" data-i18n="about.mobileHeading">We bring the celebration to you</h2>
+                        <p data-i18n="about.mobileText">Popadoo does not operate from a fixed party location. Our organizers travel to the home, school, event hall, garden, or other client-specified venue listed in the booking request. We confirm access, travel arrangements, setup needs, and availability before the event.</p>
+                    </div>
+                    <aside class="col-lg-5" aria-label="Mobile service highlights" data-i18n-aria-label="about.mobileHighlightsLabel">
+                        <div class="service-model-card card h-100">
+                            <div class="card-body">
+                                <h3 class="h4" data-i18n="about.mobileCardHeading">A flexible setup for every celebration</h3>
+                                <ul class="service-model-list">
+                                    <li data-i18n="about.mobilePointOne">You choose the venue and share the full address.</li>
+                                    <li data-i18n="about.mobilePointTwo">We adapt the plan to the available indoor or outdoor space.</li>
+                                    <li data-i18n="about.mobilePointThree">Travel requirements are agreed before a booking is confirmed.</li>
+                                </ul>
+                            </div>
                         </div>
-                    </article>
-
-                    <article class="team-card">
-                        <img src="assets/images/team-member-2.jpg" alt="Portrait placeholder for team member two" data-i18n-alt="about.memberTwoAlt"/>
-                        <div class="team-card-content">
-                            <h3 data-i18n="about.memberTwoName">Team Member Two</h3>
-                            <p class="team-role" data-i18n="about.memberTwoRole">Front-End Developer</p>
-                            <p data-i18n="about.memberTwoText">Builds accessible, responsive tools that make planning simple.</p>
-                        </div>
-                    </article>
-
-                    <article class="team-card">
-                        <img src="assets/images/team-member-3.jpg" alt="Portrait placeholder for team member three" data-i18n-alt="about.memberThreeAlt"/>
-                        <div class="team-card-content">
-                            <h3 data-i18n="about.memberThreeName">Team Member Three</h3>
-                            <p class="team-role" data-i18n="about.memberThreeRole">Event Specialist</p>
-                            <p data-i18n="about.memberThreeText">Turns themes and activities into memorable experiences for children.</p>
-                        </div>
-                    </article>
+                    </aside>
                 </div>
             </div>
         </section>
 
-        <section class="content-section" aria-labelledby="about-testimonials-heading">
+        <!-- Bootstrap grid classes work alongside the existing custom card styling. -->
+        <section class="content-section" aria-labelledby="team-heading">
             <div class="container">
-                <h2 id="about-testimonials-heading" data-i18n="about.storyHeading">Our story and testimonials</h2>
-                <div class="quote-grid">
-                    <blockquote class="quote-card">
-                        <p data-i18n="about.quoteOne">“Add a client testimonial or development milestone here.”</p>
-                    </blockquote>
-                    <blockquote class="quote-card">
-                        <p data-i18n="about.quoteTwo">“Add another image, testimonial, or project insight here.”</p>
-                    </blockquote>
+                <div class="section-heading-group">
+                    <p class="section-kicker" data-i18n="about.teamKicker">People behind the party</p>
+                    <h2 id="team-heading" data-i18n="about.teamHeading">Meet the team</h2>
+                    <p data-i18n="about.teamIntro">Every event is supported by clear planning, creative activity design, and calm on-site coordination.</p>
+                </div>
+
+                <div class="row g-4 team-grid">
+                    <div class="col-md-6 col-lg-4">
+                        <article class="team-card card h-100">
+                            <img src="assets/images/team-member-1.jpg" class="card-img-top" alt="Illustrated avatar representing the planning and family liaison role" data-i18n-alt="about.memberOneAlt" width="900" height="900"/>
+                            <div class="team-card-content card-body">
+                                <h3 data-i18n="about.memberOneName">Planning &amp; Family Liaison</h3>
+                                <p class="team-role" data-i18n="about.memberOneRole">Before the event</p>
+                                <p data-i18n="about.memberOneText">Gathers the brief, confirms the schedule and venue details, and keeps communication clear from the first enquiry to the final plan.</p>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <article class="team-card card h-100">
+                            <img src="assets/images/team-member-2.jpg" class="card-img-top" alt="Illustrated avatar representing the creative activities role" data-i18n-alt="about.memberTwoAlt" width="900" height="900"/>
+                            <div class="team-card-content card-body">
+                                <h3 data-i18n="about.memberTwoName">Creative Activities</h3>
+                                <p class="team-role" data-i18n="about.memberTwoRole">Ideas and engagement</p>
+                                <p data-i18n="about.memberTwoText">Develops age-appropriate games, themed activities, and playful moments that suit the group, venue, and event style.</p>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <article class="team-card card h-100">
+                            <img src="assets/images/team-member-3.jpg" class="card-img-top" alt="Illustrated avatar representing the on-site coordination role" data-i18n-alt="about.memberThreeAlt" width="900" height="900"/>
+                            <div class="team-card-content card-body">
+                                <h3 data-i18n="about.memberThreeName">On-site Coordination</h3>
+                                <p class="team-role" data-i18n="about.memberThreeRole">On the day</p>
+                                <p data-i18n="about.memberThreeText">Manages setup, activity flow, and practical changes at the venue so the celebration stays welcoming and organized.</p>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content-section section-surface" aria-labelledby="process-heading">
+            <div class="container">
+                <div class="section-heading-group">
+                    <p class="section-kicker" data-i18n="about.processKicker">Simple and transparent</p>
+                    <h2 id="process-heading" data-i18n="about.processHeading">How a booking works</h2>
+                </div>
+
+                <ol class="row g-4 process-grid">
+                    <li class="col-md-4">
+                        <div class="process-card card h-100">
+                            <div class="card-body">
+                                <span class="process-number" aria-hidden="true">1</span>
+                                <h3 data-i18n="about.processOneHeading">Share the details</h3>
+                                <p data-i18n="about.processOneText">Tell us the date, guest ages, event type, venue address, and the ideas you already have.</p>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="col-md-4">
+                        <div class="process-card card h-100">
+                            <div class="card-body">
+                                <span class="process-number" aria-hidden="true">2</span>
+                                <h3 data-i18n="about.processTwoHeading">Confirm the plan</h3>
+                                <p data-i18n="about.processTwoText">We discuss availability, the package, activities, access, travel, and any venue limitations.</p>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="col-md-4">
+                        <div class="process-card card h-100">
+                            <div class="card-body">
+                                <span class="process-number" aria-hidden="true">3</span>
+                                <h3 data-i18n="about.processThreeHeading">Celebrate</h3>
+                                <p data-i18n="about.processThreeText">Our team arrives at the agreed location, prepares the experience, and coordinates the event plan.</p>
+                            </div>
+                        </div>
+                    </li>
+                </ol>
+
+                <div class="about-social-callout">
+                    <p data-i18n="about.instagramText">See current themes, activity ideas, and event updates on our official Instagram page.</p>
+                    <a class="button" href="https://www.instagram.com/popadoo_kidsevents/" target="_blank" rel="noopener noreferrer" data-i18n="about.instagramLink">Visit Popadoo on Instagram</a>
                 </div>
             </div>
         </section>
     </main>
+    <!-- Shared footer is rendered once from the reusable component. -->
+    <popadoo-footer></popadoo-footer>
 
-    <footer class="site-footer">
-        <div class="container site-footer-content">
-            <strong>Popadoo Kids Events</strong>
-            <a href="mailto:hello@popadookidsevents.gr">hello@popadookidsevents.gr</a>
-            <a href="style-guide.html" data-i18n="footer.styleGuide">Pastel style guide</a>
-            <p data-i18n="footer.copyright">© 2026 Popadoo Kids Events</p>
-        </div>
-    </footer>
-
-    <script src="assets/javascript/translations.js" defer></script>
-    <script src="assets/javascript/main.js" defer></script>
+    <script src="bootstrap/bootstrap.js" defer></script>
+    <script src="javascript/components.js" defer></script>
+    <script src="javascript/translations.js" defer></script>
+    <script src="javascript/main.js" defer></script>
 </body>
 </html>

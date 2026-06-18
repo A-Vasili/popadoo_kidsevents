@@ -1,29 +1,54 @@
 /* Page-specific styles for about.html. */
 
-/* About page */
+/* Shared heading rhythm for the About page. */
 .content-section h1,
 .content-section h2 {
     margin-bottom: 1rem;
 }
 
+.section-heading-group {
+    max-width: 48rem;
+}
+
+.mobile-service-layout,
 .team-grid,
-.quote-grid {
-    display: grid;
-    gap: 1.5rem;
+.process-grid {
     margin-top: 2rem;
 }
 
-.team-card {
+/* Mobile-service explanation card. */
+.service-model-card,
+.team-card,
+.process-card {
     border: 1px solid var(--color-border);
     border-radius: 1.25rem;
-    overflow: hidden;
     background: var(--color-surface-raised);
+    color: var(--color-text);
     box-shadow: var(--shadow-card);
 }
 
-.team-card:nth-child(1) { border-top: 0.35rem solid var(--pastel-lavender); }
-.team-card:nth-child(2) { border-top: 0.35rem solid var(--pastel-mint); }
-.team-card:nth-child(3) { border-top: 0.35rem solid var(--pastel-peach); }
+.service-model-card {
+    border-top: 0.35rem solid var(--pastel-sky);
+}
+
+.service-model-list,
+.location-checklist {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+}
+
+.service-model-list li + li {
+    margin-top: 0.75rem;
+}
+
+/* Team grid: Bootstrap supplies columns; custom CSS supplies the brand treatment. */
+.team-card {
+    overflow: hidden;
+}
+
+.team-grid > div:nth-child(1) .team-card { border-top: 0.35rem solid var(--pastel-lavender); }
+.team-grid > div:nth-child(2) .team-card { border-top: 0.35rem solid var(--pastel-mint); }
+.team-grid > div:nth-child(3) .team-card { border-top: 0.35rem solid var(--pastel-peach); }
 
 .team-card img {
     width: 100%;
@@ -48,30 +73,53 @@ html[data-theme="dark"] .team-card img {
     font-weight: 800;
 }
 
-.quote-card {
-    margin: 0;
-    padding: 1.75rem;
+/* Numbered booking process. */
+.process-grid {
+    padding-left: 0;
+    list-style: none;
+}
+
+.process-card {
+    border-top: 0.35rem solid var(--pastel-butter);
+}
+
+.process-number {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+    font-weight: 900;
+}
+
+.process-card p {
+    margin-bottom: 0;
+}
+
+.about-social-callout {
+    margin-top: 2rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
     border: 1px solid var(--color-border);
-    border-radius: 1.1rem;
-    background: var(--surface-pink);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
     box-shadow: var(--shadow-card);
 }
 
-.quote-card:nth-child(2) {
-    background: var(--surface-sky);
-}
-
-.quote-card p {
+.about-social-callout p {
+    max-width: 42rem;
     margin-bottom: 0;
-    font-size: 1.1rem;
 }
 
-@media (min-width: 48rem) {
-    .team-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .quote-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 47.99rem) {
+    .about-social-callout {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }
