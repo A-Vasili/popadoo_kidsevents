@@ -12,7 +12,9 @@
     <link rel="icon" href="assets/svg/popadoo-logo.svg" type="image/svg+xml"/>
     <!-- Bootstrap provides the required framework grid, forms, cards, and utilities. -->
     <link rel="stylesheet" href="bootstrap/bootstrap.css"/>
-    <!-- Custom CSS loads after Bootstrap so the Popadoo design system remains intact. -->
+    <!-- Leaflet powers the accessible interactive map on the booking page. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- Custom CSS loads after third-party CSS so the Popadoo design system remains intact. -->
     <link rel="stylesheet" href="css/styles.css"/>
     <link rel="stylesheet" href="css/contact.css"/>
 </head>
@@ -45,8 +47,8 @@
                         <form class="booking-form needs-validation" id="booking-form" action="contact.html#booking-confirmation" method="post" aria-describedby="required-fields-note" novalidate>
                             <div class="form-field">
                                 <label for="booking-name"><span data-i18n="contact.name">Your name</span> <span aria-hidden="true">*</span></label>
-                                <input class="form-control" id="booking-name" name="name" type="text" autocomplete="name" required/>
-                                <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
+                                <input class="form-control" id="booking-name" name="name" type="text" autocomplete="name" maxlength="50" required/>
+                                <div class="invalid-feedback" data-i18n="contact.invalidName">Enter your name using 50 characters or fewer.</div>
                             </div>
 
                             <div class="form-field">
@@ -92,7 +94,7 @@
 
                             <div class="form-field">
                                 <label for="booking-time" data-i18n="contact.time">Preferred start time</label>
-                                <input class="form-control" id="booking-time" name="eventTime" type="time"/>
+                                <input class="form-control" id="booking-time" name="eventTime" type="time" value="16:00" step="1800"/>
                             </div>
 
                             <div class="form-field">
@@ -120,14 +122,15 @@
                             </div>
 
                             <div class="form-field">
-                                <label for="booking-guest-count" data-i18n="contact.guests">Estimated number of guests</label>
-                                <input class="form-control" id="booking-guest-count" name="guestCount" type="number" min="1" inputmode="numeric"/>
+                                <label for="booking-guest-count"><span data-i18n="contact.guests">Estimated number of guests</span> <span aria-hidden="true">*</span></label>
+                                <input class="form-control" id="booking-guest-count" name="guestCount" type="number" min="1" value="10" inputmode="numeric" required/>
+                                <div class="invalid-feedback" data-i18n="contact.invalidGuests">Enter at least one guest.</div>
                             </div>
 
                             <div class="form-field">
                                 <label for="booking-location"><span data-i18n="contact.location">Full event venue or address</span> <span aria-hidden="true">*</span></label>
                                 <input class="form-control" id="booking-location" name="location" type="text" autocomplete="street-address" aria-describedby="location-help" required/>
-                                <p class="form-text" id="location-help" data-i18n="contact.locationHelp">Popadoo travels to the client-specified location; there is no fixed party venue.</p>
+                                <p class="form-text" id="location-help" data-i18n="contact.locationHelp">Type an address or click the map to fill this field automatically.</p>
                                 <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
                             </div>
 
@@ -183,20 +186,21 @@
                             </ul>
                         </div>
 
-                        <div class="map-frame" aria-live="polite">
-                            <iframe
+                        <div class="map-frame" aria-describedby="map-instructions">
+                            <div
+                                class="booking-map"
                                 id="booking-map"
-                                title="Map preview for the entered event location"
-                                data-i18n-title="contact.mapTitle"
-                                src="https://www.google.com/maps?q=Greece&amp;output=embed"
-                                loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade"
-                            ></iframe>
+                                role="application"
+                                tabindex="0"
+                                aria-label="Interactive map for choosing the party location"
+                                data-i18n-aria-label="contact.mapTitle"
+                            ></div>
                         </div>
 
                         <div class="card-body location-card-footer">
-                            <p class="map-caption" data-i18n="contact.mapCaption">The map updates as you enter the event address and postal code. Service availability is confirmed after we review your venue.</p>
-                            <a id="booking-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Greece" target="_blank" rel="noopener noreferrer" data-i18n="contact.openMap">Open this location in Google Maps</a>
+                            <p class="map-caption" id="map-instructions" data-i18n="contact.mapCaption">Type an address to update the map, or click the map to fill the address and postal code automatically.</p>
+                            <p class="map-status" id="booking-map-status" role="status" aria-live="polite" data-i18n="contact.mapStatusReady">Map ready. Click a point to select the party location.</p>
+                            <a id="booking-map-link" href="https://www.openstreetmap.org/#map=6/39.0742/21.8243" target="_blank" rel="noopener noreferrer" data-i18n="contact.openMap">Open this location in OpenStreetMap</a>
                             <a href="https://www.instagram.com/popadoo_kidsevents/" target="_blank" rel="noopener noreferrer" data-i18n="contact.instagram">Follow Popadoo on Instagram</a>
                         </div>
                     </div>
@@ -207,9 +211,11 @@
     <!-- Shared footer is rendered once from the reusable component. -->
     <popadoo-footer></popadoo-footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     <script src="bootstrap/bootstrap.js" defer></script>
     <script src="javascript/components.js" defer></script>
     <script src="javascript/translations.js" defer></script>
     <script src="javascript/main.js" defer></script>
+    <script src="javascript/booking-map.js" defer></script>
 </body>
 </html>

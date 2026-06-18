@@ -15,16 +15,15 @@
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const bookingForm = document.querySelector("#booking-form");
     const bookingConfirmation = document.querySelector("#booking-confirmation");
+    const bookingName = document.querySelector("#booking-name");
     const bookingEmail = document.querySelector("#booking-email");
     const bookingPhone = document.querySelector("#booking-phone");
     const bookingDate = document.querySelector("#booking-date");
-    const bookingLocation = document.querySelector("#booking-location");
+    const bookingTime = document.querySelector("#booking-time");
+    const bookingGuests = document.querySelector("#booking-guest-count");
     const bookingPostalCode = document.querySelector("#booking-postal-code");
-    const bookingMap = document.querySelector("#booking-map");
-    const bookingMapLink = document.querySelector("#booking-map-link");
 
     let currentLanguage = "en";
-    let mapUpdateTimer = null;
 
     const getStoredValue = (key) => {
         try {
@@ -103,9 +102,9 @@
 
     /*
      * Keep language state portable between pages.
-     * localStorage remains the main preference store, while the lang query
-     * parameter makes logo/header/footer links preserve Greek or English even
-     * when a user enters from another page or storage is unavailable.
+     * localStorage remains the main preference store, while a lang query
+     * parameter is added to internal links as a fallback for browsers that block
+     * storage or users who open pages directly from a translated URL.
      */
     const updateInternalLanguageLinks = () => {
         document.querySelectorAll("a[href]").forEach((link) => {
@@ -126,8 +125,35 @@
         });
     };
 
+    const updateCurrentUrlLanguage = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set("lang", currentLanguage);
+        window.history.replaceState({}, "", getRelativeLocalizedHref(url));
+    };
+
+    const formatDateForInput = (date) => {
+        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+        return localDate.toISOString().slice(0, 10);
+    };
+
+    const setDefaultBookingValues = () => {
+        /* A late-afternoon default makes the time field useful without forcing a choice. */
+        if (bookingTime && !bookingTime.value) {
+            bookingTime.value = "16:00";
+        }
+
+        if (bookingGuests && !bookingGuests.value) {
+            bookingGuests.value = "10";
+        }
+    };
+
     const validateBookingFields = () => {
         const validators = [
+            {
+                field: bookingName,
+                key: "contact.invalidName",
+                isValid: (value) => Boolean(value) && value.length <= 50
+            },
             {
                 field: bookingEmail,
                 key: "contact.invalidEmail",
@@ -138,7 +164,7 @@
                 key: "contact.invalidPhone",
                 isValid: (value) => {
                     if (!value) {
-                        return true;
+                        return false;
                     }
 
                     const digitsOnly = value.replace(/\D/g, "");
@@ -150,12 +176,17 @@
             {
                 field: bookingDate,
                 key: "contact.invalidDate",
-                isValid: (value) => !value || (Boolean(bookingDate?.min) && value >= bookingDate.min)
+                isValid: (value) => Boolean(value) && Boolean(bookingDate?.min) && value >= bookingDate.min
+            },
+            {
+                field: bookingGuests,
+                key: "contact.invalidGuests",
+                isValid: (value) => Number.parseInt(value, 10) >= 1
             },
             {
                 field: bookingPostalCode,
                 key: "contact.invalidPostalCode",
-                isValid: (value) => !value || /^[A-Za-z0-9][A-Za-z0-9\s-]{2,9}$/u.test(value)
+                isValid: (value) => Boolean(value) && /^[A-Za-z0-9][A-Za-z0-9\s-]{2,9}$/u.test(value)
             }
         ];
 
@@ -198,11 +229,12 @@
             languageSelector.value = currentLanguage;
         }
 
-        updateInternalLanguageLinks();
-        validateBookingFields();
         updateNavigationToggleLabel();
         updateThemeControl();
+        updateInternalLanguageLinks();
+        validateBookingFields();
         storeValue(languageStorageKey, currentLanguage);
+        updateCurrentUrlLanguage();
     };
 
     const closeNavigation = (returnFocus = false) => {
@@ -227,49 +259,6 @@
         navigationMenu.classList.add("is-open");
         navigationToggle.setAttribute("aria-expanded", "true");
         updateNavigationToggleLabel();
-    };
-
-    const formatDateForInput = (date) => {
-        const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-        return localDate.toISOString().slice(0, 10);
-    };
-
-    const buildMapUrls = (query) => {
-        const encodedQuery = encodeURIComponent(query);
-
-        return {
-            embed: `https://www.google.com/maps?q=${encodedQuery}&output=embed`,
-            link: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`
-        };
-    };
-
-    const getMapQuery = () => {
-        const addressParts = [bookingLocation?.value, bookingPostalCode?.value]
-            .map((value) => value?.trim())
-            .filter(Boolean);
-
-        return addressParts.length > 0 ? addressParts.join(", ") : "Greece";
-    };
-
-    const updateBookingMap = () => {
-        if (!bookingMap && !bookingMapLink) {
-            return;
-        }
-
-        const urls = buildMapUrls(getMapQuery());
-
-        if (bookingMap && bookingMap.src !== urls.embed) {
-            bookingMap.src = urls.embed;
-        }
-
-        if (bookingMapLink) {
-            bookingMapLink.href = urls.link;
-        }
-    };
-
-    const requestMapUpdate = () => {
-        window.clearTimeout(mapUpdateTimer);
-        mapUpdateTimer = window.setTimeout(updateBookingMap, 500);
     };
 
     if (navigationToggle && navigationMenu) {
@@ -307,11 +296,12 @@
         });
     }
 
-    if (languageSelector) {
-        languageSelector.addEventListener("change", (event) => {
+    /* Event delegation keeps the language dropdown working even if the header is re-rendered. */
+    document.addEventListener("change", (event) => {
+        if (event.target.matches("#language-selector")) {
             applyLanguage(event.target.value);
-        });
-    }
+        }
+    });
 
     if (themeToggle) {
         themeToggle.addEventListener("click", () => {
@@ -326,15 +316,17 @@
 
     /*
      * Contact-form enhancement.
-     * Native HTML validation remains the source of truth. Custom checks tighten
-     * email, phone, postal-code, and date validation before the demo submission
-     * confirmation is shown.
+     * Native HTML validation stays active, while custom validation tightens name,
+     * phone, guest-count, postal-code, and date rules before the demo response.
      */
     if (bookingDate) {
         bookingDate.min = formatDateForInput(new Date());
     }
 
     if (bookingForm) {
+        setDefaultBookingValues();
+        validateBookingFields();
+
         bookingForm.addEventListener("submit", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -348,8 +340,10 @@
             }
 
             bookingForm.reset();
+            setDefaultBookingValues();
+            validateBookingFields();
             bookingForm.classList.remove("was-validated");
-            updateBookingMap();
+            document.dispatchEvent(new CustomEvent("popadoo:booking-form-reset"));
 
             if (bookingConfirmation) {
                 bookingConfirmation.hidden = false;
@@ -369,18 +363,13 @@
                 bookingConfirmation.hidden = true;
             }
         });
-    }
 
-    /* Debounced map updates avoid reloading the iframe on every keystroke. */
-    [bookingLocation, bookingPostalCode].forEach((field) => {
-        field?.addEventListener("input", requestMapUpdate);
-        field?.addEventListener("change", updateBookingMap);
-    });
+        bookingForm.addEventListener("change", validateBookingFields);
+    }
 
     const savedLanguage = getStoredValue(languageStorageKey);
     const browserLanguage = navigator.language?.toLowerCase().startsWith("el") ? "el" : "en";
-    const requestedLanguage = getUrlLanguage() ?? savedLanguage ?? browserLanguage;
+    const requestedLanguage = getUrlLanguage() ?? (isSupportedLanguage(savedLanguage) ? savedLanguage : browserLanguage);
 
-    updateBookingMap();
     applyLanguage(requestedLanguage);
 })();
