@@ -15,6 +15,7 @@
     const themeColorMeta = document.querySelector('meta[name="theme-color"]');
     const bookingForm = document.querySelector("#booking-form");
     const bookingConfirmation = document.querySelector("#booking-confirmation");
+    const bookingClearButton = document.querySelector("#booking-clear");
     const bookingName = document.querySelector("#booking-name");
     const bookingEmail = document.querySelector("#booking-email");
     const bookingPhone = document.querySelector("#booking-phone");
@@ -144,6 +145,40 @@
 
         if (bookingGuests && !bookingGuests.value) {
             bookingGuests.value = "10";
+        }
+    };
+
+    const hideBookingConfirmation = () => {
+        if (bookingConfirmation && !bookingConfirmation.hidden) {
+            bookingConfirmation.hidden = true;
+        }
+    };
+
+    const clearBookingForm = ({ preserveConfirmation = false } = {}) => {
+        if (!bookingForm) {
+            return;
+        }
+
+        /*
+         * Clear returns the booking form to a neutral empty state without
+         * showing validation errors. Required fields are checked again only
+         * when the visitor submits a new reservation request.
+         */
+        bookingForm.reset();
+        bookingForm.querySelectorAll("input, select, textarea").forEach((field) => {
+            if (field.type === "checkbox" || field.type === "radio") {
+                field.checked = false;
+                return;
+            }
+
+            field.value = "";
+            field.setCustomValidity("");
+        });
+        bookingForm.classList.remove("was-validated");
+        document.dispatchEvent(new CustomEvent("popadoo:booking-form-reset"));
+
+        if (!preserveConfirmation) {
+            hideBookingConfirmation();
         }
     };
 
@@ -339,11 +374,7 @@
                 return;
             }
 
-            bookingForm.reset();
-            setDefaultBookingValues();
-            validateBookingFields();
-            bookingForm.classList.remove("was-validated");
-            document.dispatchEvent(new CustomEvent("popadoo:booking-form-reset"));
+            clearBookingForm({ preserveConfirmation: true });
 
             if (bookingConfirmation) {
                 bookingConfirmation.hidden = false;
@@ -358,13 +389,15 @@
 
         bookingForm.addEventListener("input", () => {
             validateBookingFields();
-
-            if (bookingConfirmation && !bookingConfirmation.hidden) {
-                bookingConfirmation.hidden = true;
-            }
+            hideBookingConfirmation();
         });
 
         bookingForm.addEventListener("change", validateBookingFields);
+
+        bookingClearButton?.addEventListener("click", () => {
+            clearBookingForm();
+            bookingForm.querySelector("input, select, textarea")?.focus();
+        });
     }
 
     const savedLanguage = getStoredValue(languageStorageKey);

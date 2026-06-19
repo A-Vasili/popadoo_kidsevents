@@ -141,9 +141,28 @@
     border: 0;
 }
 
-.secondary-form-link {
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.7rem 1.15rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
     color: var(--color-primary-strong);
-    font-weight: 700;
+    font-weight: 800;
+    line-height: 1.2;
+    box-shadow: 0 0.35rem 0.95rem rgba(63, 42, 79, 0.08);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.secondary-button:hover,
+.secondary-button:focus-visible {
+    border-color: var(--color-primary);
+    color: var(--color-primary-strong);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+    transform: translateY(-0.08rem);
 }
 
 .booking-confirmation {
@@ -251,7 +270,8 @@
         flex-direction: column;
     }
 
-    .form-actions .primary-button {
+    .form-actions .primary-button,
+    .form-actions .secondary-button {
         width: 100%;
     }
 }
