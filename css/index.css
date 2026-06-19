@@ -166,7 +166,7 @@ html[data-theme="dark"] .party-booking-image {
     }
 }
 
-/* JavaScript-enhanced carousel state for manual controls and keyboard use. */
+/* JavaScript-enhanced carousel state for icon controls and keyboard use. */
 .hero-carousel.is-carousel-enhanced .hero-carousel-slide {
     opacity: 0;
     animation: none;
@@ -179,36 +179,74 @@ html[data-theme="dark"] .party-booking-image {
 
 .hero-carousel-controls {
     display: none;
-    align-items: center;
-    gap: 0.8rem;
-    margin-top: 1.5rem;
 }
 
 .hero-carousel.is-carousel-enhanced .hero-carousel-controls {
-    display: flex;
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: block;
+    pointer-events: none;
 }
 
-.hero-carousel-next {
+.hero-carousel-arrow {
+    position: absolute;
+    top: 50%;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
-    min-height: 3rem;
-    padding: 0.75rem 1.25rem;
-    border: 2px solid rgba(255, 255, 255, 0.72);
+    width: clamp(3.1rem, 6vw, 4.25rem);
+    height: clamp(3.1rem, 6vw, 4.25rem);
+    border: 2px solid rgba(255, 255, 255, 0.78);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.9);
     color: #3e2d50;
+    font-size: clamp(2.2rem, 5vw, 3.3rem);
     font-weight: 900;
+    line-height: 1;
     box-shadow: 0 0.8rem 1.8rem rgba(37, 24, 48, 0.28);
-    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+    transform: translateY(-50%);
+    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    pointer-events: auto;
 }
 
-.hero-carousel-next:hover,
-.hero-carousel-next:focus-visible {
+.hero-carousel-arrow span {
+    display: block;
+    margin-top: -0.12em;
+}
+
+.hero-carousel-arrow-previous {
+    left: clamp(0.75rem, 3vw, 2.4rem);
+}
+
+.hero-carousel-arrow-next {
+    right: clamp(0.75rem, 3vw, 2.4rem);
+}
+
+.hero-carousel-arrow:hover,
+.hero-carousel-arrow:focus-visible {
     background: var(--pastel-butter);
     color: var(--color-on-pastel);
-    transform: translateY(-0.1rem);
+    box-shadow: 0 1rem 2.1rem rgba(37, 24, 48, 0.34);
+    transform: translateY(-50%) scale(1.05);
+}
+
+.hero-carousel:focus-visible {
+    outline: 0.25rem solid var(--pastel-butter);
+    outline-offset: -0.45rem;
+}
+
+@media (max-width: 42rem) {
+    .hero-carousel-arrow {
+        top: auto;
+        bottom: 1.2rem;
+        transform: none;
+    }
+
+    .hero-carousel-arrow:hover,
+    .hero-carousel-arrow:focus-visible {
+        transform: scale(1.05);
+    }
 }
 
 /* Prominent landing-page pathway cards link users directly to key sections. */
@@ -354,8 +392,12 @@ html[data-theme="dark"] .home-pathway-link img {
     .hero-carousel.is-carousel-enhanced .hero-carousel-slide,
     .home-pathway-link,
     .home-pathway-link img,
-    .hero-carousel-next {
+    .hero-carousel-arrow {
         transition: none;
+    }
+
+    .hero-carousel.is-carousel-enhanced .hero-carousel-slide {
+        display: block;
     }
 
     .home-pathway-link:hover img,

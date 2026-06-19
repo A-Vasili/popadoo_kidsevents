@@ -23,7 +23,13 @@
     <popadoo-header></popadoo-header>
 
     <main id="main-content">
-        <section class="hero-carousel" aria-labelledby="welcome-heading" data-home-carousel>
+        <section
+            class="hero-carousel"
+            aria-labelledby="welcome-heading"
+            aria-roledescription="carousel"
+            tabindex="0"
+            data-home-carousel
+        >
             <div class="hero-carousel-slides" id="home-carousel" aria-hidden="true">
                 <figure class="hero-carousel-slide hero-carousel-slide-one">
                     <img src="assets/images/carousel/party-slide-1.jpg" alt=""/>
@@ -46,16 +52,48 @@
                         <p data-i18n="home.welcomeText">Creative children’s parties planned around your family, your theme, and the venue you choose.</p>
                         <div class="hero-carousel-controls" aria-label="Carousel controls" data-i18n-aria-label="home.carouselControlsLabel">
                             <button
-                                class="hero-carousel-next"
+                                class="hero-carousel-arrow hero-carousel-arrow-previous"
                                 type="button"
                                 aria-controls="home-carousel"
+                                aria-label="Previous image"
+                                data-i18n-aria-label="home.carouselPreviousLabel"
+                                data-carousel-previous
+                            >
+                                <span aria-hidden="true">‹</span>
+                            </button>
+
+                            <button
+                                class="hero-carousel-arrow hero-carousel-arrow-next"
+                                type="button"
+                                aria-controls="home-carousel"
+                                aria-label="Next image"
+                                data-i18n-aria-label="home.carouselNextLabel"
                                 data-carousel-next
                             >
-                                <span data-i18n="home.carouselNext">Next picture</span>
-                                <span aria-hidden="true">→</span>
+                                <span aria-hidden="true">›</span>
                             </button>
+
                             <span class="visually-hidden" aria-live="polite" data-carousel-status></span>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+       
+        <section class="party-booking-hero" aria-labelledby="party-booking-heading">
+            <img
+                class="party-booking-image"
+                src="assets/images/party-equipment-hero.jpg"
+                alt="A colorful birthday cake, party hat, balloon, wrapped gift, ribbons, and confetti"
+                data-i18n-alt="home.bookingImageAlt"
+                width="1600"
+                height="720"
+            />
+            <div class="party-booking-overlay">
+                <div class="container">
+                    <div class="party-booking-content">
+                        <h2 id="party-booking-heading" data-i18n="home.bookingHeading">Book your next party!</h2>
+                        <a class="party-booking-button" href="contact.html" data-i18n="nav.bookNow">Book Now</a>
                     </div>
                 </div>
             </div>
@@ -126,25 +164,6 @@
                             </span>
                         </a>
                     </article>
-                </div>
-            </div>
-        </section>
-
-        <section class="party-booking-hero" aria-labelledby="party-booking-heading">
-            <img
-                class="party-booking-image"
-                src="assets/images/party-equipment-hero.jpg"
-                alt="A colorful birthday cake, party hat, balloon, wrapped gift, ribbons, and confetti"
-                data-i18n-alt="home.bookingImageAlt"
-                width="1600"
-                height="720"
-            />
-            <div class="party-booking-overlay">
-                <div class="container">
-                    <div class="party-booking-content">
-                        <h2 id="party-booking-heading" data-i18n="home.bookingHeading">Book your next party!</h2>
-                        <a class="party-booking-button" href="contact.html" data-i18n="nav.bookNow">Book Now</a>
-                    </div>
                 </div>
             </div>
         </section>

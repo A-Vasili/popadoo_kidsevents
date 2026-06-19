@@ -2,9 +2,10 @@
 
 /*
  * Home-page carousel enhancement.
- * CSS still provides a fallback slideshow. When JavaScript is available, this
- * module switches to an explicit active-slide state and exposes a manual next
- * control that works with mouse, touch, and keyboard input.
+ *
+ * CSS provides a graceful fallback slideshow if JavaScript is unavailable.
+ * When this module loads, it adds a managed active-slide state plus
+ * icon-only arrow controls that work with pointer input and keyboard navigation.
  */
 (() => {
     const carousel = document.querySelector("[data-home-carousel]");
@@ -14,10 +15,11 @@
     }
 
     const slides = Array.from(carousel.querySelectorAll(".hero-carousel-slide"));
+    const previousButton = carousel.querySelector("[data-carousel-previous]");
     const nextButton = carousel.querySelector("[data-carousel-next]");
     const status = carousel.querySelector("[data-carousel-status]");
 
-    if (slides.length === 0 || !nextButton) {
+    if (slides.length === 0 || !previousButton || !nextButton) {
         return;
     }
 
@@ -43,10 +45,16 @@
         activeIndex = (nextIndex + slides.length) % slides.length;
 
         slides.forEach((slide, index) => {
-            slide.classList.toggle("is-active", index === activeIndex);
+            const isActive = index === activeIndex;
+            slide.classList.toggle("is-active", isActive);
+            slide.setAttribute("aria-hidden", String(!isActive));
         });
 
         updateStatus();
+    };
+
+    const showPreviousSlide = () => {
+        showSlide(activeIndex - 1);
     };
 
     const showNextSlide = () => {
@@ -56,9 +64,15 @@
     carousel.classList.add("is-carousel-enhanced");
     showSlide(activeIndex);
 
+    previousButton.addEventListener("click", showPreviousSlide);
     nextButton.addEventListener("click", showNextSlide);
 
     carousel.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            showPreviousSlide();
+        }
+
         if (event.key === "ArrowRight") {
             event.preventDefault();
             showNextSlide();
