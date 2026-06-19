@@ -660,6 +660,30 @@ html[data-theme="light"] .theme-toggle-icon-sun {
     text-underline-offset: 0.18em;
 }
 
+.site-footer-social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: 999px;
+    background: var(--color-surface-raised);
+    box-shadow: 0 0.45rem 1rem rgba(63, 42, 79, 0.12);
+    transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.site-footer-social-link:hover,
+.site-footer-social-link:focus-visible {
+    transform: translateY(-0.1rem);
+    box-shadow: var(--shadow-card);
+}
+
+.site-footer-social-icon {
+    width: 1.7rem;
+    height: 1.7rem;
+}
+
 @media (max-width: 72rem) {
     .site-navigation {
         min-height: 4.5rem;

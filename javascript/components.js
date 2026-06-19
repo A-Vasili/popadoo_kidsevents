@@ -129,16 +129,21 @@
                             <h2 id="footer-contact-heading" class="site-footer-heading" data-i18n="footer.contactHeading">Contact</h2>
                             <a href="mailto:hello@popadookidsevents.gr">hello@popadookidsevents.gr</a>
                             <a
+                                class="site-footer-social-link"
                                 href="https://www.instagram.com/popadoo_kidsevents/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                data-i18n="footer.instagram"
-                            >Instagram</a>
+                                aria-label="Visit Popadoo on Instagram"
+                                data-i18n-aria-label="footer.instagramLabel"
+                            >
+                                <img class="site-footer-social-icon" src="assets/svg/instagram-icon.svg" alt="" width="28" height="28" aria-hidden="true"/>
+                                <span class="visually-hidden" data-i18n="footer.instagram">Instagram</span>
+                            </a>
                         </div>
 
                         <div class="site-footer-resources" aria-labelledby="footer-resources-heading">
                             <h2 id="footer-resources-heading" class="site-footer-heading" data-i18n="footer.resourcesHeading">Resources</h2>
-                            <a href="style-guide.html"${styleGuideAriaCurrent} data-i18n="footer.styleGuide">Pastel style guide</a>
+                            <a href="style-guide.html"${styleGuideAriaCurrent} data-i18n="footer.styleGuide">Documentation</a>
                             <p data-i18n="footer.copyright">© 2026 Popadoo Kids Events</p>
                         </div>
                     </div>
