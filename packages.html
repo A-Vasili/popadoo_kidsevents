@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="author" content="Popadoo Kids Events"/>
     <meta name="theme-color" content="#fff9fc"/>
-    <meta name="description" content="Explore Popadoo Kids Events packages and planning options."/>
+    <meta name="description" content="Explore Popadoo Kids Events packages, select a party option, and compare packages dynamically."/>
     <title>Packages | Popadoo Kids Events</title>
 
     <script src="javascript/theme-init.js"></script>
@@ -26,7 +26,7 @@
         <section class="page-intro" aria-labelledby="packages-heading">
             <div class="container narrow-content">
                 <h1 id="packages-heading" data-i18n="packages.heading">Event Packages</h1>
-                <p class="lead" data-i18n="packages.lead">Choose a starting point and customise it for your celebration.</p>
+                <p class="lead" data-i18n="packages.lead">Choose a starting point, compare your favourites, and send the latest selected package to the booking form.</p>
             </div>
         </section>
 
@@ -34,7 +34,18 @@
             <div class="container">
                 <h2 class="visually-hidden" id="package-cards-heading" data-i18n="packages.availableHeading">Available packages</h2>
                 <div class="package-grid">
-                    <article class="package-card">
+                    <article
+                        class="package-card"
+                        data-package-card
+                        data-package-id="mini-party"
+                        data-package-name-key="packages.miniName"
+                        data-package-summary-key="packages.miniText"
+                        data-package-best-for-key="packages.miniBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="mini-party">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
                         <div class="package-card-content">
                             <h3 data-i18n="packages.miniName">Mini Party</h3>
                             <p data-i18n="packages.miniText">A compact celebration package with the essentials covered.</p>
@@ -43,11 +54,22 @@
                                 <li data-i18n="packages.miniFeatureTwo">Activity setup</li>
                                 <li data-i18n="packages.miniFeatureThree">Basic coordination</li>
                             </ul>
-                            <a class="button button-outline" href="contact.html" data-i18n="packages.askButton">Ask about this package</a>
+                            <a class="button button-outline package-select-link" href="contact.html?package=mini-party" data-package-select="mini-party" data-i18n="packages.selectButton">Select this package</a>
                         </div>
                     </article>
 
-                    <article class="package-card package-card-featured">
+                    <article
+                        class="package-card package-card-featured"
+                        data-package-card
+                        data-package-id="adventure-party"
+                        data-package-name-key="packages.adventureName"
+                        data-package-summary-key="packages.adventureText"
+                        data-package-best-for-key="packages.adventureBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="adventure-party">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
                         <div class="package-card-content">
                             <p class="package-badge" data-i18n="packages.popular">Most popular</p>
                             <h3 data-i18n="packages.adventureName">Adventure Party</h3>
@@ -57,11 +79,22 @@
                                 <li data-i18n="packages.adventureFeatureTwo">Entertainment</li>
                                 <li data-i18n="packages.adventureFeatureThree">Event coordination</li>
                             </ul>
-                            <a class="button" href="contact.html" data-i18n="packages.askButton">Ask about this package</a>
+                            <a class="button package-select-link" href="contact.html?package=adventure-party" data-package-select="adventure-party" data-i18n="packages.selectButton">Select this package</a>
                         </div>
                     </article>
 
-                    <article class="package-card">
+                    <article
+                        class="package-card"
+                        data-package-card
+                        data-package-id="premium-celebration"
+                        data-package-name-key="packages.premiumName"
+                        data-package-summary-key="packages.premiumText"
+                        data-package-best-for-key="packages.premiumBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="premium-celebration">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
                         <div class="package-card-content">
                             <h3 data-i18n="packages.premiumName">Premium Celebration</h3>
                             <p data-i18n="packages.premiumText">An all-inclusive package with styling and on-site support.</p>
@@ -70,7 +103,79 @@
                                 <li data-i18n="packages.premiumFeatureTwo">Custom activities</li>
                                 <li data-i18n="packages.premiumFeatureThree">On-site support</li>
                             </ul>
-                            <a class="button button-outline" href="contact.html" data-i18n="packages.askButton">Ask about this package</a>
+                            <a class="button button-outline package-select-link" href="contact.html?package=premium-celebration" data-package-select="premium-celebration" data-i18n="packages.selectButton">Select this package</a>
+                        </div>
+                    </article>
+
+                    <article
+                        class="package-card"
+                        data-package-card
+                        data-package-id="creative-workshop"
+                        data-package-name-key="packages.creativeName"
+                        data-package-summary-key="packages.creativeText"
+                        data-package-best-for-key="packages.creativeBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="creative-workshop">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
+                        <div class="package-card-content">
+                            <h3 data-i18n="packages.creativeName">Creative Workshop</h3>
+                            <p data-i18n="packages.creativeText">A hands-on craft and imagination package for children who love making things.</p>
+                            <ul>
+                                <li data-i18n="packages.creativeFeatureOne">Guided craft stations</li>
+                                <li data-i18n="packages.creativeFeatureTwo">Take-home creations</li>
+                                <li data-i18n="packages.creativeFeatureThree">Low-noise creative play</li>
+                            </ul>
+                            <a class="button button-outline package-select-link" href="contact.html?package=creative-workshop" data-package-select="creative-workshop" data-i18n="packages.selectButton">Select this package</a>
+                        </div>
+                    </article>
+
+                    <article
+                        class="package-card"
+                        data-package-card
+                        data-package-id="school-fun-day"
+                        data-package-name-key="packages.schoolFunName"
+                        data-package-summary-key="packages.schoolFunText"
+                        data-package-best-for-key="packages.schoolFunBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="school-fun-day">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
+                        <div class="package-card-content">
+                            <h3 data-i18n="packages.schoolFunName">School Fun Day</h3>
+                            <p data-i18n="packages.schoolFunText">A structured package for larger school groups, fairs, and class celebrations.</p>
+                            <ul>
+                                <li data-i18n="packages.schoolFunFeatureOne">Rotating activity zones</li>
+                                <li data-i18n="packages.schoolFunFeatureTwo">Group-friendly scheduling</li>
+                                <li data-i18n="packages.schoolFunFeatureThree">Teacher liaison planning</li>
+                            </ul>
+                            <a class="button button-outline package-select-link" href="contact.html?package=school-fun-day" data-package-select="school-fun-day" data-i18n="packages.selectButton">Select this package</a>
+                        </div>
+                    </article>
+
+                    <article
+                        class="package-card"
+                        data-package-card
+                        data-package-id="outdoor-adventure"
+                        data-package-name-key="packages.outdoorName"
+                        data-package-summary-key="packages.outdoorText"
+                        data-package-best-for-key="packages.outdoorBestFor"
+                    >
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="outdoor-adventure">
+                            <span class="package-compare-icon" aria-hidden="true">★</span>
+                            <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
+                        </button>
+                        <div class="package-card-content">
+                            <h3 data-i18n="packages.outdoorName">Outdoor Adventure</h3>
+                            <p data-i18n="packages.outdoorText">An energetic outdoor package for gardens, parks, and open-air venues.</p>
+                            <ul>
+                                <li data-i18n="packages.outdoorFeatureOne">Movement games</li>
+                                <li data-i18n="packages.outdoorFeatureTwo">Weather-aware setup plan</li>
+                                <li data-i18n="packages.outdoorFeatureThree">Flexible outdoor stations</li>
+                            </ul>
+                            <a class="button button-outline package-select-link" href="contact.html?package=outdoor-adventure" data-package-select="outdoor-adventure" data-i18n="packages.selectButton">Select this package</a>
                         </div>
                     </article>
                 </div>
@@ -79,40 +184,20 @@
 
         <section class="comparison-section section-surface" aria-labelledby="comparison-heading">
             <div class="container">
-                <h2 id="comparison-heading" data-i18n="packages.compareHeading">Compare package features</h2>
-                <div class="table-responsive">
-                    <table>
-                        <caption data-i18n="packages.tableCaption">Comparison of event package features</caption>
-                        <thead>
-                            <tr>
-                                <th scope="col" data-i18n="packages.feature">Feature</th>
-                                <th scope="col" data-i18n="packages.miniShort">Mini</th>
-                                <th scope="col" data-i18n="packages.adventureShort">Adventure</th>
-                                <th scope="col" data-i18n="packages.premiumShort">Premium</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th scope="row" data-i18n="packages.consultation">Planning consultation</th>
-                                <td data-i18n="packages.included">Included</td>
-                                <td data-i18n="packages.included">Included</td>
-                                <td data-i18n="packages.included">Included</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" data-i18n="packages.customTheme">Custom theme</th>
-                                <td data-i18n="packages.optional">Optional</td>
-                                <td data-i18n="packages.included">Included</td>
-                                <td data-i18n="packages.included">Included</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" data-i18n="packages.coordination">On-site coordination</th>
-                                <td data-i18n="packages.optional">Optional</td>
-                                <td data-i18n="packages.partial">Partial</td>
-                                <td data-i18n="packages.full">Full</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="comparison-header">
+                    <div>
+                        <h2 id="comparison-heading" data-i18n="packages.compareHeading">Compare selected packages</h2>
+                        <p class="comparison-lead" data-i18n="packages.compareLead">Use the star icon on any card to add or remove packages from this comparison form.</p>
+                    </div>
+                    <button class="button button-outline comparison-clear" id="comparison-clear" type="button" data-i18n="packages.compareClear">Clear comparison</button>
                 </div>
+
+                <form class="comparison-form" id="package-comparison-form" aria-describedby="comparison-help comparison-status">
+                    <p class="form-text" id="comparison-help" data-i18n="packages.compareHelp">Selected packages appear below. Remove one package with its delete button, or clear all selected packages at once.</p>
+                    <div class="comparison-empty" id="comparison-empty" data-i18n="packages.compareEmpty">No packages selected yet.</div>
+                    <div class="comparison-list" id="comparison-list" aria-live="polite"></div>
+                    <p class="comparison-status visually-hidden" id="comparison-status" role="status" aria-live="polite"></p>
+                </form>
             </div>
         </section>
 
@@ -139,5 +224,6 @@
     <script src="javascript/components.js" defer></script>
     <script src="javascript/translations.js" defer></script>
     <script src="javascript/main.js" defer></script>
+    <script src="javascript/packages-compare.js" defer></script>
 </body>
 </html>

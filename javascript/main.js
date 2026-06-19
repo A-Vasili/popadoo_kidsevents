@@ -5,6 +5,7 @@
     const supportedLanguages = Object.keys(translations ?? { en: {} });
     const languageStorageKey = "popadoo-language";
     const themeStorageKey = "popadoo-theme";
+    const selectedPackageStorageKey = "popadoo-selected-package";
     const navigationBreakpoint = window.matchMedia("(max-width: 72rem)");
     const navigationToggle = document.querySelector(".site-navigation-toggle");
     const navigationMenu = document.querySelector("#primary-navigation");
@@ -22,6 +23,7 @@
     const bookingDate = document.querySelector("#booking-date");
     const bookingTime = document.querySelector("#booking-time");
     const bookingGuests = document.querySelector("#booking-guest-count");
+    const bookingPackage = document.querySelector("#booking-package");
     const bookingPostalCode = document.querySelector("#booking-postal-code");
 
     let currentLanguage = "en";
@@ -44,9 +46,21 @@
 
     const isSupportedLanguage = (language) => supportedLanguages.includes(language);
 
+    const hasSelectOption = (selectElement, value) => {
+        return Boolean(selectElement)
+            && Array.from(selectElement.options).some((option) => option.value === value);
+    };
+
     const getUrlLanguage = () => {
         const language = new URLSearchParams(window.location.search).get("lang");
         return isSupportedLanguage(language) ? language : null;
+    };
+
+    const getUrlPackage = () => {
+        const packageId = new URLSearchParams(window.location.search).get("package");
+        return packageId && hasSelectOption(bookingPackage, packageId)
+            ? packageId
+            : null;
     };
 
     const translate = (key) => {
@@ -145,6 +159,24 @@
 
         if (bookingGuests && !bookingGuests.value) {
             bookingGuests.value = "10";
+        }
+    };
+
+    const applySelectedPackageToBookingForm = () => {
+        if (!bookingPackage) {
+            return;
+        }
+
+        /*
+         * Package selections made on packages.html are carried here through a
+         * URL parameter and localStorage. The URL wins so the newest clicked
+         * package always fills the booking form first.
+         */
+        const selectedPackage = getUrlPackage() ?? getStoredValue(selectedPackageStorageKey);
+
+        if (selectedPackage && hasSelectOption(bookingPackage, selectedPackage)) {
+            bookingPackage.value = selectedPackage;
+            storeValue(selectedPackageStorageKey, selectedPackage);
         }
     };
 
@@ -270,6 +302,7 @@
         validateBookingFields();
         storeValue(languageStorageKey, currentLanguage);
         updateCurrentUrlLanguage();
+        document.dispatchEvent(new CustomEvent("popadoo:language-applied", { detail: { language: currentLanguage } }));
     };
 
     const closeNavigation = (returnFocus = false) => {
@@ -360,6 +393,7 @@
 
     if (bookingForm) {
         setDefaultBookingValues();
+        applySelectedPackageToBookingForm();
         validateBookingFields();
 
         bookingForm.addEventListener("submit", (event) => {
