@@ -23,8 +23,8 @@
     <popadoo-header></popadoo-header>
 
     <main id="main-content">
-        <section class="hero-carousel" aria-labelledby="welcome-heading">
-            <div class="hero-carousel-slides" aria-hidden="true">
+        <section class="hero-carousel" aria-labelledby="welcome-heading" data-home-carousel>
+            <div class="hero-carousel-slides" id="home-carousel" aria-hidden="true">
                 <figure class="hero-carousel-slide hero-carousel-slide-one">
                     <img src="assets/images/carousel/party-slide-1.jpg" alt=""/>
                 </figure>
@@ -44,7 +44,88 @@
                     <div class="hero-carousel-content">
                         <h1 id="welcome-heading" data-i18n="home.welcomeHeading">Welcome to Popadoo Kids Events</h1>
                         <p data-i18n="home.welcomeText">Creative children’s parties planned around your family, your theme, and the venue you choose.</p>
+                        <div class="hero-carousel-controls" aria-label="Carousel controls" data-i18n-aria-label="home.carouselControlsLabel">
+                            <button
+                                class="hero-carousel-next"
+                                type="button"
+                                aria-controls="home-carousel"
+                                data-carousel-next
+                            >
+                                <span data-i18n="home.carouselNext">Next picture</span>
+                                <span aria-hidden="true">→</span>
+                            </button>
+                            <span class="visually-hidden" aria-live="polite" data-carousel-status></span>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-pathways" aria-labelledby="home-pathways-heading">
+            <div class="container">
+                <div class="home-pathways-heading">
+                    <p class="section-kicker" data-i18n="home.pathwaysKicker">Explore Popadoo</p>
+                    <h2 id="home-pathways-heading" data-i18n="home.pathwaysHeading">Plan, preview, and choose your party experience</h2>
+                    <p class="lead" data-i18n="home.pathwaysLead">Use these quick visual links to browse our event style, learn about the team, or compare party packages.</p>
+                </div>
+
+                <div class="home-pathway-grid">
+                    <article class="home-pathway-card">
+                        <a class="home-pathway-link" href="gallery.html" aria-labelledby="home-gallery-card-title">
+                            <img
+                                src="assets/images/carousel/party-slide-3.jpg"
+                                alt="Children’s party activity setup with colourful decorations"
+                                data-i18n-alt="home.galleryCardAlt"
+                                width="1200"
+                                height="800"
+                            />
+                            <span class="home-pathway-overlay" aria-hidden="true"></span>
+                            <span class="home-pathway-content">
+                                <span class="home-pathway-label" data-i18n="nav.gallery">Gallery</span>
+                                <h3 class="home-pathway-title" id="home-gallery-card-title" data-i18n="home.galleryCardTitle">See the magic</h3>
+                                <span class="home-pathway-text" data-i18n="home.galleryCardText">Browse real moments, colours, and party inspiration.</span>
+                                <span class="home-pathway-cta" data-i18n="home.galleryCardCta">Open Gallery</span>
+                            </span>
+                        </a>
+                    </article>
+
+                    <article class="home-pathway-card">
+                        <a class="home-pathway-link" href="about.html" aria-labelledby="home-about-card-title">
+                            <img
+                                src="assets/images/team-member-1.jpg"
+                                alt="Smiling Popadoo team member preparing a children’s event"
+                                data-i18n-alt="home.aboutCardAlt"
+                                width="1200"
+                                height="800"
+                            />
+                            <span class="home-pathway-overlay" aria-hidden="true"></span>
+                            <span class="home-pathway-content">
+                                <span class="home-pathway-label" data-i18n="nav.about">About Us</span>
+                                <h3 class="home-pathway-title" id="home-about-card-title" data-i18n="home.aboutCardTitle">Meet the team</h3>
+                                <span class="home-pathway-text" data-i18n="home.aboutCardText">Learn how we design safe, joyful celebrations for children.</span>
+                                <span class="home-pathway-cta" data-i18n="home.aboutCardCta">Read About Us</span>
+                            </span>
+                        </a>
+                    </article>
+
+                    <article class="home-pathway-card">
+                        <a class="home-pathway-link" href="packages.html" aria-labelledby="home-packages-card-title">
+                            <img
+                                src="assets/images/party-equipment-hero.jpg"
+                                alt="Party supplies with balloons, wrapped gifts, ribbons, and a birthday cake"
+                                data-i18n-alt="home.packagesCardAlt"
+                                width="1200"
+                                height="800"
+                            />
+                            <span class="home-pathway-overlay" aria-hidden="true"></span>
+                            <span class="home-pathway-content">
+                                <span class="home-pathway-label" data-i18n="nav.packages">Packages</span>
+                                <h3 class="home-pathway-title" id="home-packages-card-title" data-i18n="home.packagesCardTitle">Choose your package</h3>
+                                <span class="home-pathway-text" data-i18n="home.packagesCardText">Compare party options and find the best fit for your event.</span>
+                                <span class="home-pathway-cta" data-i18n="home.packagesCardCta">View Packages</span>
+                            </span>
+                        </a>
+                    </article>
                 </div>
             </div>
         </section>
@@ -75,5 +156,6 @@
     <script src="javascript/components.js" defer></script>
     <script src="javascript/translations.js" defer></script>
     <script src="javascript/main.js" defer></script>
+    <script src="javascript/home-carousel.js" defer></script>
 </body>
 </html>
