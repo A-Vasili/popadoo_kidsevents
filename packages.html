@@ -42,7 +42,7 @@
                         data-package-summary-key="packages.miniText"
                         data-package-best-for-key="packages.miniBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="mini-party">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="mini-party">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -66,7 +66,7 @@
                         data-package-summary-key="packages.adventureText"
                         data-package-best-for-key="packages.adventureBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="adventure-party">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="adventure-party">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -91,7 +91,7 @@
                         data-package-summary-key="packages.premiumText"
                         data-package-best-for-key="packages.premiumBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="premium-celebration">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="premium-celebration">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -115,7 +115,7 @@
                         data-package-summary-key="packages.creativeText"
                         data-package-best-for-key="packages.creativeBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="creative-workshop">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="creative-workshop">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -139,7 +139,7 @@
                         data-package-summary-key="packages.schoolFunText"
                         data-package-best-for-key="packages.schoolFunBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="school-fun-day">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="school-fun-day">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -163,7 +163,7 @@
                         data-package-summary-key="packages.outdoorText"
                         data-package-best-for-key="packages.outdoorBestFor"
                     >
-                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle data-package-id="outdoor-adventure">
+                        <button class="package-compare-toggle" type="button" aria-pressed="false" data-package-toggle aria-controls="comparison-list" data-package-id="outdoor-adventure">
                             <span class="package-compare-icon" aria-hidden="true">★</span>
                             <span class="visually-hidden" data-i18n="packages.compareAdd">Add package to comparison</span>
                         </button>
@@ -178,6 +178,74 @@
                             <a class="button button-outline package-select-link" href="contact.html?package=outdoor-adventure" data-package-select="outdoor-adventure" data-i18n="packages.selectButton">Select this package</a>
                         </div>
                     </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="custom-package-section section-surface" aria-labelledby="custom-package-heading">
+            <div class="container">
+                <div class="custom-package-layout">
+                    <div class="custom-package-intro">
+                        <p class="section-kicker" data-i18n="packages.customKicker">Build your own</p>
+                        <h2 id="custom-package-heading" data-i18n="packages.customHeading">Create a custom package</h2>
+                        <p data-i18n="packages.customLead">Choose the characteristics you want, review your selections, then finish the custom package so it can be sent to the booking form.</p>
+                    </div>
+
+                    <form class="custom-package-form" id="custom-package-form" aria-describedby="custom-package-help custom-package-status">
+                        <div class="custom-package-options" role="group" aria-labelledby="custom-options-heading">
+                            <h3 id="custom-options-heading" data-i18n="packages.customOptionsHeading">Available characteristics</h3>
+                            <p class="form-text" id="custom-package-help" data-i18n="packages.customHelp">Use the buttons below to add or remove characteristics from your custom package.</p>
+
+                            <div class="custom-option-grid">
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="theme-design" data-characteristic-label-key="packages.customThemeDesign">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customThemeDesign">Theme design</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="balloon-decoration" data-characteristic-label-key="packages.customBalloonDecoration">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customBalloonDecoration">Balloon decoration</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="face-painting" data-characteristic-label-key="packages.customFacePainting">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customFacePainting">Face painting</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="craft-station" data-characteristic-label-key="packages.customCraftStation">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customCraftStation">Craft station</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="movement-games" data-characteristic-label-key="packages.customMovementGames">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customMovementGames">Movement games</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="music-games" data-characteristic-label-key="packages.customMusicGames">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customMusicGames">Music games</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="story-animation" data-characteristic-label-key="packages.customStoryAnimation">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customStoryAnimation">Story animation</span>
+                                </button>
+                                <button class="custom-option-toggle" type="button" aria-pressed="false" data-custom-characteristic="sweet-table" data-characteristic-label-key="packages.customSweetTable">
+                                    <span class="custom-option-icon" aria-hidden="true">✦</span>
+                                    <span data-i18n="packages.customSweetTable">Sweet table styling</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="custom-package-summary" aria-labelledby="custom-summary-heading">
+                            <h3 id="custom-summary-heading" data-i18n="packages.customSummaryHeading">Your custom package</h3>
+                            <p class="custom-package-empty" id="custom-package-empty" data-i18n="packages.customEmpty">No characteristics selected yet.</p>
+                            <ul class="custom-selected-list" id="custom-selected-list" aria-live="polite"></ul>
+
+                            <div class="custom-package-actions">
+                                <button class="button button-outline" id="custom-package-clear" type="button" data-i18n="packages.customClear">Clear custom package</button>
+                                <button class="button" id="custom-package-finish" type="button" data-i18n="packages.customFinish">Finish custom package</button>
+                            </div>
+
+                            <p class="custom-package-status visually-hidden" id="custom-package-status" role="status" aria-live="polite"></p>
+                            <a class="button button-outline custom-package-book-link" id="custom-package-book-link" href="contact.html?package=custom-package" hidden data-i18n="packages.customBookNow">Book this custom package</a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>

@@ -119,6 +119,7 @@
                                     <option value="creative-workshop" data-i18n="packages.creativeName">Creative Workshop</option>
                                     <option value="school-fun-day" data-i18n="packages.schoolFunName">School Fun Day</option>
                                     <option value="outdoor-adventure" data-i18n="packages.outdoorName">Outdoor Adventure</option>
+                                    <option value="custom-package" data-i18n="packages.customPackageName">Custom Package</option>
                                     <option value="not-sure" data-i18n="contact.notSurePackage">Not sure yet</option>
                                 </select>
                                 <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
@@ -154,9 +155,9 @@
                             </div>
 
                             <div class="form-field form-field-full-width">
-                                <label for="booking-details"><span data-i18n="contact.details">Theme, activities, and additional details</span> <span aria-hidden="true">*</span></label>
-                                <textarea class="form-control" id="booking-details" name="eventDetails" rows="6" required></textarea>
-                                <div class="invalid-feedback" data-i18n="contact.invalidRequired">Please complete this required field.</div>
+                                <label for="booking-details" data-i18n="contact.details">Theme, activities, and additional details</label>
+                                <textarea class="form-control" id="booking-details" name="eventDetails" rows="6" aria-describedby="booking-details-help"></textarea>
+                                <p class="form-text" id="booking-details-help" data-i18n="contact.detailsHelp">Optional. If you create a custom package, its selected characteristics appear here automatically.</p>
                             </div>
 
                             <div class="form-field form-field-full-width form-consent">

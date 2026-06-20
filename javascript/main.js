@@ -6,6 +6,8 @@
     const languageStorageKey = "popadoo-language";
     const themeStorageKey = "popadoo-theme";
     const selectedPackageStorageKey = "popadoo-selected-package";
+    const customPackageStorageKey = "popadoo-custom-package";
+    const customPackageId = "custom-package";
     const navigationBreakpoint = window.matchMedia("(max-width: 72rem)");
     const navigationToggle = document.querySelector(".site-navigation-toggle");
     const navigationMenu = document.querySelector("#primary-navigation");
@@ -24,6 +26,7 @@
     const bookingTime = document.querySelector("#booking-time");
     const bookingGuests = document.querySelector("#booking-guest-count");
     const bookingPackage = document.querySelector("#booking-package");
+    const bookingDetails = document.querySelector("#booking-details");
     const bookingPostalCode = document.querySelector("#booking-postal-code");
 
     let currentLanguage = "en";
@@ -162,6 +165,54 @@
         }
     };
 
+    const getCustomPackage = () => {
+        try {
+            const customPackage = JSON.parse(getStoredValue(customPackageStorageKey) ?? "null");
+            return customPackage?.id === customPackageId && Array.isArray(customPackage.characteristics)
+                ? customPackage
+                : null;
+        } catch (error) {
+            return null;
+        }
+    };
+
+    const buildCustomPackageDetails = (customPackage) => {
+        const characteristics = customPackage?.characteristics
+            ?.map((characteristic) => translate(characteristic.labelKey))
+            ?.filter(Boolean) ?? [];
+
+        if (characteristics.length === 0) {
+            return "";
+        }
+
+        return [
+            translate("contact.customPackageDetailsIntro"),
+            ...characteristics.map((characteristic) => `- ${characteristic}`)
+        ].join("\n");
+    };
+
+    const applyCustomPackageDetails = () => {
+        if (!bookingDetails || bookingPackage?.value !== customPackageId) {
+            return;
+        }
+
+        const details = buildCustomPackageDetails(getCustomPackage());
+
+        if (!details) {
+            return;
+        }
+
+        /*
+         * Custom package details are prefilled only when the box is empty or
+         * when the previous value was auto-generated. User-written notes are
+         * left untouched.
+         */
+        if (!bookingDetails.value.trim() || bookingDetails.dataset.autoCustomPackage === "true") {
+            bookingDetails.value = details;
+            bookingDetails.dataset.autoCustomPackage = "true";
+        }
+    };
+
     const applySelectedPackageToBookingForm = () => {
         if (!bookingPackage) {
             return;
@@ -177,6 +228,7 @@
         if (selectedPackage && hasSelectOption(bookingPackage, selectedPackage)) {
             bookingPackage.value = selectedPackage;
             storeValue(selectedPackageStorageKey, selectedPackage);
+            applyCustomPackageDetails();
         }
     };
 
@@ -299,6 +351,7 @@
         updateNavigationToggleLabel();
         updateThemeControl();
         updateInternalLanguageLinks();
+        applyCustomPackageDetails();
         validateBookingFields();
         storeValue(languageStorageKey, currentLanguage);
         updateCurrentUrlLanguage();
@@ -421,9 +474,19 @@
             }
         });
 
-        bookingForm.addEventListener("input", () => {
+        bookingForm.addEventListener("input", (event) => {
+            if (event.target === bookingDetails) {
+                bookingDetails.dataset.autoCustomPackage = "false";
+            }
+
             validateBookingFields();
             hideBookingConfirmation();
+        });
+
+        bookingPackage?.addEventListener("change", () => {
+            if (bookingPackage.value === customPackageId) {
+                applyCustomPackageDetails();
+            }
         });
 
         bookingForm.addEventListener("change", validateBookingFields);
