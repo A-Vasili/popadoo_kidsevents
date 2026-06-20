@@ -2,9 +2,9 @@
 
 /*
  * packages.html behaviour.
- * This file powers two independent features:
- * 1. Star buttons that add/remove package cards from the comparison form.
- * 2. A custom-package builder that stores selected characteristics for Book Now.
+ * This script powers two features:
+ * 1. Star buttons that reliably add/remove package cards from the comparison form.
+ * 2. The custom-package builder that stores selected characteristics for Book Now.
  */
 (() => {
     const compareStorageKey = "popadoo-compare-packages";
@@ -15,19 +15,19 @@
     const onReady = (callback) => {
         if (document.readyState === "loading") {
             document.addEventListener("DOMContentLoaded", callback, { once: true });
-        } else {
-            callback();
+            return;
         }
+
+        callback();
     };
 
     onReady(() => {
         const cards = Array.from(document.querySelectorAll("[data-package-card]"));
-        const compareForm = document.querySelector("#package-comparison-form");
+        const comparisonSection = document.querySelector(".comparison-section");
         const comparisonList = document.querySelector("#comparison-list");
         const comparisonEmpty = document.querySelector("#comparison-empty");
         const comparisonStatus = document.querySelector("#comparison-status");
         const clearButton = document.querySelector("#comparison-clear");
-        const customForm = document.querySelector("#custom-package-form");
         const customOptionButtons = Array.from(document.querySelectorAll("[data-custom-characteristic]"));
         const customSelectedList = document.querySelector("#custom-selected-list");
         const customEmpty = document.querySelector("#custom-package-empty");
@@ -61,19 +61,23 @@
             try {
                 window.localStorage.setItem(key, value);
             } catch (error) {
-                /* The current interaction continues even when private browsing blocks storage. */
+                /* The page still works for this visit if storage is blocked. */
             }
         };
 
         const currentLanguage = () => document.documentElement.lang || "en";
 
         const translate = (key) => {
-            const translations = window.popadooTranslations;
+            const translations = window.popadooTranslations || {};
             const language = currentLanguage();
 
-            return translations?.[language]?.[key]
-                ?? translations?.en?.[key]
-                ?? key;
+            return (translations[language] && translations[language][key])
+                || (translations.en && translations.en[key])
+                || key;
+        };
+
+        const getEventTargetElement = (event) => {
+            return event.target instanceof Element ? event.target : event.target.parentElement;
         };
 
         const getLocalizedContactHref = () => {
@@ -99,7 +103,7 @@
 
         const loadComparedPackages = () => {
             try {
-                const storedIds = JSON.parse(getStoredValue(compareStorageKey) ?? "[]");
+                const storedIds = JSON.parse(getStoredValue(compareStorageKey) || "[]");
                 return Array.isArray(storedIds)
                     ? storedIds.filter((id, index, list) => packageMap.has(id) && list.indexOf(id) === index)
                     : [];
@@ -117,17 +121,21 @@
                 const packageId = card.dataset.packageId;
                 const isCompared = comparedPackageIds.includes(packageId);
                 const toggle = card.querySelector("[data-package-toggle]");
-                const hiddenText = toggle?.querySelector(".visually-hidden");
+                const hiddenText = toggle ? toggle.querySelector(".visually-hidden") : null;
                 const packageData = packageMap.get(packageId);
                 const packageName = packageData ? getPackageName(packageData) : "";
                 const labelKey = isCompared ? "packages.compareRemove" : "packages.compareAdd";
                 const label = `${translate(labelKey)}: ${packageName}`;
 
                 card.classList.toggle("is-compared", isCompared);
-                toggle?.classList.toggle("is-active", isCompared);
-                toggle?.setAttribute("aria-pressed", String(isCompared));
-                toggle?.setAttribute("aria-label", label);
-                toggle?.setAttribute("aria-controls", "comparison-list");
+
+                if (toggle) {
+                    toggle.classList.toggle("is-active", isCompared);
+                    toggle.setAttribute("aria-pressed", String(isCompared));
+                    toggle.setAttribute("aria-label", label);
+                    toggle.setAttribute("aria-controls", "comparison-list");
+                    toggle.dataset.packageId = packageId;
+                }
 
                 if (hiddenText) {
                     hiddenText.textContent = label;
@@ -154,7 +162,8 @@
             heading.textContent = name;
             const summary = document.createElement("p");
             summary.textContent = translate(packageData.summaryKey);
-            content.append(heading, summary);
+            content.appendChild(heading);
+            content.appendChild(summary);
 
             const removeButton = document.createElement("button");
             removeButton.className = "comparison-remove";
@@ -163,7 +172,8 @@
             removeButton.setAttribute("aria-label", `${translate("packages.compareRemove")} ${name}`);
             removeButton.innerHTML = '<span aria-hidden="true">×</span>';
 
-            header.append(content, removeButton);
+            header.appendChild(content);
+            header.appendChild(removeButton);
 
             const meta = document.createElement("dl");
             meta.className = "comparison-meta";
@@ -172,10 +182,13 @@
             bestForTerm.textContent = translate("packages.bestFor");
             const bestForDescription = document.createElement("dd");
             bestForDescription.textContent = translate(packageData.bestForKey);
-            bestForWrapper.append(bestForTerm, bestForDescription);
-            meta.append(bestForWrapper);
+            bestForWrapper.appendChild(bestForTerm);
+            bestForWrapper.appendChild(bestForDescription);
+            meta.appendChild(bestForWrapper);
 
-            item.append(hiddenInput, header, meta);
+            item.appendChild(hiddenInput);
+            item.appendChild(header);
+            item.appendChild(meta);
             return item;
         };
 
@@ -199,10 +212,10 @@
                 .map((id) => packageMap.get(id))
                 .filter(Boolean)
                 .map(renderComparisonItem)
-                .forEach((item) => comparisonList.append(item));
+                .forEach((item) => comparisonList.appendChild(item));
         };
 
-        const toggleComparedPackage = (packageId) => {
+        const toggleComparedPackage = (packageId, shouldRevealComparison = false) => {
             const packageData = packageMap.get(packageId);
 
             if (!packageData) {
@@ -213,8 +226,12 @@
                 comparedPackageIds = comparedPackageIds.filter((id) => id !== packageId);
                 announceComparison(`${getPackageName(packageData)} ${translate("packages.statusRemoved")}`);
             } else {
-                comparedPackageIds = [...comparedPackageIds, packageId];
+                comparedPackageIds = comparedPackageIds.concat(packageId);
                 announceComparison(`${getPackageName(packageData)} ${translate("packages.statusAdded")}`);
+
+                if (shouldRevealComparison && comparisonSection) {
+                    comparisonSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                }
             }
 
             saveComparedPackages();
@@ -254,7 +271,8 @@
 
         const updateCustomOptionState = () => {
             customOptionButtons.forEach((button) => {
-                const isSelected = selectedCharacteristics.includes(button.dataset.customCharacteristic);
+                const characteristicId = button.dataset.customCharacteristic;
+                const isSelected = selectedCharacteristics.includes(characteristicId);
                 const label = button.dataset.characteristicLabelKey ? translate(button.dataset.characteristicLabelKey) : "";
                 const action = isSelected ? translate("packages.customRemoveCharacteristic") : translate("packages.customAddCharacteristic");
 
@@ -278,7 +296,8 @@
             removeButton.setAttribute("aria-label", `${translate("packages.customRemoveCharacteristic")} ${getCharacteristicName(characteristic)}`);
             removeButton.innerHTML = '<span aria-hidden="true">×</span>';
 
-            item.append(label, removeButton);
+            item.appendChild(label);
+            item.appendChild(removeButton);
             return item;
         };
 
@@ -307,7 +326,7 @@
             }
 
             customSelectedList.textContent = "";
-            selected.map(renderSelectedCharacteristic).forEach((item) => customSelectedList.append(item));
+            selected.map(renderSelectedCharacteristic).forEach((item) => customSelectedList.appendChild(item));
         };
 
         const saveCustomPackage = () => {
@@ -334,7 +353,7 @@
                 selectedCharacteristics = selectedCharacteristics.filter((id) => id !== characteristicId);
                 announceCustom(`${getCharacteristicName(characteristic)} ${translate("packages.customStatusRemoved")}`);
             } else {
-                selectedCharacteristics = [...selectedCharacteristics, characteristicId];
+                selectedCharacteristics = selectedCharacteristics.concat(characteristicId);
                 announceCustom(`${getCharacteristicName(characteristic)} ${translate("packages.customStatusAdded")}`);
             }
 
@@ -378,47 +397,54 @@
             announceCustom(translate("packages.customStatusFinished"));
         };
 
-        /* Direct listeners make the star buttons work even if nested icons receive the click target. */
-        cards.forEach((card) => {
-            const toggle = card.querySelector("[data-package-toggle]");
-            toggle?.addEventListener("click", (event) => {
+        /*
+         * Use one delegated handler for all dynamic controls. This fixes the
+         * compare-star bug even when users click the star glyph itself or when
+         * translated content changes the button contents after page load.
+         */
+        document.addEventListener("click", (event) => {
+            const target = getEventTargetElement(event);
+
+            if (!target) {
+                return;
+            }
+
+            const compareToggle = target.closest("[data-package-toggle]");
+            if (compareToggle) {
                 event.preventDefault();
-                toggleComparedPackage(toggle.dataset.packageId);
-            });
-        });
+                event.stopPropagation();
+                toggleComparedPackage(compareToggle.dataset.packageId, true);
+                return;
+            }
 
-        comparisonList?.addEventListener("click", (event) => {
-            const removeButton = event.target.closest("[data-package-remove]");
+            const compareRemove = target.closest("[data-package-remove]");
+            if (compareRemove) {
+                event.preventDefault();
+                removeComparedPackage(compareRemove.dataset.packageRemove);
+                return;
+            }
 
-            if (removeButton) {
-                removeComparedPackage(removeButton.dataset.packageRemove);
+            const selectLink = target.closest("[data-package-select]");
+            if (selectLink) {
+                storeValue(selectedPackageStorageKey, selectLink.dataset.packageSelect);
+                return;
+            }
+
+            const customToggle = target.closest("[data-custom-characteristic]");
+            if (customToggle) {
+                event.preventDefault();
+                toggleCustomCharacteristic(customToggle.dataset.customCharacteristic);
+                return;
+            }
+
+            const customRemove = target.closest("[data-custom-remove]");
+            if (customRemove) {
+                event.preventDefault();
+                removeCustomCharacteristic(customRemove.dataset.customRemove);
             }
         });
 
         clearButton?.addEventListener("click", clearComparison);
-
-        document.addEventListener("click", (event) => {
-            const selectLink = event.target.closest("[data-package-select]");
-
-            if (selectLink) {
-                storeValue(selectedPackageStorageKey, selectLink.dataset.packageSelect);
-            }
-        });
-
-        customOptionButtons.forEach((button) => {
-            button.addEventListener("click", () => {
-                toggleCustomCharacteristic(button.dataset.customCharacteristic);
-            });
-        });
-
-        customSelectedList?.addEventListener("click", (event) => {
-            const removeButton = event.target.closest("[data-custom-remove]");
-
-            if (removeButton) {
-                removeCustomCharacteristic(removeButton.dataset.customRemove);
-            }
-        });
-
         customClearButton?.addEventListener("click", clearCustomPackage);
         customFinishButton?.addEventListener("click", finishCustomPackage);
 
@@ -430,9 +456,6 @@
 
         comparedPackageIds = loadComparedPackages();
         renderComparison();
-
-        if (customForm) {
-            renderCustomPackage();
-        }
+        renderCustomPackage();
     });
 })();
