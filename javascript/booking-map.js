@@ -1,12 +1,19 @@
 "use strict";
 
+/*
+ * Booking map integration.
+ * Connects Leaflet with OpenStreetMap search so visitors can choose or verify
+ * the event location without leaving the booking form.
+ */
 (() => {
+    /* The module exits early on pages without a map or when Leaflet is unavailable. */
     const mapElement = document.querySelector("#booking-map");
 
     if (!mapElement || typeof window.L === "undefined") {
         return;
     }
 
+    /* Form fields and status elements updated by geocoding results. */
     const addressField = document.querySelector("#booking-location");
     const postalCodeField = document.querySelector("#booking-postal-code");
     const statusElement = document.querySelector("#booking-map-status");
@@ -15,6 +22,7 @@
     const geocodeEndpoint = "https://nominatim.openstreetmap.org";
     let searchTimer = null;
 
+    /* Update the accessible status text used for map and search feedback. */
     const setStatus = (message) => {
         if (statusElement) {
             statusElement.textContent = message;
@@ -23,6 +31,7 @@
 
     const normaliseAddressPart = (value) => value?.trim() ?? "";
 
+    /* Convert Nominatim address parts into a readable single-line address. */
     const buildAddressLine = (address = {}) => {
         const road = normaliseAddressPart(address.road || address.pedestrian || address.footway || address.path);
         const houseNumber = normaliseAddressPart(address.house_number);
@@ -37,6 +46,7 @@
             .join(", ");
     };
 
+    /* Combine address and postal-code inputs into the forward-geocoding query. */
     const buildSearchQuery = () => {
         return [addressField?.value, postalCodeField?.value]
             .map((value) => value?.trim())
@@ -44,6 +54,7 @@
             .join(", ");
     };
 
+    /* Keep the external OpenStreetMap link synchronized with the marker position. */
     const updateMapLink = (lat, lon, zoom = 16) => {
         if (!mapLink) {
             return;
@@ -72,6 +83,7 @@
 
     updateMapLink(defaultPosition[0], defaultPosition[1], 6);
 
+    /* Move the marker, pan/zoom the map, and update the external map link together. */
     const setMarker = (lat, lon, zoom = 16) => {
         const position = [Number(lat), Number(lon)];
         marker.setLatLng(position);
@@ -79,6 +91,7 @@
         updateMapLink(position[0], position[1], zoom);
     };
 
+    /* Fetch JSON from OpenStreetMap and surface network failures as user messages. */
     const requestJson = async (url) => {
         const response = await fetch(url, {
             headers: {
@@ -94,6 +107,7 @@
         return response.json();
     };
 
+    /* Look up the clicked map position and write the resolved address into the form. */
     const reverseGeocode = async ({ lat, lng }) => {
         const url = new URL(`${geocodeEndpoint}/reverse`);
         url.searchParams.set("format", "jsonv2");
@@ -125,6 +139,7 @@
         }
     };
 
+    /* Search for the typed address and move the map to the best returned match. */
     const forwardGeocode = async () => {
         const query = buildSearchQuery();
 
@@ -163,6 +178,7 @@
         }
     };
 
+    /* Debounce typing so the search endpoint is not called on every keystroke. */
     const scheduleForwardGeocode = () => {
         window.clearTimeout(searchTimer);
         searchTimer = window.setTimeout(forwardGeocode, 750);

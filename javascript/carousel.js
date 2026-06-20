@@ -23,8 +23,10 @@
         return;
     }
 
+    /* Track the currently visible slide; wrapping is handled by showSlide(). */
     let activeIndex = 0;
 
+    /* Build localized screen-reader text for the current slide position. */
     const getStatusMessage = () => {
         const current = activeIndex + 1;
         const total = slides.length;
@@ -41,6 +43,7 @@
         }
     };
 
+    /* Activate one slide, hide the others from assistive tech, and refresh status text. */
     const showSlide = (nextIndex) => {
         activeIndex = (nextIndex + slides.length) % slides.length;
 
@@ -64,6 +67,7 @@
     carousel.classList.add("is-carousel-enhanced");
     showSlide(activeIndex);
 
+    /* Pointer and keyboard controls all use the same slide navigation functions. */
     previousButton.addEventListener("click", showPreviousSlide);
     nextButton.addEventListener("click", showNextSlide);
 
@@ -79,7 +83,7 @@
         }
     });
 
-    /* Keep the live status message in sync when main.js changes the language. */
+    /* Refresh status text when main.js changes the document language. */
     const languageObserver = new MutationObserver(updateStatus);
     languageObserver.observe(document.documentElement, {
         attributes: true,

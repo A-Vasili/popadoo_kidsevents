@@ -1,6 +1,12 @@
 "use strict";
 
+/*
+ * Main site behavior.
+ * Handles language switching, theme toggling, responsive navigation, and the
+ * booking-form workflow shared across the Popadoo pages.
+ */
 (() => {
+    /* Global configuration, storage keys, and frequently used DOM references. */
     const translations = window.popadooTranslations;
     const supportedLanguages = Object.keys(translations ?? { en: {} });
     const languageStorageKey = "popadoo-language";
@@ -29,8 +35,10 @@
     const bookingDetails = document.querySelector("#booking-details");
     const bookingPostalCode = document.querySelector("#booking-postal-code");
 
+    /* currentLanguage drives translations, localized links, and validation messages. */
     let currentLanguage = "en";
 
+    /* Safe localStorage wrappers keep preferences optional when browser storage is blocked. */
     const getStoredValue = (key) => {
         try {
             return window.localStorage.getItem(key);
@@ -47,6 +55,7 @@
         }
     };
 
+    /* Small validation helpers for language and package values. */
     const isSupportedLanguage = (language) => supportedLanguages.includes(language);
 
     const hasSelectOption = (selectElement, value) => {
@@ -66,12 +75,14 @@
             : null;
     };
 
+    /* Translate a key in the active language, falling back to English and then the key. */
     const translate = (key) => {
         return translations?.[currentLanguage]?.[key]
             ?? translations?.en?.[key]
             ?? key;
     };
 
+    /* Keep navigation toggle labels accurate for screen-reader users. */
     const updateNavigationToggleLabel = () => {
         if (!navigationToggle) {
             return;
@@ -84,6 +95,7 @@
         );
     };
 
+    /* Synchronize theme controls, status text, and browser theme-color metadata. */
     const updateThemeControl = () => {
         if (!themeToggle) {
             return;
@@ -149,6 +161,7 @@
         window.history.replaceState({}, "", getRelativeLocalizedHref(url));
     };
 
+    /* Convert a Date to the yyyy-mm-dd format expected by date inputs. */
     const formatDateForInput = (date) => {
         const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
         return localDate.toISOString().slice(0, 10);
@@ -165,6 +178,7 @@
         }
     };
 
+    /* Read the custom package built on packages.html, ignoring malformed stored data. */
     const getCustomPackage = () => {
         try {
             const customPackage = JSON.parse(getStoredValue(customPackageStorageKey) ?? "null");
@@ -176,6 +190,7 @@
         }
     };
 
+    /* Format custom-package characteristics as booking-form notes. */
     const buildCustomPackageDetails = (customPackage) => {
         const characteristics = customPackage?.characteristics
             ?.map((characteristic) => translate(characteristic.labelKey))
@@ -266,6 +281,7 @@
         }
     };
 
+    /* Apply localized custom validity messages before native form validation runs. */
     const validateBookingFields = () => {
         const validators = [
             {
@@ -319,6 +335,7 @@
         });
     };
 
+    /* Apply translations to text, attributes, metadata, form errors, and page links. */
     const applyLanguage = (language) => {
         currentLanguage = isSupportedLanguage(language) ? language : "en";
         document.documentElement.lang = currentLanguage;
@@ -358,6 +375,7 @@
         document.dispatchEvent(new CustomEvent("popadoo:language-applied", { detail: { language: currentLanguage } }));
     };
 
+    /* Responsive navigation helpers maintain aria-expanded and focus restoration. */
     const closeNavigation = (returnFocus = false) => {
         if (!navigationToggle || !navigationMenu) {
             return;
@@ -382,6 +400,7 @@
         updateNavigationToggleLabel();
     };
 
+    /* Bind responsive navigation interactions only when the header is present. */
     if (navigationToggle && navigationMenu) {
         navigationToggle.addEventListener("click", () => {
             const isOpen = navigationToggle.getAttribute("aria-expanded") === "true";
@@ -424,6 +443,7 @@
         }
     });
 
+    /* Persist the visitor-selected theme and update accessible control text. */
     if (themeToggle) {
         themeToggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
@@ -497,6 +517,7 @@
         });
     }
 
+    /* Choose the initial language from URL, saved preference, or browser language. */
     const savedLanguage = getStoredValue(languageStorageKey);
     const browserLanguage = navigator.language?.toLowerCase().startsWith("el") ? "el" : "en";
     const requestedLanguage = getUrlLanguage() ?? (isSupportedLanguage(savedLanguage) ? savedLanguage : browserLanguage);

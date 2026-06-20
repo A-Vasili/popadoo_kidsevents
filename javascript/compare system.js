@@ -17,22 +17,26 @@
 
     window.PopadooPackagesInteractionsStarted = true;
 
+    /* Storage keys keep compare selections and package handoff data consistent across pages. */
     var compareStorageKey = "popadoo-compare-packages";
     var selectedPackageStorageKey = "popadoo-selected-package";
     var customPackageStorageKey = "popadoo-custom-package";
     var customPackageId = "custom-package";
 
+    /* Runtime state: collected package cards, compare selections, and custom-package choices. */
     var cards = [];
     var packageMap = {};
     var comparedPackageIds = [];
     var selectedCharacteristics = [];
 
+    /* Cached comparison UI nodes populated during initialization. */
     var comparisonSection = null;
     var comparisonList = null;
     var comparisonEmpty = null;
     var comparisonStatus = null;
     var comparisonClearButton = null;
 
+    /* Cached custom-package builder controls populated during initialization. */
     var customOptionButtons = [];
     var customSelectedList = null;
     var customEmpty = null;
@@ -41,6 +45,7 @@
     var customStatus = null;
     var customBookLink = null;
 
+    /* Run initialization immediately or after DOMContentLoaded, depending on load timing. */
     function onReady(callback) {
         if (document.readyState === "loading") {
             document.addEventListener("DOMContentLoaded", callback);
@@ -77,6 +82,7 @@
         return null;
     }
 
+    /* Safe localStorage wrappers prevent private-mode or quota errors from breaking UI. */
     function getStoredValue(key) {
         try {
             return window.localStorage.getItem(key);
@@ -97,6 +103,7 @@
         return document.documentElement.getAttribute("lang") || "en";
     }
 
+    /* Resolve translated labels with an English fallback for missing keys. */
     function translate(key) {
         var translations = window.popadooTranslations || {};
         var language = getCurrentLanguage();
@@ -171,6 +178,7 @@
         }
     }
 
+    /* Restore only package IDs that still exist in the current DOM. */
     function loadComparedPackages() {
         var storedIds;
         var filtered = [];
@@ -198,6 +206,7 @@
         storeValue(compareStorageKey, JSON.stringify(comparedPackageIds));
     }
 
+    /* Keep star buttons, aria-pressed values, and card classes aligned with compare state. */
     function updateCardToggleState() {
         cards.forEach(function (card) {
             var packageId = card.getAttribute("data-package-id");
@@ -227,6 +236,7 @@
         });
     }
 
+    /* Render one selected package in the comparison summary. */
     function createComparisonItem(packageData) {
         var item = document.createElement("article");
         var hiddenInput = document.createElement("input");
@@ -278,6 +288,7 @@
         return item;
     }
 
+    /* Rebuild the comparison summary and update empty/status messaging. */
     function renderComparison() {
         var fragment = document.createDocumentFragment();
 
@@ -316,6 +327,7 @@
         }
     }
 
+    /* Add or remove a package from the comparison list, then persist and re-render. */
     function toggleComparedPackage(packageId, shouldRevealComparison) {
         var data = packageMap[packageId];
 
@@ -376,6 +388,7 @@
         toggleComparedPackage(packageId, true);
     }
 
+    /* Read a custom-package option from its button dataset. */
     function getCharacteristicById(characteristicId) {
         var found = null;
 
@@ -400,6 +413,7 @@
         return characteristic.labelKey ? translate(characteristic.labelKey) : characteristic.label;
     }
 
+    /* Reflect selected custom options in button pressed states and visibility. */
     function updateCustomOptionState() {
         customOptionButtons.forEach(function (button) {
             var characteristicId = button.getAttribute("data-custom-characteristic");
@@ -445,6 +459,7 @@
         return fileName + url.search;
     }
 
+    /* Rebuild the custom-package summary and prepare the Book Now handoff link. */
     function renderCustomPackage() {
         var selected = [];
         var fragment = document.createDocumentFragment();
@@ -486,6 +501,7 @@
         customSelectedList.appendChild(fragment);
     }
 
+    /* Persist a completed custom package so the contact page can prefill details. */
     function saveCustomPackage() {
         var selected = [];
 
@@ -545,6 +561,7 @@
         }
     }
 
+    /* Finalize the custom selection and route the visitor to the booking form. */
     function finishCustomPackage() {
         if (selectedCharacteristics.length === 0) {
             announceCustom(translate("packages.customChooseFirst"));
@@ -562,6 +579,7 @@
         announceCustom(translate("packages.customStatusFinished"));
     }
 
+    /* Delegate click handling so dynamically created remove buttons work automatically. */
     function handleDocumentClick(event) {
         var target = event.target;
         var compareToggle = closestElement(target, "[data-package-toggle]");
@@ -598,6 +616,7 @@
         }
     }
 
+    /* Let keyboard users toggle compare stars with Enter or Space. */
     function handleCompareKeyboard(event) {
         var key = event.key || event.code;
 
@@ -608,6 +627,7 @@
         handleCompareToggle(event, event.currentTarget);
     }
 
+    /* Attach global listeners after state and DOM references have been collected. */
     function bindEvents() {
         /* Capture-phase delegation runs before other handlers can stop the click. */
         document.addEventListener("click", handleDocumentClick, true);
@@ -634,6 +654,7 @@
         });
     }
 
+    /* Read package card metadata once and normalize it for comparison rendering. */
     function collectPackages() {
         cards = toArray(document.querySelectorAll("[data-package-card]"));
         packageMap = {};
@@ -656,6 +677,7 @@
         });
     }
 
+    /* Initialize package comparison and custom-package builder state. */
     function init() {
         comparisonSection = document.querySelector(".comparison-section");
         comparisonList = document.querySelector("#comparison-list");

@@ -9,6 +9,7 @@
  * theme behaviour, keyboard navigation, and the current-page state.
  */
 (() => {
+    /* Navigation definitions are shared by the custom header component. */
     const navigationItems = [
         { page: "index", href: "index.html", key: "nav.home", label: "Home" },
         { page: "gallery", href: "gallery.html", key: "nav.gallery", label: "Gallery" },
@@ -17,8 +18,10 @@
         { page: "testimonials", href: "testimonials.html", key: "nav.testimonials", label: "Testimonials" }
     ];
 
+    /* Pages declare their identity in body[data-page] so active links stay automatic. */
     const getCurrentPage = () => document.body?.dataset.page ?? "index";
 
+    /* Header web component renders logo, navigation, language, theme, and CTA controls. */
     class PopadooHeader extends HTMLElement {
         connectedCallback() {
             const currentPage = getCurrentPage();
@@ -108,6 +111,7 @@
         }
     }
 
+    /* Footer web component centralizes shared contact, resource, and social links. */
     class PopadooFooter extends HTMLElement {
         connectedCallback() {
             const styleGuideAriaCurrent = getCurrentPage() === "styleGuide"
@@ -152,7 +156,8 @@
     }
 
     if (!customElements.get("popadoo-header")) {
-        customElements.define("popadoo-header", PopadooHeader);
+        /* Register custom elements once their classes are defined. */
+    customElements.define("popadoo-header", PopadooHeader);
     }
 
     if (!customElements.get("popadoo-footer")) {

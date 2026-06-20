@@ -1,7 +1,11 @@
 "use strict";
 
-/* All translatable interface and page content is kept outside the HTML. */
+/*
+ * Translation catalog used by main.js and the package builder.
+ * Object.freeze prevents accidental runtime edits to shared interface copy.
+ */
 window.popadooTranslations = Object.freeze({
+    /* English source copy. */
     en: Object.freeze({
         "common.skipLink": "Skip to main content",
         "nav.primaryLabel": "Primary navigation",
@@ -352,6 +356,7 @@ window.popadooTranslations = Object.freeze({
 
     }),
 
+    /* Greek translations shown when the active language is el. */
     el: Object.freeze({
         "common.skipLink": "Μετάβαση στο κύριο περιεχόμενο",
         "nav.primaryLabel": "Κύρια πλοήγηση",
