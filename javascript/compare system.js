@@ -1,461 +1,689 @@
 "use strict";
 
 /*
- * packages.html behaviour.
- * This script powers two features:
- * 1. Star buttons that reliably add/remove package cards from the comparison form.
- * 2. The custom-package builder that stores selected characteristics for Book Now.
+ * Packages page interactions.
+ *
+ * This file intentionally uses defensive, browser-friendly JavaScript because
+ * the compare stars are the main package-selection control. It does not depend
+ * on Bootstrap, jQuery, or inline handlers. It powers:
+ * - package comparison star toggles;
+ * - selected package persistence for the Book Now page;
+ * - the custom-package builder and its Book Now handoff.
  */
-(() => {
-    const compareStorageKey = "popadoo-compare-packages";
-    const selectedPackageStorageKey = "popadoo-selected-package";
-    const customPackageStorageKey = "popadoo-custom-package";
-    const customPackageId = "custom-package";
+(function () {
+    if (window.PopadooPackagesInteractionsStarted) {
+        return;
+    }
 
-    const onReady = (callback) => {
+    window.PopadooPackagesInteractionsStarted = true;
+
+    var compareStorageKey = "popadoo-compare-packages";
+    var selectedPackageStorageKey = "popadoo-selected-package";
+    var customPackageStorageKey = "popadoo-custom-package";
+    var customPackageId = "custom-package";
+
+    var cards = [];
+    var packageMap = {};
+    var comparedPackageIds = [];
+    var selectedCharacteristics = [];
+
+    var comparisonSection = null;
+    var comparisonList = null;
+    var comparisonEmpty = null;
+    var comparisonStatus = null;
+    var comparisonClearButton = null;
+
+    var customOptionButtons = [];
+    var customSelectedList = null;
+    var customEmpty = null;
+    var customClearButton = null;
+    var customFinishButton = null;
+    var customStatus = null;
+    var customBookLink = null;
+
+    function onReady(callback) {
         if (document.readyState === "loading") {
-            document.addEventListener("DOMContentLoaded", callback, { once: true });
+            document.addEventListener("DOMContentLoaded", callback);
             return;
         }
 
         callback();
-    };
+    }
 
-    onReady(() => {
-        const cards = Array.from(document.querySelectorAll("[data-package-card]"));
-        const comparisonSection = document.querySelector(".comparison-section");
-        const comparisonList = document.querySelector("#comparison-list");
-        const comparisonEmpty = document.querySelector("#comparison-empty");
-        const comparisonStatus = document.querySelector("#comparison-status");
-        const clearButton = document.querySelector("#comparison-clear");
-        const customOptionButtons = Array.from(document.querySelectorAll("[data-custom-characteristic]"));
-        const customSelectedList = document.querySelector("#custom-selected-list");
-        const customEmpty = document.querySelector("#custom-package-empty");
-        const customClearButton = document.querySelector("#custom-package-clear");
-        const customFinishButton = document.querySelector("#custom-package-finish");
-        const customStatus = document.querySelector("#custom-package-status");
-        const customBookLink = document.querySelector("#custom-package-book-link");
+    function toArray(list) {
+        return Array.prototype.slice.call(list || []);
+    }
 
-        const packageMap = new Map(cards.map((card) => [
-            card.dataset.packageId,
-            {
-                id: card.dataset.packageId,
-                nameKey: card.dataset.packageNameKey,
-                summaryKey: card.dataset.packageSummaryKey,
-                bestForKey: card.dataset.packageBestForKey
-            }
-        ]));
+    function elementMatches(element, selector) {
+        var matcher = element.matches
+            || element.msMatchesSelector
+            || element.webkitMatchesSelector
+            || element.mozMatchesSelector;
 
-        let comparedPackageIds = [];
-        let selectedCharacteristics = [];
+        return Boolean(matcher && matcher.call(element, selector));
+    }
 
-        const getStoredValue = (key) => {
-            try {
-                return window.localStorage.getItem(key);
-            } catch (error) {
-                return null;
-            }
-        };
+    function closestElement(element, selector) {
+        var current = element;
 
-        const storeValue = (key, value) => {
-            try {
-                window.localStorage.setItem(key, value);
-            } catch (error) {
-                /* The page still works for this visit if storage is blocked. */
-            }
-        };
-
-        const currentLanguage = () => document.documentElement.lang || "en";
-
-        const translate = (key) => {
-            const translations = window.popadooTranslations || {};
-            const language = currentLanguage();
-
-            return (translations[language] && translations[language][key])
-                || (translations.en && translations.en[key])
-                || key;
-        };
-
-        const getEventTargetElement = (event) => {
-            return event.target instanceof Element ? event.target : event.target.parentElement;
-        };
-
-        const getLocalizedContactHref = () => {
-            const url = new URL("contact.html", window.location.href);
-            url.searchParams.set("package", customPackageId);
-            url.searchParams.set("lang", currentLanguage());
-            return `${url.pathname.substring(url.pathname.lastIndexOf("/") + 1)}${url.search}`;
-        };
-
-        const announceComparison = (message) => {
-            if (comparisonStatus) {
-                comparisonStatus.textContent = message;
-            }
-        };
-
-        const announceCustom = (message) => {
-            if (customStatus) {
-                customStatus.textContent = message;
-            }
-        };
-
-        const getPackageName = (packageData) => translate(packageData.nameKey);
-
-        const loadComparedPackages = () => {
-            try {
-                const storedIds = JSON.parse(getStoredValue(compareStorageKey) || "[]");
-                return Array.isArray(storedIds)
-                    ? storedIds.filter((id, index, list) => packageMap.has(id) && list.indexOf(id) === index)
-                    : [];
-            } catch (error) {
-                return [];
-            }
-        };
-
-        const saveComparedPackages = () => {
-            storeValue(compareStorageKey, JSON.stringify(comparedPackageIds));
-        };
-
-        const updateCardToggleState = () => {
-            cards.forEach((card) => {
-                const packageId = card.dataset.packageId;
-                const isCompared = comparedPackageIds.includes(packageId);
-                const toggle = card.querySelector("[data-package-toggle]");
-                const hiddenText = toggle ? toggle.querySelector(".visually-hidden") : null;
-                const packageData = packageMap.get(packageId);
-                const packageName = packageData ? getPackageName(packageData) : "";
-                const labelKey = isCompared ? "packages.compareRemove" : "packages.compareAdd";
-                const label = `${translate(labelKey)}: ${packageName}`;
-
-                card.classList.toggle("is-compared", isCompared);
-
-                if (toggle) {
-                    toggle.classList.toggle("is-active", isCompared);
-                    toggle.setAttribute("aria-pressed", String(isCompared));
-                    toggle.setAttribute("aria-label", label);
-                    toggle.setAttribute("aria-controls", "comparison-list");
-                    toggle.dataset.packageId = packageId;
-                }
-
-                if (hiddenText) {
-                    hiddenText.textContent = label;
-                }
-            });
-        };
-
-        const renderComparisonItem = (packageData) => {
-            const name = getPackageName(packageData);
-            const item = document.createElement("article");
-            item.className = "comparison-item";
-            item.dataset.comparisonItem = packageData.id;
-
-            const hiddenInput = document.createElement("input");
-            hiddenInput.type = "hidden";
-            hiddenInput.name = "comparePackages[]";
-            hiddenInput.value = packageData.id;
-
-            const header = document.createElement("div");
-            header.className = "comparison-item-header";
-
-            const content = document.createElement("div");
-            const heading = document.createElement("h3");
-            heading.textContent = name;
-            const summary = document.createElement("p");
-            summary.textContent = translate(packageData.summaryKey);
-            content.appendChild(heading);
-            content.appendChild(summary);
-
-            const removeButton = document.createElement("button");
-            removeButton.className = "comparison-remove";
-            removeButton.type = "button";
-            removeButton.dataset.packageRemove = packageData.id;
-            removeButton.setAttribute("aria-label", `${translate("packages.compareRemove")} ${name}`);
-            removeButton.innerHTML = '<span aria-hidden="true">×</span>';
-
-            header.appendChild(content);
-            header.appendChild(removeButton);
-
-            const meta = document.createElement("dl");
-            meta.className = "comparison-meta";
-            const bestForWrapper = document.createElement("div");
-            const bestForTerm = document.createElement("dt");
-            bestForTerm.textContent = translate("packages.bestFor");
-            const bestForDescription = document.createElement("dd");
-            bestForDescription.textContent = translate(packageData.bestForKey);
-            bestForWrapper.appendChild(bestForTerm);
-            bestForWrapper.appendChild(bestForDescription);
-            meta.appendChild(bestForWrapper);
-
-            item.appendChild(hiddenInput);
-            item.appendChild(header);
-            item.appendChild(meta);
-            return item;
-        };
-
-        const renderComparison = () => {
-            updateCardToggleState();
-
-            if (comparisonEmpty) {
-                comparisonEmpty.hidden = comparedPackageIds.length > 0;
+        while (current && current.nodeType === 1) {
+            if (elementMatches(current, selector)) {
+                return current;
             }
 
-            if (clearButton) {
-                clearButton.disabled = comparedPackageIds.length === 0;
+            current = current.parentElement;
+        }
+
+        return null;
+    }
+
+    function getStoredValue(key) {
+        try {
+            return window.localStorage.getItem(key);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function storeValue(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (error) {
+            /* The page still works for the current visit when storage is blocked. */
+        }
+    }
+
+    function getCurrentLanguage() {
+        return document.documentElement.getAttribute("lang") || "en";
+    }
+
+    function translate(key) {
+        var translations = window.popadooTranslations || {};
+        var language = getCurrentLanguage();
+
+        if (translations[language] && translations[language][key]) {
+            return translations[language][key];
+        }
+
+        if (translations.en && translations.en[key]) {
+            return translations.en[key];
+        }
+
+        return key;
+    }
+
+    function textFromCard(card, selector) {
+        var element = card ? card.querySelector(selector) : null;
+        return element ? element.textContent.trim() : "";
+    }
+
+    function addUnique(list, value) {
+        if (list.indexOf(value) === -1) {
+            list.push(value);
+        }
+
+        return list;
+    }
+
+    function removeFromList(list, value) {
+        return list.filter(function (item) {
+            return item !== value;
+        });
+    }
+
+    function packageExists(packageId) {
+        return Boolean(packageId && packageMap[packageId]);
+    }
+
+    function packageName(packageData) {
+        if (!packageData) {
+            return "";
+        }
+
+        return packageData.nameKey ? translate(packageData.nameKey) : packageData.name;
+    }
+
+    function packageSummary(packageData) {
+        if (!packageData) {
+            return "";
+        }
+
+        return packageData.summaryKey ? translate(packageData.summaryKey) : packageData.summary;
+    }
+
+    function packageBestFor(packageData) {
+        if (!packageData) {
+            return "";
+        }
+
+        return packageData.bestForKey ? translate(packageData.bestForKey) : "";
+    }
+
+    function announceComparison(message) {
+        if (comparisonStatus) {
+            comparisonStatus.textContent = message;
+        }
+    }
+
+    function announceCustom(message) {
+        if (customStatus) {
+            customStatus.textContent = message;
+        }
+    }
+
+    function loadComparedPackages() {
+        var storedIds;
+        var filtered = [];
+
+        try {
+            storedIds = JSON.parse(getStoredValue(compareStorageKey) || "[]");
+        } catch (error) {
+            storedIds = [];
+        }
+
+        if (!Array.isArray(storedIds)) {
+            return [];
+        }
+
+        storedIds.forEach(function (packageId) {
+            if (packageExists(packageId) && filtered.indexOf(packageId) === -1) {
+                filtered.push(packageId);
             }
+        });
 
-            if (!comparisonList) {
-                return;
-            }
+        return filtered;
+    }
 
-            comparisonList.textContent = "";
-            comparedPackageIds
-                .map((id) => packageMap.get(id))
-                .filter(Boolean)
-                .map(renderComparisonItem)
-                .forEach((item) => comparisonList.appendChild(item));
-        };
+    function saveComparedPackages() {
+        storeValue(compareStorageKey, JSON.stringify(comparedPackageIds));
+    }
 
-        const toggleComparedPackage = (packageId, shouldRevealComparison = false) => {
-            const packageData = packageMap.get(packageId);
+    function updateCardToggleState() {
+        cards.forEach(function (card) {
+            var packageId = card.getAttribute("data-package-id");
+            var toggle = card.querySelector("[data-package-toggle]");
+            var hiddenText = toggle ? toggle.querySelector(".visually-hidden") : null;
+            var isCompared = comparedPackageIds.indexOf(packageId) !== -1;
+            var data = packageMap[packageId];
+            var labelKey = isCompared ? "packages.compareRemove" : "packages.compareAdd";
+            var label = translate(labelKey) + ": " + packageName(data);
 
-            if (!packageData) {
-                return;
-            }
+            card.classList.toggle("is-compared", isCompared);
 
-            if (comparedPackageIds.includes(packageId)) {
-                comparedPackageIds = comparedPackageIds.filter((id) => id !== packageId);
-                announceComparison(`${getPackageName(packageData)} ${translate("packages.statusRemoved")}`);
-            } else {
-                comparedPackageIds = comparedPackageIds.concat(packageId);
-                announceComparison(`${getPackageName(packageData)} ${translate("packages.statusAdded")}`);
+            if (toggle) {
+                toggle.classList.toggle("is-active", isCompared);
+                toggle.setAttribute("aria-pressed", isCompared ? "true" : "false");
+                toggle.setAttribute("aria-label", label);
+                toggle.setAttribute("aria-controls", "comparison-list");
 
-                if (shouldRevealComparison && comparisonSection) {
-                    comparisonSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                if (!toggle.getAttribute("data-package-id")) {
+                    toggle.setAttribute("data-package-id", packageId);
                 }
             }
 
-            saveComparedPackages();
-            renderComparison();
-        };
-
-        const removeComparedPackage = (packageId) => {
-            const packageData = packageMap.get(packageId);
-            comparedPackageIds = comparedPackageIds.filter((id) => id !== packageId);
-            saveComparedPackages();
-            renderComparison();
-
-            if (packageData) {
-                announceComparison(`${getPackageName(packageData)} ${translate("packages.statusRemoved")}`);
+            if (hiddenText) {
+                hiddenText.textContent = label;
             }
-        };
+        });
+    }
 
-        const clearComparison = () => {
-            comparedPackageIds = [];
-            saveComparedPackages();
-            renderComparison();
-            announceComparison(translate("packages.statusCleared"));
-        };
+    function createComparisonItem(packageData) {
+        var item = document.createElement("article");
+        var hiddenInput = document.createElement("input");
+        var header = document.createElement("div");
+        var content = document.createElement("div");
+        var heading = document.createElement("h3");
+        var summary = document.createElement("p");
+        var removeButton = document.createElement("button");
+        var meta = document.createElement("dl");
+        var bestForWrapper = document.createElement("div");
+        var bestForTerm = document.createElement("dt");
+        var bestForDescription = document.createElement("dd");
+        var name = packageName(packageData);
 
-        const getCharacteristicById = (characteristicId) => {
-            const button = customOptionButtons.find((optionButton) => optionButton.dataset.customCharacteristic === characteristicId);
+        item.className = "comparison-item";
+        item.setAttribute("data-comparison-item", packageData.id);
 
-            return button
-                ? {
+        hiddenInput.type = "hidden";
+        hiddenInput.name = "comparePackages[]";
+        hiddenInput.value = packageData.id;
+
+        header.className = "comparison-item-header";
+        heading.textContent = name;
+        summary.textContent = packageSummary(packageData);
+
+        content.appendChild(heading);
+        content.appendChild(summary);
+
+        removeButton.className = "comparison-remove";
+        removeButton.type = "button";
+        removeButton.setAttribute("data-package-remove", packageData.id);
+        removeButton.setAttribute("aria-label", translate("packages.compareRemove") + " " + name);
+        removeButton.innerHTML = '<span aria-hidden="true">×</span>';
+
+        header.appendChild(content);
+        header.appendChild(removeButton);
+
+        meta.className = "comparison-meta";
+        bestForTerm.textContent = translate("packages.bestFor");
+        bestForDescription.textContent = packageBestFor(packageData);
+        bestForWrapper.appendChild(bestForTerm);
+        bestForWrapper.appendChild(bestForDescription);
+        meta.appendChild(bestForWrapper);
+
+        item.appendChild(hiddenInput);
+        item.appendChild(header);
+        item.appendChild(meta);
+
+        return item;
+    }
+
+    function renderComparison() {
+        var fragment = document.createDocumentFragment();
+
+        updateCardToggleState();
+
+        if (comparisonEmpty) {
+            comparisonEmpty.hidden = comparedPackageIds.length > 0;
+        }
+
+        if (comparisonClearButton) {
+            comparisonClearButton.disabled = comparedPackageIds.length === 0;
+        }
+
+        if (!comparisonList) {
+            return;
+        }
+
+        comparisonList.textContent = "";
+
+        comparedPackageIds.forEach(function (packageId) {
+            if (packageMap[packageId]) {
+                fragment.appendChild(createComparisonItem(packageMap[packageId]));
+            }
+        });
+
+        comparisonList.appendChild(fragment);
+    }
+
+    function revealComparisonSection() {
+        if (!comparisonSection) {
+            return;
+        }
+
+        if (typeof comparisonSection.scrollIntoView === "function") {
+            comparisonSection.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+    }
+
+    function toggleComparedPackage(packageId, shouldRevealComparison) {
+        var data = packageMap[packageId];
+
+        if (!data) {
+            return;
+        }
+
+        if (comparedPackageIds.indexOf(packageId) !== -1) {
+            comparedPackageIds = removeFromList(comparedPackageIds, packageId);
+            announceComparison(packageName(data) + " " + translate("packages.statusRemoved"));
+        } else {
+            addUnique(comparedPackageIds, packageId);
+            announceComparison(packageName(data) + " " + translate("packages.statusAdded"));
+
+            if (shouldRevealComparison) {
+                revealComparisonSection();
+            }
+        }
+
+        saveComparedPackages();
+        renderComparison();
+    }
+
+    function removeComparedPackage(packageId) {
+        var data = packageMap[packageId];
+
+        if (!packageExists(packageId)) {
+            return;
+        }
+
+        comparedPackageIds = removeFromList(comparedPackageIds, packageId);
+        saveComparedPackages();
+        renderComparison();
+        announceComparison(packageName(data) + " " + translate("packages.statusRemoved"));
+    }
+
+    function clearComparison() {
+        comparedPackageIds = [];
+        saveComparedPackages();
+        renderComparison();
+        announceComparison(translate("packages.statusCleared"));
+    }
+
+    function getPackageIdFromToggle(toggle) {
+        var card = closestElement(toggle, "[data-package-card]");
+        return toggle.getAttribute("data-package-id") || (card ? card.getAttribute("data-package-id") : "");
+    }
+
+    function handleCompareToggle(event, toggle) {
+        var packageId = getPackageIdFromToggle(toggle);
+
+        if (!packageId) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        toggleComparedPackage(packageId, true);
+    }
+
+    function getCharacteristicById(characteristicId) {
+        var found = null;
+
+        customOptionButtons.forEach(function (button) {
+            if (button.getAttribute("data-custom-characteristic") === characteristicId) {
+                found = {
                     id: characteristicId,
-                    labelKey: button.dataset.characteristicLabelKey
-                }
-                : null;
-        };
-
-        const getCharacteristicName = (characteristic) => translate(characteristic.labelKey);
-
-        const updateCustomOptionState = () => {
-            customOptionButtons.forEach((button) => {
-                const characteristicId = button.dataset.customCharacteristic;
-                const isSelected = selectedCharacteristics.includes(characteristicId);
-                const label = button.dataset.characteristicLabelKey ? translate(button.dataset.characteristicLabelKey) : "";
-                const action = isSelected ? translate("packages.customRemoveCharacteristic") : translate("packages.customAddCharacteristic");
-
-                button.classList.toggle("is-selected", isSelected);
-                button.setAttribute("aria-pressed", String(isSelected));
-                button.setAttribute("aria-label", `${action}: ${label}`);
-            });
-        };
-
-        const renderSelectedCharacteristic = (characteristic) => {
-            const item = document.createElement("li");
-            item.className = "custom-selected-item";
-
-            const label = document.createElement("span");
-            label.textContent = getCharacteristicName(characteristic);
-
-            const removeButton = document.createElement("button");
-            removeButton.className = "custom-selected-remove";
-            removeButton.type = "button";
-            removeButton.dataset.customRemove = characteristic.id;
-            removeButton.setAttribute("aria-label", `${translate("packages.customRemoveCharacteristic")} ${getCharacteristicName(characteristic)}`);
-            removeButton.innerHTML = '<span aria-hidden="true">×</span>';
-
-            item.appendChild(label);
-            item.appendChild(removeButton);
-            return item;
-        };
-
-        const renderCustomPackage = () => {
-            const selected = selectedCharacteristics.map(getCharacteristicById).filter(Boolean);
-            updateCustomOptionState();
-
-            if (customEmpty) {
-                customEmpty.hidden = selected.length > 0;
+                    labelKey: button.getAttribute("data-characteristic-label-key"),
+                    label: button.textContent.trim()
+                };
             }
+        });
 
-            if (customClearButton) {
-                customClearButton.disabled = selected.length === 0;
-            }
+        return found;
+    }
 
-            if (customFinishButton) {
-                customFinishButton.disabled = selected.length === 0;
-            }
+    function characteristicName(characteristic) {
+        if (!characteristic) {
+            return "";
+        }
 
-            if (customBookLink) {
-                customBookLink.href = getLocalizedContactHref();
-            }
+        return characteristic.labelKey ? translate(characteristic.labelKey) : characteristic.label;
+    }
 
-            if (!customSelectedList) {
-                return;
-            }
+    function updateCustomOptionState() {
+        customOptionButtons.forEach(function (button) {
+            var characteristicId = button.getAttribute("data-custom-characteristic");
+            var isSelected = selectedCharacteristics.indexOf(characteristicId) !== -1;
+            var labelKey = button.getAttribute("data-characteristic-label-key");
+            var label = labelKey ? translate(labelKey) : button.textContent.trim();
+            var action = isSelected ? translate("packages.customRemoveCharacteristic") : translate("packages.customAddCharacteristic");
 
-            customSelectedList.textContent = "";
-            selected.map(renderSelectedCharacteristic).forEach((item) => customSelectedList.appendChild(item));
-        };
+            button.classList.toggle("is-selected", isSelected);
+            button.setAttribute("aria-pressed", isSelected ? "true" : "false");
+            button.setAttribute("aria-label", action + ": " + label);
+        });
+    }
 
-        const saveCustomPackage = () => {
-            const selected = selectedCharacteristics.map(getCharacteristicById).filter(Boolean);
-            const payload = {
-                id: customPackageId,
-                nameKey: "packages.customPackageName",
-                characteristics: selected,
-                createdAt: new Date().toISOString()
-            };
+    function createSelectedCharacteristicItem(characteristic) {
+        var item = document.createElement("li");
+        var label = document.createElement("span");
+        var removeButton = document.createElement("button");
 
-            storeValue(customPackageStorageKey, JSON.stringify(payload));
-            storeValue(selectedPackageStorageKey, customPackageId);
-        };
+        item.className = "custom-selected-item";
+        label.textContent = characteristicName(characteristic);
 
-        const toggleCustomCharacteristic = (characteristicId) => {
-            const characteristic = getCharacteristicById(characteristicId);
+        removeButton.className = "custom-selected-remove";
+        removeButton.type = "button";
+        removeButton.setAttribute("data-custom-remove", characteristic.id);
+        removeButton.setAttribute("aria-label", translate("packages.customRemoveCharacteristic") + " " + characteristicName(characteristic));
+        removeButton.innerHTML = '<span aria-hidden="true">×</span>';
 
-            if (!characteristic) {
-                return;
-            }
+        item.appendChild(label);
+        item.appendChild(removeButton);
 
-            if (selectedCharacteristics.includes(characteristicId)) {
-                selectedCharacteristics = selectedCharacteristics.filter((id) => id !== characteristicId);
-                announceCustom(`${getCharacteristicName(characteristic)} ${translate("packages.customStatusRemoved")}`);
-            } else {
-                selectedCharacteristics = selectedCharacteristics.concat(characteristicId);
-                announceCustom(`${getCharacteristicName(characteristic)} ${translate("packages.customStatusAdded")}`);
-            }
+        return item;
+    }
 
-            renderCustomPackage();
-        };
+    function getLocalizedContactHref() {
+        var url = new URL("contact.html", window.location.href);
+        var fileName;
 
-        const removeCustomCharacteristic = (characteristicId) => {
-            const characteristic = getCharacteristicById(characteristicId);
-            selectedCharacteristics = selectedCharacteristics.filter((id) => id !== characteristicId);
-            renderCustomPackage();
+        url.searchParams.set("package", customPackageId);
+        url.searchParams.set("lang", getCurrentLanguage());
+        fileName = url.pathname.substring(url.pathname.lastIndexOf("/") + 1) || "contact.html";
+
+        return fileName + url.search;
+    }
+
+    function renderCustomPackage() {
+        var selected = [];
+        var fragment = document.createDocumentFragment();
+
+        selectedCharacteristics.forEach(function (characteristicId) {
+            var characteristic = getCharacteristicById(characteristicId);
 
             if (characteristic) {
-                announceCustom(`${getCharacteristicName(characteristic)} ${translate("packages.customStatusRemoved")}`);
-            }
-        };
-
-        const clearCustomPackage = () => {
-            selectedCharacteristics = [];
-            renderCustomPackage();
-            announceCustom(translate("packages.customStatusCleared"));
-
-            if (customBookLink) {
-                customBookLink.hidden = true;
-            }
-        };
-
-        const finishCustomPackage = () => {
-            if (selectedCharacteristics.length === 0) {
-                announceCustom(translate("packages.customChooseFirst"));
-                return;
-            }
-
-            saveCustomPackage();
-            renderCustomPackage();
-
-            if (customBookLink) {
-                customBookLink.hidden = false;
-                customBookLink.focus();
-            }
-
-            announceCustom(translate("packages.customStatusFinished"));
-        };
-
-        /*
-         * Use one delegated handler for all dynamic controls. This fixes the
-         * compare-star bug even when users click the star glyph itself or when
-         * translated content changes the button contents after page load.
-         */
-        document.addEventListener("click", (event) => {
-            const target = getEventTargetElement(event);
-
-            if (!target) {
-                return;
-            }
-
-            const compareToggle = target.closest("[data-package-toggle]");
-            if (compareToggle) {
-                event.preventDefault();
-                event.stopPropagation();
-                toggleComparedPackage(compareToggle.dataset.packageId, true);
-                return;
-            }
-
-            const compareRemove = target.closest("[data-package-remove]");
-            if (compareRemove) {
-                event.preventDefault();
-                removeComparedPackage(compareRemove.dataset.packageRemove);
-                return;
-            }
-
-            const selectLink = target.closest("[data-package-select]");
-            if (selectLink) {
-                storeValue(selectedPackageStorageKey, selectLink.dataset.packageSelect);
-                return;
-            }
-
-            const customToggle = target.closest("[data-custom-characteristic]");
-            if (customToggle) {
-                event.preventDefault();
-                toggleCustomCharacteristic(customToggle.dataset.customCharacteristic);
-                return;
-            }
-
-            const customRemove = target.closest("[data-custom-remove]");
-            if (customRemove) {
-                event.preventDefault();
-                removeCustomCharacteristic(customRemove.dataset.customRemove);
+                selected.push(characteristic);
             }
         });
 
-        clearButton?.addEventListener("click", clearComparison);
-        customClearButton?.addEventListener("click", clearCustomPackage);
-        customFinishButton?.addEventListener("click", finishCustomPackage);
+        updateCustomOptionState();
 
-        /* Re-render translated dynamic content when the shared language control changes. */
-        document.addEventListener("popadoo:language-applied", () => {
+        if (customEmpty) {
+            customEmpty.hidden = selected.length > 0;
+        }
+
+        if (customClearButton) {
+            customClearButton.disabled = selected.length === 0;
+        }
+
+        if (customFinishButton) {
+            customFinishButton.disabled = selected.length === 0;
+        }
+
+        if (customBookLink) {
+            customBookLink.href = getLocalizedContactHref();
+        }
+
+        if (!customSelectedList) {
+            return;
+        }
+
+        customSelectedList.textContent = "";
+        selected.forEach(function (characteristic) {
+            fragment.appendChild(createSelectedCharacteristicItem(characteristic));
+        });
+        customSelectedList.appendChild(fragment);
+    }
+
+    function saveCustomPackage() {
+        var selected = [];
+
+        selectedCharacteristics.forEach(function (characteristicId) {
+            var characteristic = getCharacteristicById(characteristicId);
+
+            if (characteristic) {
+                selected.push(characteristic);
+            }
+        });
+
+        storeValue(customPackageStorageKey, JSON.stringify({
+            id: customPackageId,
+            nameKey: "packages.customPackageName",
+            characteristics: selected,
+            createdAt: new Date().toISOString()
+        }));
+        storeValue(selectedPackageStorageKey, customPackageId);
+    }
+
+    function toggleCustomCharacteristic(characteristicId) {
+        var characteristic = getCharacteristicById(characteristicId);
+
+        if (!characteristic) {
+            return;
+        }
+
+        if (selectedCharacteristics.indexOf(characteristicId) !== -1) {
+            selectedCharacteristics = removeFromList(selectedCharacteristics, characteristicId);
+            announceCustom(characteristicName(characteristic) + " " + translate("packages.customStatusRemoved"));
+        } else {
+            addUnique(selectedCharacteristics, characteristicId);
+            announceCustom(characteristicName(characteristic) + " " + translate("packages.customStatusAdded"));
+        }
+
+        renderCustomPackage();
+    }
+
+    function removeCustomCharacteristic(characteristicId) {
+        var characteristic = getCharacteristicById(characteristicId);
+
+        selectedCharacteristics = removeFromList(selectedCharacteristics, characteristicId);
+        renderCustomPackage();
+
+        if (characteristic) {
+            announceCustom(characteristicName(characteristic) + " " + translate("packages.customStatusRemoved"));
+        }
+    }
+
+    function clearCustomPackage() {
+        selectedCharacteristics = [];
+        renderCustomPackage();
+        announceCustom(translate("packages.customStatusCleared"));
+
+        if (customBookLink) {
+            customBookLink.hidden = true;
+        }
+    }
+
+    function finishCustomPackage() {
+        if (selectedCharacteristics.length === 0) {
+            announceCustom(translate("packages.customChooseFirst"));
+            return;
+        }
+
+        saveCustomPackage();
+        renderCustomPackage();
+
+        if (customBookLink) {
+            customBookLink.hidden = false;
+            customBookLink.focus();
+        }
+
+        announceCustom(translate("packages.customStatusFinished"));
+    }
+
+    function handleDocumentClick(event) {
+        var target = event.target;
+        var compareToggle = closestElement(target, "[data-package-toggle]");
+        var compareRemove = closestElement(target, "[data-package-remove]");
+        var selectLink = closestElement(target, "[data-package-select]");
+        var customToggle = closestElement(target, "[data-custom-characteristic]");
+        var customRemove = closestElement(target, "[data-custom-remove]");
+
+        if (compareToggle) {
+            handleCompareToggle(event, compareToggle);
+            return;
+        }
+
+        if (compareRemove) {
+            event.preventDefault();
+            removeComparedPackage(compareRemove.getAttribute("data-package-remove"));
+            return;
+        }
+
+        if (selectLink) {
+            storeValue(selectedPackageStorageKey, selectLink.getAttribute("data-package-select"));
+            return;
+        }
+
+        if (customToggle) {
+            event.preventDefault();
+            toggleCustomCharacteristic(customToggle.getAttribute("data-custom-characteristic"));
+            return;
+        }
+
+        if (customRemove) {
+            event.preventDefault();
+            removeCustomCharacteristic(customRemove.getAttribute("data-custom-remove"));
+        }
+    }
+
+    function handleCompareKeyboard(event) {
+        var key = event.key || event.code;
+
+        if (key !== "Enter" && key !== " " && key !== "Spacebar") {
+            return;
+        }
+
+        handleCompareToggle(event, event.currentTarget);
+    }
+
+    function bindEvents() {
+        /* Capture-phase delegation runs before other handlers can stop the click. */
+        document.addEventListener("click", handleDocumentClick, true);
+
+        toArray(document.querySelectorAll("[data-package-toggle]")).forEach(function (toggle) {
+            toggle.addEventListener("keydown", handleCompareKeyboard);
+        });
+
+        if (comparisonClearButton) {
+            comparisonClearButton.addEventListener("click", clearComparison);
+        }
+
+        if (customClearButton) {
+            customClearButton.addEventListener("click", clearCustomPackage);
+        }
+
+        if (customFinishButton) {
+            customFinishButton.addEventListener("click", finishCustomPackage);
+        }
+
+        document.addEventListener("popadoo:language-applied", function () {
             renderComparison();
             renderCustomPackage();
         });
+    }
+
+    function collectPackages() {
+        cards = toArray(document.querySelectorAll("[data-package-card]"));
+        packageMap = {};
+
+        cards.forEach(function (card) {
+            var packageId = card.getAttribute("data-package-id");
+
+            if (!packageId) {
+                return;
+            }
+
+            packageMap[packageId] = {
+                id: packageId,
+                nameKey: card.getAttribute("data-package-name-key"),
+                summaryKey: card.getAttribute("data-package-summary-key"),
+                bestForKey: card.getAttribute("data-package-best-for-key"),
+                name: textFromCard(card, "h3"),
+                summary: textFromCard(card, "p:not(.package-badge)")
+            };
+        });
+    }
+
+    function init() {
+        comparisonSection = document.querySelector(".comparison-section");
+        comparisonList = document.querySelector("#comparison-list");
+        comparisonEmpty = document.querySelector("#comparison-empty");
+        comparisonStatus = document.querySelector("#comparison-status");
+        comparisonClearButton = document.querySelector("#comparison-clear");
+        customOptionButtons = toArray(document.querySelectorAll("[data-custom-characteristic]"));
+        customSelectedList = document.querySelector("#custom-selected-list");
+        customEmpty = document.querySelector("#custom-package-empty");
+        customClearButton = document.querySelector("#custom-package-clear");
+        customFinishButton = document.querySelector("#custom-package-finish");
+        customStatus = document.querySelector("#custom-package-status");
+        customBookLink = document.querySelector("#custom-package-book-link");
+
+        collectPackages();
+
+        if (cards.length === 0) {
+            return;
+        }
 
         comparedPackageIds = loadComparedPackages();
+        bindEvents();
         renderComparison();
         renderCustomPackage();
-    });
-})();
+
+        /* Expose a tiny debug hook so a developer can test from the console. */
+        window.PopadooToggleComparedPackage = toggleComparedPackage;
+    }
+
+    onReady(init);
+}());
