@@ -177,6 +177,13 @@ html[data-theme="dark"] .party-booking-image {
     opacity: 1;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .hero-carousel.is-carousel-enhanced .hero-carousel-slide {
+        display: block;
+        transition: none;
+    }
+}
+
 .hero-carousel-controls {
     display: none;
 }
@@ -192,8 +199,8 @@ html[data-theme="dark"] .party-booking-image {
 /* Shared control styling keeps arrow and indicator opacity behaviour consistent. */
 .hero-carousel-arrow,
 .hero-carousel-indicators {
-    opacity: 0.22;
-    transition: opacity 220ms ease, transform 180ms ease, box-shadow 180ms ease;
+    opacity: 0.18;
+    transition: opacity 220ms ease, transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
     pointer-events: auto;
 }
 
@@ -207,25 +214,35 @@ html[data-theme="dark"] .party-booking-image {
 .hero-carousel-arrow {
     position: absolute;
     top: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     width: clamp(3.1rem, 6vw, 4.25rem);
     height: clamp(3.1rem, 6vw, 4.25rem);
+    padding: 0;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 999px;
     background: rgba(42, 42, 48, 0.92);
     color: #ffffff;
-    font-size: clamp(2.2rem, 5vw, 3.3rem);
-    font-weight: 900;
-    line-height: 1;
     box-shadow: 0 0.8rem 1.8rem rgba(0, 0, 0, 0.28);
     transform: translateY(-50%);
 }
 
-.hero-carousel-arrow span {
+/* CSS-drawn arrows stay perfectly centered inside the circular button. */
+.hero-carousel-arrow-icon {
     display: block;
-    margin-top: -0.12em;
+    width: clamp(0.82rem, 1.8vw, 1.1rem);
+    height: clamp(0.82rem, 1.8vw, 1.1rem);
+    border-color: currentColor;
+    border-style: solid;
+    border-width: 0 0 0.2rem 0.2rem;
+}
+
+.hero-carousel-arrow-previous .hero-carousel-arrow-icon {
+    transform: translateX(0.12rem) rotate(45deg);
+}
+
+.hero-carousel-arrow-next .hero-carousel-arrow-icon {
+    transform: translateX(-0.12rem) rotate(-135deg);
 }
 
 .hero-carousel-arrow-previous {

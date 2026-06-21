@@ -5,7 +5,7 @@
  *
  * CSS provides a graceful fallback slideshow if JavaScript is unavailable.
  * When this module loads, it adds managed active-slide state, icon-only arrow
- * controls, keyboard support, and bottom-center dots that show the current slide.
+ * controls, keyboard support, bottom-center dots, and continuous autoplay.
  */
 (() => {
     const carousel = document.querySelector("[data-home-carousel]");
@@ -19,6 +19,8 @@
     const nextButton = carousel.querySelector("[data-carousel-next]");
     const indicatorButtons = Array.from(carousel.querySelectorAll("[data-carousel-indicator]"));
     const status = carousel.querySelector("[data-carousel-status]");
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const autoplayInterval = 5000;
 
     if (slides.length === 0 || !previousButton || !nextButton) {
         return;
@@ -26,6 +28,7 @@
 
     /* Track the currently visible slide; wrapping is handled by showSlide(). */
     let activeIndex = 0;
+    let autoplayTimer = null;
 
     /* Build localized screen-reader text for the current slide position. */
     const getStatusMessage = () => {
@@ -85,30 +88,75 @@
         showSlide(activeIndex + 1);
     };
 
+    const stopAutoplay = () => {
+        window.clearInterval(autoplayTimer);
+        autoplayTimer = null;
+    };
+
+    const startAutoplay = () => {
+        stopAutoplay();
+
+        /* Honour reduced-motion preferences while keeping manual controls available. */
+        if (slides.length < 2 || prefersReducedMotion.matches) {
+            return;
+        }
+
+        autoplayTimer = window.setInterval(showNextSlide, autoplayInterval);
+    };
+
+    /* Manual navigation restarts the timer so auto-sliding never jumps immediately after a click. */
+    const navigateManually = (navigationCallback) => {
+        navigationCallback();
+        startAutoplay();
+    };
+
     carousel.classList.add("is-carousel-enhanced");
     showSlide(activeIndex);
+    startAutoplay();
 
-    /* Pointer and keyboard controls all use the same slide navigation functions. */
-    previousButton.addEventListener("click", showPreviousSlide);
-    nextButton.addEventListener("click", showNextSlide);
+    previousButton.addEventListener("click", () => {
+        navigateManually(showPreviousSlide);
+    });
+
+    nextButton.addEventListener("click", () => {
+        navigateManually(showNextSlide);
+    });
 
     indicatorButtons.forEach((button) => {
         button.addEventListener("click", () => {
-            showSlide(Number(button.dataset.carouselIndicator));
+            navigateManually(() => {
+                showSlide(Number(button.dataset.carouselIndicator));
+            });
         });
     });
 
     carousel.addEventListener("keydown", (event) => {
         if (event.key === "ArrowLeft") {
             event.preventDefault();
-            showPreviousSlide();
+            navigateManually(showPreviousSlide);
         }
 
         if (event.key === "ArrowRight") {
             event.preventDefault();
-            showNextSlide();
+            navigateManually(showNextSlide);
         }
     });
+
+    /* Avoid wasting work while the tab is hidden; restart the loop as soon as it is visible. */
+    document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+            stopAutoplay();
+            return;
+        }
+
+        startAutoplay();
+    });
+
+    if (typeof prefersReducedMotion.addEventListener === "function") {
+        prefersReducedMotion.addEventListener("change", startAutoplay);
+    } else if (typeof prefersReducedMotion.addListener === "function") {
+        prefersReducedMotion.addListener(startAutoplay);
+    }
 
     /* Refresh translated carousel labels when main.js changes the document language. */
     const languageObserver = new MutationObserver(() => {
