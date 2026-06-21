@@ -189,6 +189,21 @@ html[data-theme="dark"] .party-booking-image {
     pointer-events: none;
 }
 
+/* Shared control styling keeps arrow and indicator opacity behaviour consistent. */
+.hero-carousel-arrow,
+.hero-carousel-indicators {
+    opacity: 0.22;
+    transition: opacity 220ms ease, transform 180ms ease, box-shadow 180ms ease;
+    pointer-events: auto;
+}
+
+.hero-carousel-arrow:hover,
+.hero-carousel-arrow:focus-visible,
+.hero-carousel-indicators:hover,
+.hero-carousel-indicators:focus-within {
+    opacity: 1;
+}
+
 .hero-carousel-arrow {
     position: absolute;
     top: 50%;
@@ -197,17 +212,15 @@ html[data-theme="dark"] .party-booking-image {
     justify-content: center;
     width: clamp(3.1rem, 6vw, 4.25rem);
     height: clamp(3.1rem, 6vw, 4.25rem);
-    border: 2px solid rgba(255, 255, 255, 0.78);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #3e2d50;
+    background: rgba(42, 42, 48, 0.92);
+    color: #ffffff;
     font-size: clamp(2.2rem, 5vw, 3.3rem);
     font-weight: 900;
     line-height: 1;
-    box-shadow: 0 0.8rem 1.8rem rgba(37, 24, 48, 0.28);
+    box-shadow: 0 0.8rem 1.8rem rgba(0, 0, 0, 0.28);
     transform: translateY(-50%);
-    transition: background-color 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
-    pointer-events: auto;
 }
 
 .hero-carousel-arrow span {
@@ -225,10 +238,56 @@ html[data-theme="dark"] .party-booking-image {
 
 .hero-carousel-arrow:hover,
 .hero-carousel-arrow:focus-visible {
-    background: var(--pastel-butter);
-    color: var(--color-on-pastel);
-    box-shadow: 0 1rem 2.1rem rgba(37, 24, 48, 0.34);
+    background: rgba(42, 42, 48, 0.98);
+    color: #ffffff;
+    box-shadow: 0 1rem 2.1rem rgba(0, 0, 0, 0.34);
     transform: translateY(-50%) scale(1.05);
+}
+
+.hero-carousel-arrow:focus-visible,
+.hero-carousel-indicator:focus-visible {
+    outline: 0.2rem solid var(--pastel-butter);
+    outline-offset: 0.18rem;
+}
+
+/* Bottom-center dots show the active slide while remaining visually quiet until hover/focus. */
+.hero-carousel-indicators {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(1.1rem, 3vw, 2rem);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(42, 42, 48, 0.9);
+    box-shadow: 0 0.8rem 1.8rem rgba(0, 0, 0, 0.24);
+    transform: translateX(-50%);
+}
+
+.hero-carousel-indicator {
+    width: 0.78rem;
+    height: 0.78rem;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    transition: background-color 180ms ease, transform 180ms ease, width 180ms ease;
+}
+
+.hero-carousel-indicator.is-active,
+.hero-carousel-indicator[aria-current="true"] {
+    width: 1.85rem;
+    background: #ffffff;
+}
+
+.hero-carousel-indicator:hover,
+.hero-carousel-indicator:focus-visible {
+    background: #ffffff;
+    transform: scale(1.08);
 }
 
 .hero-carousel:focus-visible {
@@ -246,6 +305,10 @@ html[data-theme="dark"] .party-booking-image {
     .hero-carousel-arrow:hover,
     .hero-carousel-arrow:focus-visible {
         transform: scale(1.05);
+    }
+
+    .hero-carousel-indicators {
+        bottom: 5rem;
     }
 }
 
@@ -392,7 +455,9 @@ html[data-theme="dark"] .home-pathway-link img {
     .hero-carousel.is-carousel-enhanced .hero-carousel-slide,
     .home-pathway-link,
     .home-pathway-link img,
-    .hero-carousel-arrow {
+    .hero-carousel-arrow,
+    .hero-carousel-indicators,
+    .hero-carousel-indicator {
         transition: none;
     }
 

@@ -111,13 +111,9 @@
         }
     }
 
-    /* Footer web component centralizes shared contact, resource, and social links. */
+    /* Footer web component centralizes shared brand, contact, and social links. */
     class PopadooFooter extends HTMLElement {
         connectedCallback() {
-            const styleGuideAriaCurrent = getCurrentPage() === "styleGuide"
-                ? ' aria-current="page"'
-                : "";
-
             this.innerHTML = `
                 <footer class="site-footer">
                     <div class="container site-footer-grid">
@@ -127,6 +123,7 @@
                                 <strong>Popadoo Kids Events</strong>
                             </a>
                             <p data-i18n="footer.tagline">Joyful children’s events, brought to your chosen venue.</p>
+                            <p class="site-footer-copyright" data-i18n="footer.copyright">© 2026 Popadoo Kids Events</p>
                         </div>
 
                         <div class="site-footer-contact" aria-labelledby="footer-contact-heading">
@@ -143,12 +140,6 @@
                                 <img class="site-footer-social-icon" src="assets/svg/instagram-icon.svg" alt="" width="28" height="28" aria-hidden="true"/>
                                 <span class="visually-hidden" data-i18n="footer.instagram">Instagram</span>
                             </a>
-                        </div>
-
-                        <div class="site-footer-resources" aria-labelledby="footer-resources-heading">
-                            <h2 id="footer-resources-heading" class="site-footer-heading" data-i18n="footer.resourcesHeading">Resources</h2>
-                            <a href="style-guide.html"${styleGuideAriaCurrent} data-i18n="footer.styleGuide">Documentation</a>
-                            <p data-i18n="footer.copyright">© 2026 Popadoo Kids Events</p>
                         </div>
                     </div>
                 </footer>`;
