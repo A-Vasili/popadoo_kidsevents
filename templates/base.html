@@ -1,0 +1,61 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Popadoo Kids Events">
+    <meta name="theme-color" content="#fff9fc">
+
+    <title>{% block title %}Popadoo Kids Events{% endblock %}</title>
+
+    <script src="{% static 'js/theme-init.js' %}"></script>
+
+    <link
+        rel="icon"
+        href="{% static 'assets/svg/popadoo-logo.svg' %}"
+        type="image/svg+xml"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'vendor/bootstrap/bootstrap.css' %}"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{% static 'css/styles.css' %}"
+    >
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body data-page="{% block page_name %}default{% endblock %}">
+    <a
+        class="visually-hidden-focusable"
+        href="#main-content"
+        data-i18n="common.skipLink"
+    >
+        Skip to main content
+    </a>
+
+    {% include "includes/header.html" %}
+
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% include "includes/footer.html" %}
+
+    <script
+        src="{% static 'vendor/bootstrap/bootstrap.js' %}"
+        defer
+    ></script>
+
+    <script src="{% static 'js/translations.js' %}" defer></script>
+    <script src="{% static 'js/main.js' %}" defer></script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

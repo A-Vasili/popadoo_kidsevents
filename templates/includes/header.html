@@ -1,0 +1,114 @@
+{% load static %}
+
+<header class="site-header">
+    <div class="container">
+        <nav
+            class="site-navigation"
+            aria-label="Primary navigation"
+            data-i18n-aria-label="nav.primaryLabel"
+        >
+            <a
+                class="site-logo"
+                href="{% url 'core:home' %}"
+                aria-label="Popadoo Kids Events home"
+            >
+                <img
+                    class="site-logo-mark"
+                    src="{% static 'assets/svg/popadoo-logo.svg' %}"
+                    alt=""
+                    width="128"
+                    height="128"
+                >
+                <span class="site-logo-text">Popadoo Kids Events</span>
+            </a>
+
+            <button
+                class="site-navigation-toggle"
+                type="button"
+                aria-controls="primary-navigation"
+                aria-expanded="false"
+                aria-label="Open primary navigation"
+            >
+                <span class="site-navigation-toggle-line"></span>
+                <span class="site-navigation-toggle-line"></span>
+                <span class="site-navigation-toggle-line"></span>
+            </button>
+
+            <div class="site-navigation-menu" id="primary-navigation">
+                <ul class="site-navigation-links">
+                    <li>
+                        <a
+                            class="site-navigation-link active"
+                            href="{% url 'core:home' %}"
+                            aria-current="page"
+                            data-i18n="nav.home"
+                        >
+                            Home
+                        </a>
+                    </li>
+
+                    <li><a class="site-navigation-link" href="#" data-i18n="nav.gallery">Gallery</a></li>
+                    <li><a class="site-navigation-link" href="#" data-i18n="nav.packages">Packages</a></li>
+                    <li><a class="site-navigation-link" href="#" data-i18n="nav.about">About Us</a></li>
+                    <li><a class="site-navigation-link" href="#" data-i18n="nav.testimonials">Testimonials</a></li>
+                </ul>
+
+                <div class="site-controls">
+                    <div class="language-control">
+                        <label
+                            class="visually-hidden"
+                            for="language-selector"
+                            data-i18n="language.label"
+                        >
+                            Language
+                        </label>
+
+                        <select
+                            class="language-selector"
+                            id="language-selector"
+                            aria-label="Language"
+                        >
+                            <option value="en" lang="en">English</option>
+                            <option value="el" lang="el">Greek</option>
+                        </select>
+                    </div>
+
+                    <button
+                        class="theme-toggle"
+                        id="theme-toggle"
+                        type="button"
+                        role="switch"
+                        aria-checked="false"
+                        aria-label="Switch to dark mode"
+                    >
+                        <span class="theme-toggle-track" aria-hidden="true">
+                            <span class="theme-toggle-stars"></span>
+                            <span class="theme-toggle-clouds"></span>
+
+                            <span class="theme-toggle-knob">
+                                <img
+                                    class="theme-toggle-icon theme-toggle-icon-moon"
+                                    src="{% static 'assets/svg/moon-toggle.svg' %}"
+                                    alt=""
+                                >
+                                <img
+                                    class="theme-toggle-icon theme-toggle-icon-sun"
+                                    src="{% static 'assets/svg/sun-toggle.svg' %}"
+                                    alt=""
+                                >
+                            </span>
+                        </span>
+
+                        <span class="visually-hidden" data-theme-status>
+                            Light mode
+                        </span>
+                    </button>
+
+                    <a class="book-now-button" href="#" data-i18n="nav.bookNow">
+                        Book Now
+                    </a>
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>

@@ -1,0 +1,125 @@
+/* Page-specific styles for about.html. */
+
+/* Shared heading rhythm for the About page. */
+.content-section h1,
+.content-section h2 {
+    margin-bottom: 1rem;
+}
+
+.section-heading-group {
+    max-width: 48rem;
+}
+
+.mobile-service-layout,
+.team-grid,
+.process-grid {
+    margin-top: 2rem;
+}
+
+/* Mobile-service explanation card. */
+.service-model-card,
+.team-card,
+.process-card {
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-card);
+}
+
+.service-model-card {
+    border-top: 0.35rem solid var(--pastel-sky);
+}
+
+.service-model-list,
+.location-checklist {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+}
+
+.service-model-list li + li {
+    margin-top: 0.75rem;
+}
+
+/* Team grid: Bootstrap supplies columns; custom CSS supplies the brand treatment. */
+.team-card {
+    overflow: hidden;
+}
+
+.team-grid > div:nth-child(1) .team-card { border-top: 0.35rem solid var(--pastel-lavender); }
+.team-grid > div:nth-child(2) .team-card { border-top: 0.35rem solid var(--pastel-mint); }
+.team-grid > div:nth-child(3) .team-card { border-top: 0.35rem solid var(--pastel-peach); }
+
+.team-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+html[data-theme="dark"] .team-card img {
+    filter: brightness(0.86) saturate(0.9);
+}
+
+.team-card-content {
+    padding: 1.35rem;
+}
+
+.team-card-content p:last-child {
+    margin-bottom: 0;
+}
+
+.team-role {
+    color: var(--color-primary-strong);
+    font-weight: 800;
+}
+
+/* Numbered booking process. */
+.process-grid {
+    padding-left: 0;
+    list-style: none;
+}
+
+.process-card {
+    border-top: 0.35rem solid var(--pastel-butter);
+}
+
+.process-number {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+    font-weight: 900;
+}
+
+.process-card p {
+    margin-bottom: 0;
+}
+
+.about-social-callout {
+    margin-top: 2rem;
+    padding: clamp(1.25rem, 3vw, 2rem);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-card);
+}
+
+.about-social-callout p {
+    max-width: 42rem;
+    margin-bottom: 0;
+}
+
+@media (max-width: 47.99rem) {
+    .about-social-callout {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

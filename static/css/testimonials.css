@@ -1,0 +1,33 @@
+/* Page-specific styles for testimonials.html. */
+
+.testimonial-grid {
+    margin-top: 2rem;
+}
+
+.testimonial-card {
+    min-height: 14rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--surface-lavender);
+    color: var(--color-text);
+    box-shadow: var(--shadow-card);
+}
+
+.testimonial-grid > div:nth-child(2) .testimonial-card { background: var(--surface-mint); }
+.testimonial-grid > div:nth-child(3) .testimonial-card { background: var(--surface-peach); }
+
+.feedback-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-grid;
+    place-items: center;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--color-surface-raised);
+    color: var(--color-primary-strong);
+    font-weight: 900;
+}
+
+.testimonial-card p {
+    margin-bottom: 0;
+}

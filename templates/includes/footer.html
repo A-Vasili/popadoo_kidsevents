@@ -1,0 +1,66 @@
+{% load static %}
+
+<footer class="site-footer">
+    <div class="container site-footer-grid">
+        <div class="site-footer-brand">
+            <a
+                class="site-footer-logo"
+                href="{% url 'core:home' %}"
+                aria-label="Popadoo Kids Events home"
+            >
+                <img
+                    src="{% static 'assets/svg/popadoo-logo.svg' %}"
+                    alt=""
+                    width="96"
+                    height="96"
+                >
+                <strong>Popadoo Kids Events</strong>
+            </a>
+
+            <p data-i18n="footer.tagline">
+                Joyful children’s events, brought to your chosen venue.
+            </p>
+
+            <p
+                class="site-footer-copyright"
+                data-i18n="footer.copyright"
+            >
+                © 2026 Popadoo Kids Events
+            </p>
+        </div>
+
+        <div
+            class="site-footer-contact"
+            aria-labelledby="footer-contact-heading"
+        >
+            <h2
+                id="footer-contact-heading"
+                class="site-footer-heading"
+                data-i18n="footer.contactHeading"
+            >
+                Contact
+            </h2>
+
+            <a href="mailto:hello@popadookidsevents.gr">
+                hello@popadookidsevents.gr
+            </a>
+
+            <a
+                class="site-footer-social-link"
+                href="https://www.instagram.com/popadoo_kidsevents/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Visit Popadoo on Instagram"
+            >
+                <img
+                    class="site-footer-social-icon"
+                    src="{% static 'assets/svg/instagram-icon.svg' %}"
+                    alt=""
+                    width="28"
+                    height="28"
+                >
+                <span class="visually-hidden">Instagram</span>
+            </a>
+        </div>
+    </div>
+</footer>

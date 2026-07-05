@@ -1,0 +1,277 @@
+/* Page-specific styles for contact.html. */
+
+/* Two-column booking area: Bootstrap supplies responsive columns and gaps. */
+.booking-section,
+.location-card {
+    border: 1px solid var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-card);
+}
+
+.booking-section {
+    padding: clamp(1.35rem, 3vw, 2.25rem);
+}
+
+.booking-section h2 {
+    margin-bottom: 0.5rem;
+}
+
+.form-intro {
+    margin-bottom: 1.5rem;
+    color: var(--color-muted);
+}
+
+/* Custom grid remains as a fallback while Bootstrap form classes are used. */
+.booking-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+.form-field label {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-heading);
+    font-weight: 800;
+}
+
+.form-field .form-control,
+.form-field .form-select {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 0.35rem 0.95rem rgba(63, 42, 79, 0.04);
+    transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.form-field textarea.form-control {
+    min-height: 9rem;
+    resize: vertical;
+}
+
+.form-field .form-control:hover,
+.form-field .form-select:hover {
+    border-color: var(--pastel-lavender);
+}
+
+.form-field .form-control:focus,
+.form-field .form-select:focus,
+.form-check-input:focus {
+    border-color: var(--color-primary);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+}
+
+/* Native select, date, and time controls are restyled to match the rounded pastel brand system. */
+.form-field .form-select {
+    appearance: none;
+    padding-right: 2.65rem;
+    background-image:
+        linear-gradient(45deg, transparent 50%, var(--color-primary-strong) 50%),
+        linear-gradient(135deg, var(--color-primary-strong) 50%, transparent 50%),
+        linear-gradient(135deg, var(--color-surface), var(--surface-lavender));
+    background-position:
+        calc(100% - 1.1rem) 50%,
+        calc(100% - 0.78rem) 50%,
+        0 0;
+    background-repeat: no-repeat;
+    background-size: 0.36rem 0.36rem, 0.36rem 0.36rem, 100% 100%;
+    color-scheme: light dark;
+    font-weight: 700;
+}
+
+.form-field input[type="date"],
+.form-field input[type="time"],
+.form-field input[type="number"] {
+    font-weight: 700;
+}
+
+.form-field input[type="date"]::-webkit-calendar-picker-indicator,
+.form-field input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: saturate(0.85);
+    opacity: 0.8;
+}
+
+.form-field input[type="date"]:invalid,
+.form-field input[type="time"]:invalid,
+.form-field input[type="number"]:invalid,
+.form-field .form-select:invalid {
+    color: var(--color-muted);
+}
+
+.form-text {
+    color: var(--color-muted);
+}
+
+.form-field-full-width {
+    grid-column: 1 / -1;
+}
+
+.form-check-input {
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
+}
+
+.form-check-input:checked {
+    border-color: var(--color-primary);
+    background-color: var(--color-primary);
+}
+
+.form-check-label {
+    margin-bottom: 0;
+    font-weight: 600;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.primary-button {
+    border: 0;
+}
+
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.7rem 1.15rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-primary-strong);
+    font-weight: 800;
+    line-height: 1.2;
+    box-shadow: 0 0.35rem 0.95rem rgba(63, 42, 79, 0.08);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.secondary-button:hover,
+.secondary-button:focus-visible {
+    border-color: var(--color-primary);
+    color: var(--color-primary-strong);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+    transform: translateY(-0.08rem);
+}
+
+.booking-confirmation {
+    margin-bottom: 1.5rem;
+    border-color: var(--pastel-mint);
+    background: var(--surface-mint);
+    color: var(--color-text);
+}
+
+.booking-confirmation[hidden] {
+    display: none !important;
+}
+
+/* Location card and interactive OpenStreetMap. */
+.location-card {
+    overflow: hidden;
+    border-top: 0.35rem solid var(--pastel-sky);
+}
+
+.location-card .card-body {
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+.location-checklist {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+}
+
+.location-checklist li + li {
+    margin-top: 0.65rem;
+}
+
+.map-frame {
+    min-height: 22rem;
+    border-block: 1px solid var(--color-border);
+    background: var(--surface-sky);
+}
+
+.booking-map {
+    width: 100%;
+    min-height: 22rem;
+    display: block;
+    isolation: isolate;
+}
+
+.booking-map:focus-visible {
+    outline: 0.22rem solid var(--color-focus);
+    outline-offset: -0.35rem;
+}
+
+.booking-map .leaflet-control-zoom a,
+.booking-map .leaflet-popup-content-wrapper,
+.booking-map .leaflet-popup-tip {
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+}
+
+.booking-map .leaflet-control-zoom a {
+    border-color: var(--color-border);
+    color: var(--color-primary-strong);
+    font-weight: 900;
+}
+
+.booking-map .leaflet-control-attribution {
+    background: var(--color-surface-raised);
+    color: var(--color-muted);
+}
+
+.map-status {
+    margin-bottom: 0;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.8rem;
+    background: var(--surface-lavender);
+    color: var(--color-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.location-card-footer {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.location-card-footer a {
+    color: var(--color-primary-strong);
+    font-weight: 800;
+}
+
+.map-caption {
+    margin-bottom: 0;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+}
+
+@media (min-width: 48rem) {
+    .booking-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 35rem) {
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .form-actions .primary-button,
+    .form-actions .secondary-button {
+        width: 100%;
+    }
+}
