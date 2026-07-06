@@ -7,11 +7,74 @@
             aria-label="Primary navigation"
             data-i18n-aria-label="nav.primaryLabel"
         >
-            <a
-                class="site-logo"
-                href="{% url 'core:home' %}"
-                aria-label="Popadoo Kids Events home"
-            >
+
+            <ul class="site-navigation-links">
+                <li>
+                    <a
+                        class="site-navigation-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}"
+                        href="{% url 'core:home' %}"
+                        {% if request.resolver_match.url_name == "home" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.home"
+                    >
+                        Home
+                    </a>
+                </li>
+
+                <li>
+                    <a
+                        class="site-navigation-link{% if request.resolver_match.url_name == 'gallery' %} active{% endif %}"
+                        href="{% url 'core:gallery' %}"
+                        {% if request.resolver_match.url_name == "gallery" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.gallery"
+                    >
+                        Gallery
+                    </a>
+                </li>
+
+                <li>
+                    <a
+                        class="site-navigation-link{% if request.resolver_match.url_name == 'packages' %} active{% endif %}"
+                        href="{% url 'core:packages' %}"
+                        {% if request.resolver_match.url_name == "packages" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.packages"
+                    >
+                        Packages
+                    </a>
+                </li>
+
+                <li>
+                    <a
+                        class="site-navigation-link{% if request.resolver_match.url_name == 'about' %} active{% endif %}"
+                        href="{% url 'core:about' %}"
+                        {% if request.resolver_match.url_name == "about" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.about"
+                    >
+                        About Us
+                    </a>
+                </li>
+
+                <li>
+                    <a
+                        class="site-navigation-link{% if request.resolver_match.url_name == 'testimonials' %} active{% endif %}"
+                        href="{% url 'core:testimonials' %}"
+                        {% if request.resolver_match.url_name == "testimonials" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.testimonials"
+                    >
+                        Testimonials
+                    </a>
+                </li>
+            </ul>
+
                 <img
                     class="site-logo-mark"
                     src="{% static 'assets/svg/popadoo-logo.svg' %}"
@@ -104,10 +167,16 @@
                         </span>
                     </button>
 
-                    <a class="book-now-button" href="#" data-i18n="nav.bookNow">
+                    <a
+                        class="book-now-button{% if request.resolver_match.url_name == 'contact' %} active{% endif %}"
+                        href="{% url 'core:contact' %}"
+                        {% if request.resolver_match.url_name == "contact" %}
+                            aria-current="page"
+                        {% endif %}
+                        data-i18n="nav.bookNow"
+                    >
                         Book Now
                     </a>
-                </div>
             </div>
         </nav>
     </div>
