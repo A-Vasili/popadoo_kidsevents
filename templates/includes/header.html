@@ -111,7 +111,16 @@
                     </li>
 
                     <li><a class="site-navigation-link" href="#" data-i18n="nav.gallery">Gallery</a></li>
-                    <li><a class="site-navigation-link" href="#" data-i18n="nav.packages">Packages</a></li>
+                    
+                    <li>
+                        <a
+                            class="site-navigation-link active"
+                            href="{% url 'core:packages' %}"
+                            data-i18n="nav.packages"
+                        >
+                            Packages
+                        </a>
+                    </li>
                     <li><a class="site-navigation-link" href="#" data-i18n="nav.about">About Us</a></li>
                     <li><a class="site-navigation-link" href="#" data-i18n="nav.testimonials">Testimonials</a></li>
                 </ul>
