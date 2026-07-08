@@ -1,13 +1,56 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Testimonials | Popadoo Kids Events{% endblock %}
 {% block page_name %}testimonials{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/testimonials.css' %}">
+{% endblock %}
+
 {% block content %}
-    <main class="page-main" id="main-content">
-        <div class="container">
-            <h1>Testimonials</h1>
-            <p>This page is currently being migrated to Django.</p>
-        </div>
-    </main>
+<div class="page-main">
+<div class="container">
+<header class="page-heading">
+<p class="section-kicker" data-i18n="testimonials.kicker">Honest feedback</p>
+<h1 data-i18n="testimonials.heading">Testimonials</h1>
+<p class="lead" data-i18n="testimonials.lead">Popadoo publishes client comments only with permission. This coursework version does not invent quotations; instead, it explains the feedback standards used to improve each event.</p>
+</header>
+<section aria-labelledby="testimonial-list-heading">
+<div class="section-heading-group">
+<h2 data-i18n="testimonials.listHeading" id="testimonial-list-heading">How we approach feedback</h2>
+<p data-i18n="testimonials.intro">After an event, families and partners can comment on the areas below. Verified testimonials can be added here later with clear attribution and consent.</p>
+</div>
+<div class="row g-4 testimonial-grid">
+<div class="col-md-4">
+<article class="testimonial-card card h-100">
+<div class="card-body">
+<span aria-hidden="true" class="feedback-icon">1</span>
+<h3 data-i18n="testimonials.headingOne">Planning and communication</h3>
+<p data-i18n="testimonials.quoteOne">We ask whether the schedule, venue requirements, package details, and next steps were explained clearly before the celebration.</p>
+</div>
+</article>
+</div>
+<div class="col-md-4">
+<article class="testimonial-card card h-100">
+<div class="card-body">
+<span aria-hidden="true" class="feedback-icon">2</span>
+<h3 data-i18n="testimonials.headingTwo">Children’s experience</h3>
+<p data-i18n="testimonials.quoteTwo">We review whether the activities were age-appropriate, engaging, inclusive, and suitable for the group and venue.</p>
+</div>
+</article>
+</div>
+<div class="col-md-4">
+<article class="testimonial-card card h-100">
+<div class="card-body">
+<span aria-hidden="true" class="feedback-icon">3</span>
+<h3 data-i18n="testimonials.headingThree">On-site coordination</h3>
+<p data-i18n="testimonials.quoteThree">We invite practical feedback about arrival, setup, activity flow, adaptability, and the overall organization of the event.</p>
+</div>
+</article>
+</div>
+</div>
+</section>
+</div>
+</div>
 {% endblock %}

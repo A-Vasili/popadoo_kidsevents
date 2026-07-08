@@ -126,8 +126,7 @@
     };
 
     const getRelativeLocalizedHref = (url) => {
-        const fileName = url.pathname.substring(url.pathname.lastIndexOf("/") + 1) || "index.html";
-        return `${fileName}${url.search}${url.hash}`;
+        return `${url.pathname}${url.search}${url.hash}`;
     };
 
     /*
@@ -146,7 +145,7 @@
 
             const url = new URL(originalHref, window.location.href);
 
-            if (url.origin !== window.location.origin || !url.pathname.endsWith(".html")) {
+            if (url.origin !== window.location.origin) {
                 return;
             }
 
