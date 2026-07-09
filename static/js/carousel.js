@@ -1,6 +1,11 @@
 "use strict";
 
 /*
+ * This script controls the home-page image carousel and keeps its buttons, indicators, and announcements synchronized.
+ * These comments explain the browser-side steps without changing the JavaScript behaviour.
+ */
+
+/*
  * Home-page carousel enhancement.
  *
  * CSS provides a graceful fallback slideshow if JavaScript is unavailable.
@@ -41,6 +46,7 @@
             : `Photo ${current} of ${total}`;
     };
 
+    // This function reads or prepares indicator label for the next step.
     const getIndicatorLabel = (index) => {
         const position = index + 1;
         const language = document.documentElement.lang;
@@ -50,6 +56,7 @@
             : `Show image ${position}`;
     };
 
+    // This function refreshes status so the page matches the latest user choice.
     const updateStatus = () => {
         if (status) {
             status.textContent = getStatusMessage();
@@ -80,19 +87,23 @@
         updateStatus();
     };
 
+    // This function handles the show previous slide part of the browser interaction.
     const showPreviousSlide = () => {
         showSlide(activeIndex - 1);
     };
 
+    // This function handles the show next slide part of the browser interaction.
     const showNextSlide = () => {
         showSlide(activeIndex + 1);
     };
 
+    // This function handles the stop autoplay part of the browser interaction.
     const stopAutoplay = () => {
         window.clearInterval(autoplayTimer);
         autoplayTimer = null;
     };
 
+    // This function handles the start autoplay part of the browser interaction.
     const startAutoplay = () => {
         stopAutoplay();
 

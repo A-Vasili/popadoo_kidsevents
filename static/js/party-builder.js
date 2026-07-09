@@ -1,6 +1,11 @@
 "use strict";
 
 /*
+ * This script improves the multi-step party builder with live prices, keyboard support, safe formatting, and submit protection.
+ * These comments explain the browser-side steps without changing the JavaScript behaviour.
+ */
+
+/*
  * Multi-step Popadoo checkout enhancements.
  *
  * All essential validation remains server-side through Django forms. This file
@@ -14,6 +19,7 @@
         minimumFractionDigits: 2,
     });
 
+    // This function converts a price stored in HTML into a safe number for the live total.
     const toNumber = (value) => Number.parseFloat(value || "0") || 0;
 
     const optionsForm = document.querySelector("[data-party-options-form]");
@@ -33,6 +39,7 @@
         const totalOutput = document.querySelector("#party-total");
         const liveStatus = document.querySelector("#builder-live-status");
 
+        // This function refreshes choice labels so the page matches the latest user choice.
         const updateChoiceLabels = () => {
             tierRadios.forEach((radio) => {
                 const action = radio
@@ -57,6 +64,7 @@
             });
         };
 
+        // This function rebuilds the visible cart from the current data.
         const renderCart = ({ announce = false } = {}) => {
             const selectedTier = tierRadios.find((radio) => radio.checked);
             const selectedAddons = addonCheckboxes.filter(
@@ -113,6 +121,7 @@
             }
         };
 
+        // This function lets arrow, Home, and End keys move between related option controls.
         const addKeyboardNavigation = (container, controls) => {
             container?.addEventListener("keydown", (event) => {
                 const currentIndex = controls.indexOf(event.target);

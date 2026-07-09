@@ -1,3 +1,6 @@
+# This file defines the forms used by workers and owners in the operations area.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django import forms
@@ -9,9 +12,11 @@ from party_builder.models import AddonExperience, GuestPriceTier, PartyPackage
 from .models import WorkerAvailability
 
 
+# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
+# This helper adds labels and error links that make the form easier to understand with assistive technology.
 def apply_accessibility(form: forms.BaseForm) -> None:
     for name, field in form.fields.items():
         if isinstance(field.widget, forms.CheckboxInput):
@@ -32,6 +37,7 @@ class WorkerProfileForm(forms.ModelForm):
         model = WorkerProfile
         fields = ("display_name", "phone")
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)
@@ -49,11 +55,13 @@ class WorkerAvailabilityForm(forms.ModelForm):
             "notes": forms.TextInput(attrs={"placeholder": "Optional note"}),
         }
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)
 
 
+# This form gathers and checks the information needed for decline assignment.
 class DeclineAssignmentForm(forms.Form):
     reason = forms.CharField(
         max_length=500,
@@ -62,11 +70,13 @@ class DeclineAssignmentForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
     )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)
 
 
+# This form gathers and checks the information needed for manual assignment.
 class ManualAssignmentForm(forms.Form):
     worker = forms.ModelChoiceField(queryset=WorkerProfile.objects.none())
     already_agreed = forms.BooleanField(
@@ -81,6 +91,7 @@ class ManualAssignmentForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 3}),
     )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["worker"].queryset = WorkerProfile.objects.filter(
@@ -91,27 +102,35 @@ class ManualAssignmentForm(forms.Form):
         apply_accessibility(self)
 
 
+# This form gathers and checks the information needed for package pricing.
 class PackagePricingForm(forms.ModelForm):
+    # This inner Meta class tells Django which database model and fields this form or admin section uses.
     class Meta:
         model = PartyPackage
         fields = ("base_price", "duration_minutes", "is_active")
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)
 
 
+# This form gathers and checks the information needed for guest tier pricing.
 class GuestTierPricingForm(forms.ModelForm):
+    # This inner Meta class tells Django which database model and fields this form or admin section uses.
     class Meta:
         model = GuestPriceTier
         fields = ("label", "min_guests", "max_guests", "total_price", "is_active")
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)
 
 
+# This form gathers and checks the information needed for addon pricing.
 class AddonPricingForm(forms.ModelForm):
+    # This inner Meta class tells Django which database model and fields this form or admin section uses.
     class Meta:
         model = AddonExperience
         fields = (
@@ -126,6 +145,7 @@ class AddonPricingForm(forms.ModelForm):
             "display_order",
         )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_accessibility(self)

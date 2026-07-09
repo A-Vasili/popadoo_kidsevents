@@ -1,8 +1,12 @@
+# This file controls how operations records appear in Django administration.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from django.contrib import admin
 
 from .models import AuditEvent, PartyAssignment, WorkerAvailability
 
 
+# This class controls how worker availability information appears in Django administration.
 @admin.register(WorkerAvailability)
 class WorkerAvailabilityAdmin(admin.ModelAdmin):
     list_display = ("worker", "availability_type", "start_at", "end_at")
@@ -11,6 +15,7 @@ class WorkerAvailabilityAdmin(admin.ModelAdmin):
     date_hierarchy = "start_at"
 
 
+# This class controls how party assignment information appears in Django administration.
 @admin.register(PartyAssignment)
 class PartyAssignmentAdmin(admin.ModelAdmin):
     list_display = ("party_build", "worker", "status", "assignment_source", "assigned_at")
@@ -24,6 +29,7 @@ class PartyAssignmentAdmin(admin.ModelAdmin):
     readonly_fields = ("assigned_at", "responded_at")
 
 
+# This class controls how audit event information appears in Django administration.
 @admin.register(AuditEvent)
 class AuditEventAdmin(admin.ModelAdmin):
     list_display = ("event_type", "actor", "summary", "created_at")
@@ -40,11 +46,14 @@ class AuditEventAdmin(admin.ModelAdmin):
         "created_at",
     )
 
+    # This method decides whether the current user may create a new record in Django administration.
     def has_add_permission(self, request):
         return False
 
+    # This method decides whether the current user may edit an existing record in Django administration.
     def has_change_permission(self, request, obj=None):
         return False
 
+    # This method decides whether the current user may delete this protected record in Django administration.
     def has_delete_permission(self, request, obj=None):
         return False

@@ -1,5 +1,10 @@
 "use strict";
 
+/*
+ * This small script applies the saved light or dark theme before the page appears, preventing a visible colour flash.
+ * These comments explain the browser-side steps without changing the JavaScript behaviour.
+ */
+
 /* Apply the saved theme before the page paints to reduce theme flashing. */
 (() => {
     /* The same key is used by main.js when visitors change the theme. */

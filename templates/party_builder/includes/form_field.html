@@ -1,11 +1,16 @@
+
+{# This template displays the form field page or reusable section for the includes area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
 <div class="form-field{% if wide %} form-field-wide{% endif %}">
     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
     {{ field }}
     <span class="field-help" id="{{ field.id_for_label }}_help">
         {% if help_text %}{{ help_text }}{% elif field.help_text %}{{ field.help_text }}{% else %}Required.{% endif %}
     </span>
+    {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
     {% if field.errors %}
         <ul class="field-errors" id="{{ field.id_for_label }}_error" role="alert">
+            {# This loop creates one visible item for each record supplied by the Django view. #}
             {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
         </ul>
     {% else %}

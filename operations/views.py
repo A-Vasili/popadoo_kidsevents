@@ -1,3 +1,6 @@
+# This file controls worker and owner pages, including schedules, assignments, permissions, and pricing.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.contrib import messages
@@ -36,20 +39,26 @@ from .services.permissions import (
 from .services.scheduling import find_schedule_conflicts, get_event_window, worker_is_available
 
 
+# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
+# This reusable mixin adds operations access behaviour to several views.
 class OperationsAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
     raise_exception = True
 
+    # This test checks that func.
     def test_func(self):
         return can_access_operations(self.request.user)
 
 
+# This reusable mixin adds worker required behaviour to several views.
 class WorkerRequiredMixin(OperationsAccessMixin):
+    # This test checks that func.
     def test_func(self):
         return is_worker(self.request.user) or is_owner(self.request.user)
 
+    # This method finds or prepares the worker profile needed by the rest of the code.
     def get_worker_profile(self):
         profile = getattr(self.request.user, "worker_profile", None)
         if profile is None and not is_owner(self.request.user):
@@ -57,21 +66,27 @@ class WorkerRequiredMixin(OperationsAccessMixin):
         return profile
 
 
+# This reusable mixin adds owner required behaviour to several views.
 class OwnerRequiredMixin(OperationsAccessMixin):
+    # This test checks that func.
     def test_func(self):
         return is_owner(self.request.user)
 
 
+# This reusable mixin adds pricing required behaviour to several views.
 class PricingRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     raise_exception = True
 
+    # This test checks that func.
     def test_func(self):
         return can_manage_pricing(self.request.user)
 
 
+# This view controls the operations dashboard page or action.
 class OperationsDashboardView(OperationsAccessMixin, TemplateView):
     template_name = "operations/dashboard.html"
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
@@ -110,15 +125,18 @@ class OperationsDashboardView(OperationsAccessMixin, TemplateView):
             )
         return context
 
+    # This method finds or prepares the worker profile needed by the rest of the code.
     def get_worker_profile(self):
         return get_object_or_404(WorkerProfile, user=self.request.user, is_active_worker=True)
 
 
+# This view controls the worker assignment list page or action.
 class WorkerAssignmentListView(WorkerRequiredMixin, ListView):
     template_name = "operations/assignment_list.html"
     context_object_name = "assignments"
     paginate_by = 20
 
+    # This method limits the database records to the ones the current user is allowed to see.
     def get_queryset(self):
         queryset = PartyAssignment.objects.select_related(
             "party_build__package", "worker__user"
@@ -128,11 +146,13 @@ class WorkerAssignmentListView(WorkerRequiredMixin, ListView):
         return queryset.filter(worker=self.get_worker_profile())
 
 
+# This view controls the worker assignment detail page or action.
 class WorkerAssignmentDetailView(WorkerRequiredMixin, DetailView):
     model = PartyAssignment
     template_name = "operations/assignment_detail.html"
     context_object_name = "assignment"
 
+    # This method limits the database records to the ones the current user is allowed to see.
     def get_queryset(self):
         queryset = super().get_queryset().select_related(
             "party_build__package", "party_build__guest_tier", "worker__user"
@@ -141,15 +161,18 @@ class WorkerAssignmentDetailView(WorkerRequiredMixin, DetailView):
             return queryset
         return queryset.filter(worker=self.get_worker_profile())
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["decline_form"] = DeclineAssignmentForm()
         return context
 
 
+# This view controls the worker assignment accept page or action.
 class WorkerAssignmentAcceptView(WorkerRequiredMixin, View):
     http_method_names = ["post"]
 
+    # This method processes a submitted form and performs the protected action requested by the user.
     def post(self, request, pk):
         worker = self.get_worker_profile()
         try:
@@ -161,16 +184,19 @@ class WorkerAssignmentAcceptView(WorkerRequiredMixin, View):
         return redirect("operations:operations_worker_assignment_detail", pk=assignment.pk)
 
 
+# This view controls the worker assignment decline page or action.
 class WorkerAssignmentDeclineView(WorkerRequiredMixin, FormView):
     form_class = DeclineAssignmentForm
     template_name = "operations/assignment_detail.html"
 
+    # This method performs setup and permission checks before the request reaches the page action.
     def dispatch(self, request, *args, **kwargs):
         self.assignment = get_object_or_404(PartyAssignment, pk=kwargs["pk"])
         if not is_owner(request.user) and self.assignment.worker_id != self.get_worker_profile().pk:
             raise Http404
         return super().dispatch(request, *args, **kwargs)
 
+    # This method redisplays the page with helpful messages when the form contains errors.
     def form_invalid(self, form):
         context = {
             "assignment": self.assignment,
@@ -178,6 +204,7 @@ class WorkerAssignmentDeclineView(WorkerRequiredMixin, FormView):
         }
         return self.render_to_response(context)
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         worker = self.assignment.worker if is_owner(self.request.user) else self.get_worker_profile()
         try:
@@ -201,28 +228,34 @@ class WorkerProfileView(WorkerRequiredMixin, FormView):
     form_class = WorkerProfileForm
     success_url = reverse_lazy("operations:operations_worker_profile")
 
+    # This method finds or prepares the worker profile needed by the rest of the code.
     def get_worker_profile(self):
         return get_object_or_404(WorkerProfile, user=self.request.user, is_active_worker=True)
 
+    # This method passes the extra information that the form needs when it is created.
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.get_worker_profile()
         return kwargs
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         form.save()
         messages.success(self.request, "Your worker profile was updated.")
         return super().form_valid(form)
 
 
+# This view controls the worker availability page or action.
 class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
     template_name = "operations/availability.html"
     form_class = WorkerAvailabilityForm
     success_url = reverse_lazy("operations:operations_worker_availability")
 
+    # This method finds or prepares the worker profile needed by the rest of the code.
     def get_worker_profile(self):
         return get_object_or_404(WorkerProfile, user=self.request.user, is_active_worker=True)
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         availability = form.save(commit=False)
         availability.worker = self.get_worker_profile()
@@ -231,6 +264,7 @@ class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
         messages.success(self.request, "Your availability was saved.")
         return super().form_valid(form)
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["availability_periods"] = self.get_worker_profile().availability_periods.filter(
@@ -239,9 +273,11 @@ class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
         return context
 
 
+# This view controls the worker availability delete page or action.
 class WorkerAvailabilityDeleteView(WorkerRequiredMixin, View):
     http_method_names = ["post"]
 
+    # This method processes a submitted form and performs the protected action requested by the user.
     def post(self, request, pk):
         period = get_object_or_404(
             WorkerAvailability,
@@ -254,9 +290,11 @@ class WorkerAvailabilityDeleteView(WorkerRequiredMixin, View):
         return redirect("operations:operations_worker_availability")
 
 
+# This view controls the worker schedule page or action.
 class WorkerScheduleView(WorkerRequiredMixin, TemplateView):
     template_name = "operations/worker_schedule.html"
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         worker = self.get_worker_profile()
@@ -268,9 +306,11 @@ class WorkerScheduleView(WorkerRequiredMixin, TemplateView):
         return context
 
 
+# This view controls the owner workers page or action.
 class OwnerWorkersView(OwnerRequiredMixin, TemplateView):
     template_name = "operations/owner_workers.html"
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         query = self.request.GET.get("q", "").strip()
@@ -287,9 +327,11 @@ class OwnerWorkersView(OwnerRequiredMixin, TemplateView):
         return context
 
 
+# This view controls the owner worker permission page or action.
 class OwnerWorkerPermissionView(OwnerRequiredMixin, View):
     http_method_names = ["post"]
 
+    # This method processes a submitted form and performs the protected action requested by the user.
     def post(self, request, user_id):
         user = get_object_or_404(User, pk=user_id, is_superuser=False)
         action = request.POST.get("action")
@@ -313,9 +355,11 @@ class OwnerWorkerPermissionView(OwnerRequiredMixin, View):
         return redirect("operations:operations_owner_workers")
 
 
+# This view controls the owner schedule page or action.
 class OwnerScheduleView(OwnerRequiredMixin, TemplateView):
     template_name = "operations/owner_schedule.html"
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["workers"] = WorkerProfile.objects.filter(is_active_worker=True).select_related("user")
@@ -332,10 +376,12 @@ class OwnerScheduleView(OwnerRequiredMixin, TemplateView):
         return context
 
 
+# This view controls the owner manual assignment page or action.
 class OwnerManualAssignmentView(OwnerRequiredMixin, FormView):
     template_name = "operations/manual_assignment.html"
     form_class = ManualAssignmentForm
 
+    # This method performs setup and permission checks before the request reaches the page action.
     def dispatch(self, request, *args, **kwargs):
         self.party_build = get_object_or_404(
             PartyBuild.objects.select_related("package").prefetch_related("addon_items__addon"),
@@ -343,6 +389,7 @@ class OwnerManualAssignmentView(OwnerRequiredMixin, FormView):
         )
         return super().dispatch(request, *args, **kwargs)
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["party_build"] = self.party_build
@@ -361,6 +408,7 @@ class OwnerManualAssignmentView(OwnerRequiredMixin, FormView):
         context["worker_rows"] = worker_rows
         return context
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         try:
             assignment = assign_manually(
@@ -385,13 +433,16 @@ class OwnerAuditView(OwnerRequiredMixin, ListView):
     context_object_name = "events"
     paginate_by = 50
 
+    # This method limits the database records to the ones the current user is allowed to see.
     def get_queryset(self):
         return AuditEvent.objects.select_related("actor")
 
 
+# This view controls the owner pricing page or action.
 class OwnerPricingView(PricingRequiredMixin, TemplateView):
     template_name = "operations/pricing.html"
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["packages"] = PartyPackage.objects.prefetch_related("guest_price_tiers")
@@ -399,6 +450,7 @@ class OwnerPricingView(PricingRequiredMixin, TemplateView):
         context["addon_create_form"] = kwargs.get("addon_create_form", AddonPricingForm(prefix="new"))
         return context
 
+    # This method processes a submitted form and performs the protected action requested by the user.
     def post(self, request, *args, **kwargs):
         action = request.POST.get("action", "")
         try:

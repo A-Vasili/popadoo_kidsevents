@@ -1,3 +1,6 @@
+# This file calculates event times and checks worker availability or schedule conflicts.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -76,6 +79,7 @@ def find_schedule_conflicts(
     return conflicts
 
 
+# This helper finds or prepares the worker daily load needed by the rest of the code.
 def get_worker_daily_load(worker: WorkerProfile, event_date) -> int:
     return PartyAssignment.objects.filter(
         worker=worker,

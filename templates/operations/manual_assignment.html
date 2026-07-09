@@ -1,4 +1,121 @@
-{% extends "base.html" %}{% load static %}
-{% block title %}Manual Assignment | Popadoo Kids Events{% endblock %}{% block meta_robots %}noindex,nofollow{% endblock %}{% block page_name %}operationsManualAssignment{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/operations.css' %}">{% endblock %}
-{% block content %}<section class="operations-page" aria-labelledby="manual-heading"><div class="container">{% include "operations/includes/nav.html" %}<div class="operations-two-column"><section class="operations-panel"><h1 id="manual-heading">Assign {{ party_build.contact_name }}’s party</h1><dl class="detail-grid"><div><dt>Date</dt><dd>{{ party_build.event_date }}</dd></div><div><dt>Time</dt><dd>{{ party_build.event_time|default:"Not confirmed" }}</dd></div><div><dt>Children</dt><dd>{{ party_build.guest_count }}</dd></div><div><dt>Venue</dt><dd>{{ party_build.event_address }}</dd></div></dl><form method="post" novalidate>{% csrf_token %}{% for field in form %}<div class="form-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}{% for error in field.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}</div>{% endfor %}<button class="button" type="submit">Save assignment</button></form></section><aside class="operations-panel"><h2>Conflict overview</h2>{% for row in worker_rows %}<article class="operations-row"><div><strong>{{ row.worker }}</strong>{% if not row.available %}<span class="conflict-text">Not marked available</span>{% elif row.conflicts %}<span class="conflict-text">{{ row.conflicts|length }} conflict{{ row.conflicts|length|pluralize }}</span>{% else %}<span>Available with no accepted conflicts</span>{% endif %}</div></article>{% endfor %}</aside></div></div></section>{% endblock %}
+{% extends "base.html" %}
+{% load static %}
+{# This template displays the manual assignment page or reusable section for the operations area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+{% block title %}
+    Manual Assignment | Popadoo Kids Events
+{% endblock %}
+{% block meta_robots %}
+    noindex,nofollow
+{% endblock %}
+{% block page_name %}
+    operationsManualAssignment
+{% endblock %}
+{# This block adds only the stylesheet needed by this page. #}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/operations.css' %}">
+{% endblock %}
+{# This block contains the visible page content inserted into the shared base template. #}
+{% block content %}
+    <section class="operations-page" aria-labelledby="manual-heading">
+        <div class="container">
+            {% include "operations/includes/nav.html" %}
+            <div class="operations-two-column">
+                <section class="operations-panel">
+                    <h1 id="manual-heading">
+                        Assign
+                        {{ party_build.contact_name }}
+                        ’s party
+                    </h1>
+                    <dl class="detail-grid">
+                        <div>
+                            <dt>
+                                Date
+                            </dt>
+                            <dd>
+                                {{ party_build.event_date }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>
+                                Time
+                            </dt>
+                            <dd>
+                                {{ party_build.event_time|default:"Not confirmed" }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>
+                                Children
+                            </dt>
+                            <dd>
+                                {{ party_build.guest_count }}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>
+                                Venue
+                            </dt>
+                            <dd>
+                                {{ party_build.event_address }}
+                            </dd>
+                        </div>
+                    </dl>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                            <div class="form-field">
+                                <label for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <p class="form-help">
+                                        {{ field.help_text }}
+                                    </p>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <p class="form-error" role="alert">
+                                        {{ error }}
+                                    </p>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button class="button" type="submit">
+                            Save assignment
+                        </button>
+                    </form>
+                </section>
+                <aside class="operations-panel">
+                    <h2>
+                        Conflict overview
+                    </h2>
+                    {% for row in worker_rows %}
+                        <article class="operations-row">
+                            <div>
+                                <strong>
+                                    {{ row.worker }}
+                                </strong>
+                                {% if not row.available %}
+                                    <span class="conflict-text">
+                                        Not marked available
+                                    </span>
+                                {% elif row.conflicts %}
+                                    <span class="conflict-text">
+                                        {{ row.conflicts|length }}
+                                        conflict
+                                        {{ row.conflicts|length|pluralize }}
+                                    </span>
+                                {% else %}
+                                    <span>
+                                        Available with no accepted conflicts
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </aside>
+            </div>
+        </div>
+    </section>
+{% endblock %}

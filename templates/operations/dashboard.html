@@ -1,53 +1,145 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Operations | Popadoo Kids Events{% endblock %}
-{% block meta_robots %}noindex,nofollow{% endblock %}
-{% block page_name %}operationsDashboard{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/operations.css' %}">{% endblock %}
+{# This template displays the dashboard page or reusable section for the operations area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+{% block title %}
+    Operations | Popadoo Kids Events
+{% endblock %}
+{% block meta_robots %}
+    noindex,nofollow
+{% endblock %}
+{% block page_name %}
+    operationsDashboard
+{% endblock %}
+{# This block adds only the stylesheet needed by this page. #}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/operations.css' %}">
+{% endblock %}
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-<section class="operations-page" aria-labelledby="operations-heading">
-    <div class="container">
-        <header class="operations-heading">
-            <p class="section-kicker">Private staff area</p>
-            <h1 id="operations-heading">Operations</h1>
-            <p>{% if is_owner_panel %}Review workers, schedules, assignment exceptions, and pricing.{% else %}Respond to party offers and maintain your availability.{% endif %}</p>
-        </header>
-        {% include "operations/includes/nav.html" %}
-        <div class="operations-stats">
-            {% if is_owner_panel %}
-                <article><strong>{{ active_worker_count }}</strong><span>Active workers</span></article>
-                <article><strong>{{ manual_review_bookings|length }}</strong><span>Need manual review</span></article>
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
+    <section class="operations-page" aria-labelledby="operations-heading">
+        <div class="container">
+            {# This header introduces the page and gives visitors the main context before they continue. #}
+            <header class="operations-heading">
+                <p class="section-kicker">
+                    Private staff area
+                </p>
+                <h1 id="operations-heading">
+                    Operations
+                </h1>
+                <p>
+                    {% if is_owner_panel %}
+                        Review workers, schedules, assignment exceptions, and pricing.
+                    {% else %}
+                        Respond to party offers and maintain your availability.
+                    {% endif %}
+                </p>
+            </header>
+            {# This include reuses a shared template fragment instead of repeating the same markup. #}
+            {% include "operations/includes/nav.html" %}
+            <div class="operations-stats">
+                {% if is_owner_panel %}
+                    {# This article represents one self-contained item that can be understood on its own. #}
+                    <article>
+                        <strong>
+                            {{ active_worker_count }}
+                        </strong>
+                        <span>
+                            Active workers
+                        </span>
+                    </article>
+                    {# This article represents one self-contained item that can be understood on its own. #}
+                    <article>
+                        <strong>
+                            {{ manual_review_bookings|length }}
+                        </strong>
+                        <span>
+                            Need manual review
+                        </span>
+                    </article>
+                {% endif %}
+                {# This article represents one self-contained item that can be understood on its own. #}
+                <article>
+                    <strong>
+                        {{ pending_assignments|length }}
+                    </strong>
+                    <span>
+                        Awaiting response
+                    </span>
+                </article>
+                {# This article represents one self-contained item that can be understood on its own. #}
+                <article>
+                    <strong>
+                        {{ upcoming_assignments|length }}
+                    </strong>
+                    <span>
+                        Upcoming confirmed
+                    </span>
+                </article>
+            </div>
+            {% if is_owner_panel and manual_review_bookings %}
+                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
+                <section class="operations-panel" aria-labelledby="manual-review-heading">
+                    <h2 id="manual-review-heading">
+                        Bookings needing manual assignment
+                    </h2>
+                    <div class="operations-list">
+                        {# This loop creates one visible item for each record supplied by the Django view. #}
+                        {% for booking in manual_review_bookings %}
+                            {# This article represents one self-contained item that can be understood on its own. #}
+                            <article class="operations-row">
+                                <div>
+                                    <strong>
+                                        {{ booking.contact_name }}
+                                    </strong>
+                                    <span>
+                                        {{ booking.event_date|date:"j M Y" }}
+                                        ·
+                                        {{ booking.event_time|time:"H:i"|default:"Time not confirmed" }}
+                                    </span>
+                                </div>
+                                <a class="button button-small" href="{% url 'operations:operations_owner_manual_assignment' booking.pk %}">
+                                    Assign worker
+                                </a>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
             {% endif %}
-            <article><strong>{{ pending_assignments|length }}</strong><span>Awaiting response</span></article>
-            <article><strong>{{ upcoming_assignments|length }}</strong><span>Upcoming confirmed</span></article>
+            {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
+            <section class="operations-panel" aria-labelledby="pending-heading">
+                <h2 id="pending-heading">
+                    Pending assignment offers
+                </h2>
+                <div class="operations-list">
+                    {# This loop creates one visible item for each record supplied by the Django view. #}
+                    {% for assignment in pending_assignments %}
+                        {# This article represents one self-contained item that can be understood on its own. #}
+                        <article class="operations-row">
+                            <div>
+                                <strong>
+                                    {{ assignment.party_build.contact_name }}
+                                </strong>
+                                <span>
+                                    {{ assignment.party_build.event_date|date:"j M Y" }}
+                                    {% if is_owner_panel %}
+                                        ·
+                                        {{ assignment.worker }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <a href="{% url 'operations:operations_worker_assignment_detail' assignment.pk %}">
+                                View details
+                            </a>
+                        </article>
+                    {% empty %}
+                        <p>
+                            No pending offers.
+                        </p>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
-        {% if is_owner_panel and manual_review_bookings %}
-        <section class="operations-panel" aria-labelledby="manual-review-heading">
-            <h2 id="manual-review-heading">Bookings needing manual assignment</h2>
-            <div class="operations-list">
-                {% for booking in manual_review_bookings %}
-                    <article class="operations-row">
-                        <div><strong>{{ booking.contact_name }}</strong><span>{{ booking.event_date|date:"j M Y" }} · {{ booking.event_time|time:"H:i"|default:"Time not confirmed" }}</span></div>
-                        <a class="button button-small" href="{% url 'operations:operations_owner_manual_assignment' booking.pk %}">Assign worker</a>
-                    </article>
-                {% endfor %}
-            </div>
-        </section>
-        {% endif %}
-        <section class="operations-panel" aria-labelledby="pending-heading">
-            <h2 id="pending-heading">Pending assignment offers</h2>
-            <div class="operations-list">
-                {% for assignment in pending_assignments %}
-                    <article class="operations-row">
-                        <div>
-                            <strong>{{ assignment.party_build.contact_name }}</strong>
-                            <span>{{ assignment.party_build.event_date|date:"j M Y" }}{% if is_owner_panel %} · {{ assignment.worker }}{% endif %}</span>
-                        </div>
-                        <a href="{% url 'operations:operations_worker_assignment_detail' assignment.pk %}">View details</a>
-                    </article>
-                {% empty %}<p>No pending offers.</p>{% endfor %}
-            </div>
-        </section>
-    </div>
-</section>
+    </section>
 {% endblock %}

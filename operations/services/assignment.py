@@ -1,3 +1,6 @@
+# This file contains the main worker-assignment workflow, kept outside views so it can be reused safely.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from datetime import datetime, timezone as datetime_timezone

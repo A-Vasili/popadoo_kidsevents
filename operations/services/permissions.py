@@ -1,3 +1,6 @@
+# This file safely promotes, demotes, and grants pricing rights to users.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.contrib.auth.models import Group
@@ -10,11 +13,13 @@ from accounts.permissions import OWNER_GROUP, PRICING_GROUP, WORKER_GROUP, is_ow
 from ..models import AuditEvent
 
 
+# This helper stops the action unless the signed-in user has owner-level access.
 def _require_owner(actor):
     if not is_owner(actor) or not actor.has_perm("accounts.manage_worker_roles"):
         raise PermissionDenied("Owner permission is required.")
 
 
+# This helper changes a user role through the approved permission workflow.
 @transaction.atomic
 def promote_to_worker(user, actor):
     _require_owner(actor)
@@ -33,6 +38,7 @@ def promote_to_worker(user, actor):
     return profile
 
 
+# This helper changes a user role through the approved permission workflow.
 @transaction.atomic
 def demote_worker(user, actor):
     _require_owner(actor)
@@ -55,6 +61,7 @@ def demote_worker(user, actor):
     )
 
 
+# This helper changes a delegated permission and records the action.
 @transaction.atomic
 def grant_pricing_management(user, actor):
     _require_owner(actor)
@@ -71,6 +78,7 @@ def grant_pricing_management(user, actor):
     )
 
 
+# This helper changes a delegated permission and records the action.
 @transaction.atomic
 def revoke_pricing_management(user, actor):
     _require_owner(actor)

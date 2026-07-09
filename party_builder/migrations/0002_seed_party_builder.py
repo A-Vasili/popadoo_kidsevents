@@ -1,3 +1,6 @@
+# This migration records a database change so every environment can build the same structure.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from decimal import Decimal
 
 from django.db import migrations
@@ -109,6 +112,7 @@ ADDONS = [
 ]
 
 
+# This migration helper inserts the starting package and add-ons into a new database.
 def seed_party_builder(apps, schema_editor):
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
     AddonExperience = apps.get_model("party_builder", "AddonExperience")
@@ -125,6 +129,7 @@ def seed_party_builder(apps, schema_editor):
         )
 
 
+# This helper removes seed data after the required checks.
 def remove_seed_data(apps, schema_editor):
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
     AddonExperience = apps.get_model("party_builder", "AddonExperience")
@@ -135,6 +140,7 @@ def remove_seed_data(apps, schema_editor):
     ).delete()
 
 
+# This migration tells Django how to update the database in a repeatable way.
 class Migration(migrations.Migration):
     dependencies = [("party_builder", "0001_initial")]
 

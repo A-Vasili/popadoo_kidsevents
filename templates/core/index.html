@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
+{# This template displays the index page or reusable section for the core area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+
 {% block title %}Home | Popadoo Kids Events{% endblock %}
 
 {% block page_name %}index{% endblock %}
 
+{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link
         rel="stylesheet"
@@ -12,8 +16,10 @@
     >
 {% endblock %}
 
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
 
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
     <section
         class="hero-carousel"
         aria-labelledby="welcome-heading"
@@ -163,6 +169,7 @@
         </div>
     </section>
 
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
     <section
         class="party-booking-hero"
         aria-labelledby="party-booking-heading"
@@ -199,6 +206,7 @@
         </div>
     </section>
 
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
     <section
         class="home-pathways"
         aria-labelledby="home-pathways-heading"
@@ -231,6 +239,7 @@
 
             <div class="home-pathway-grid">
 
+                {# This article represents one self-contained item that can be understood on its own. #}
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
@@ -285,6 +294,7 @@
                     </a>
                 </article>
 
+                {# This article represents one self-contained item that can be understood on its own. #}
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
@@ -339,6 +349,7 @@
                     </a>
                 </article>
 
+                {# This article represents one self-contained item that can be understood on its own. #}
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
@@ -398,6 +409,7 @@
 
 {% endblock %}
 
+{# This block loads only the JavaScript needed by this page. #}
 {% block extra_js %}
     <script
         src="{% static 'js/carousel.js' %}"

@@ -1,3 +1,6 @@
+# This migration records a database change so every environment can build the same structure.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from decimal import Decimal
 
 from django.db import migrations
@@ -63,6 +66,7 @@ TIERS = [
 ]
 
 
+# This migration helper inserts the default group-size price brackets into a new database.
 def seed_guest_price_tiers(apps, schema_editor):
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
     GuestPriceTier = apps.get_model("party_builder", "GuestPriceTier")
@@ -124,6 +128,7 @@ def seed_guest_price_tiers(apps, schema_editor):
         )
 
 
+# This helper removes guest price tiers after the required checks.
 def remove_guest_price_tiers(apps, schema_editor):
     GuestPriceTier = apps.get_model("party_builder", "GuestPriceTier")
     GuestPriceTier.objects.filter(
@@ -132,6 +137,7 @@ def remove_guest_price_tiers(apps, schema_editor):
     ).delete()
 
 
+# This migration tells Django how to update the database in a repeatable way.
 class Migration(migrations.Migration):
     dependencies = [
         ("party_builder", "0003_tiered_checkout"),

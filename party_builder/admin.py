@@ -1,3 +1,6 @@
+# This file controls how packages, add-ons, and bookings appear in Django administration.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from django.contrib import admin
 
 from .models import (
@@ -9,6 +12,7 @@ from .models import (
 )
 
 
+# This class controls how guest price tier information appears in Django administration.
 class GuestPriceTierInline(admin.TabularInline):
     model = GuestPriceTier
     extra = 0
@@ -23,6 +27,7 @@ class GuestPriceTierInline(admin.TabularInline):
     )
 
 
+# This class controls how party package information appears in Django administration.
 @admin.register(PartyPackage)
 class PartyPackageAdmin(admin.ModelAdmin):
     list_display = (
@@ -41,6 +46,7 @@ class PartyPackageAdmin(admin.ModelAdmin):
     inlines = (GuestPriceTierInline,)
 
 
+# This class controls how guest price tier information appears in Django administration.
 @admin.register(GuestPriceTier)
 class GuestPriceTierAdmin(admin.ModelAdmin):
     list_display = (
@@ -58,6 +64,7 @@ class GuestPriceTierAdmin(admin.ModelAdmin):
     ordering = ("package", "display_order", "min_guests")
 
 
+# This class controls how addon experience information appears in Django administration.
 @admin.register(AddonExperience)
 class AddonExperienceAdmin(admin.ModelAdmin):
     list_display = (
@@ -74,6 +81,7 @@ class AddonExperienceAdmin(admin.ModelAdmin):
     ordering = ("display_order", "name")
 
 
+# This class controls how party build addon information appears in Django administration.
 class PartyBuildAddonInline(admin.TabularInline):
     model = PartyBuildAddon
     extra = 0
@@ -81,6 +89,7 @@ class PartyBuildAddonInline(admin.TabularInline):
     readonly_fields = ("addon", "unit_price")
 
 
+# This class controls how party build information appears in Django administration.
 @admin.register(PartyBuild)
 class PartyBuildAdmin(admin.ModelAdmin):
     list_display = (

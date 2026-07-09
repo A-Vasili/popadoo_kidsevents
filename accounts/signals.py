@@ -1,3 +1,6 @@
+# This file runs small automatic setup tasks when users or database migrations are created.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model

@@ -1,3 +1,6 @@
+# This file defines worker availability, party assignments, and the audit history stored in the database.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -33,6 +36,7 @@ class WorkerAvailability(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("start_at", "worker__display_name")
         permissions = [
@@ -42,11 +46,13 @@ class WorkerAvailability(models.Model):
             models.Index(fields=("worker", "start_at", "end_at")),
         ]
 
+    # This validation step checks values that depend on more than one form field.
     def clean(self) -> None:
         super().clean()
         if self.start_at and self.end_at and self.end_at <= self.start_at:
             raise ValidationError({"end_at": "End time must be after start time."})
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.worker}: {self.get_availability_type_display()} {self.start_at:%d/%m/%Y %H:%M}"
 
@@ -61,6 +67,7 @@ class PartyAssignment(models.Model):
         SUPERSEDED = "superseded", "Superseded"
         CANCELLED = "cancelled", "Cancelled"
 
+    # This database model stores source information.
     class Source(models.TextChoices):
         AUTOMATIC = "automatic", "Automatic"
         OWNER_MANUAL = "owner_manual", "Owner manual"
@@ -95,6 +102,7 @@ class PartyAssignment(models.Model):
     owner_note = models.CharField(max_length=500, blank=True)
     conflict_override_reason = models.CharField(max_length=500, blank=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("-assigned_at",)
         permissions = [
@@ -118,6 +126,7 @@ class PartyAssignment(models.Model):
             models.Index(fields=("party_build", "status")),
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.party_build.public_id} → {self.worker} ({self.status})"
 
@@ -140,8 +149,10 @@ class AuditEvent(models.Model):
     after_data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("-created_at",)
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.event_type}: {self.summary}"

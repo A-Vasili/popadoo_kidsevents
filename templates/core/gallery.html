@@ -1,9 +1,13 @@
 {% extends "base.html" %}
 {% load static %}
 
+{# This template displays the gallery page or reusable section for the core area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+
 {% block title %}Gallery | Popadoo Kids Events{% endblock %}
 {% block page_name %}gallery{% endblock %}
 
+{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link
         rel="stylesheet"
@@ -11,9 +15,11 @@
     >
 {% endblock %}
 
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
     <div class="page-main">
         <div class="container">
+            {# This header introduces the page and gives visitors the main context before they continue. #}
             <header class="page-heading">
                 <p
                     class="section-kicker"
@@ -37,6 +43,7 @@
                 </p>
             </header>
 
+            {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
             <section aria-labelledby="gallery-grid-heading">
                 <div class="section-heading-group">
                     <h2

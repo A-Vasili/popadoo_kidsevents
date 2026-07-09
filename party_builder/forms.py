@@ -1,3 +1,6 @@
+# This file defines and validates each step of the party-building and simulated checkout process.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 import re
@@ -43,6 +46,7 @@ class PackageOptionsForm(forms.Form):
         label="Optional experiences",
     )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, package: PartyPackage, **kwargs):
         self.package = package
         super().__init__(*args, **kwargs)
@@ -54,6 +58,7 @@ class PackageOptionsForm(forms.Form):
         ).order_by("display_order", "name")
         _apply_accessible_attributes(self)
 
+    # This validation step checks and prepares the guest tier value before it is used.
     def clean_guest_tier(self) -> GuestPriceTier:
         tier = self.cleaned_data["guest_tier"]
         if tier.package_id != self.package.pk or not tier.is_active:
@@ -156,6 +161,7 @@ class PartyDetailsForm(forms.Form):
         ),
     )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, guest_tier: GuestPriceTier, show_save_profile=False, user=None, **kwargs):
         self.guest_tier = guest_tier
         self.user = user
@@ -175,6 +181,7 @@ class PartyDetailsForm(forms.Form):
         )
         _apply_accessible_attributes(self)
 
+    # This validation step checks and prepares the contact phone value before it is used.
     def clean_contact_phone(self) -> str:
         phone = self.cleaned_data["contact_phone"].strip()
         digits = re.sub(r"\D", "", phone)
@@ -182,12 +189,14 @@ class PartyDetailsForm(forms.Form):
             raise forms.ValidationError("Enter a valid phone number.")
         return phone
 
+    # This validation step checks and prepares the event date value before it is used.
     def clean_event_date(self):
         event_date = self.cleaned_data["event_date"]
         if event_date < timezone.localdate():
             raise forms.ValidationError("Choose today or a future date.")
         return event_date
 
+    # This validation step checks and prepares the guest count value before it is used.
     def clean_guest_count(self) -> int:
         guest_count = self.cleaned_data["guest_count"]
         if not self.guest_tier.contains_guest_count(guest_count):
@@ -197,12 +206,14 @@ class PartyDetailsForm(forms.Form):
             )
         return guest_count
 
+    # This validation step checks and prepares the postal code value before it is used.
     def clean_postal_code(self) -> str:
         postal_code = self.cleaned_data["postal_code"].strip()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\s-]{2,9}", postal_code):
             raise forms.ValidationError("Enter a valid postal code.")
         return postal_code
 
+    # This validation step checks values that depend on more than one form field.
     def clean(self):
         cleaned_data = super().clean()
         if (
@@ -292,6 +303,7 @@ class SimulatedPaymentForm(forms.Form):
         ),
     )
 
+    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_year = timezone.localdate().year
@@ -300,6 +312,7 @@ class SimulatedPaymentForm(forms.Form):
         ]
         _apply_accessible_attributes(self)
 
+    # This method checks the demonstration card number with the standard checksum rule.
     @staticmethod
     def _passes_luhn(number: str) -> bool:
         digits = [int(character) for character in number]
@@ -313,6 +326,7 @@ class SimulatedPaymentForm(forms.Form):
             checksum += digit
         return checksum % 10 == 0
 
+    # This method identifies the demonstration card brand from the number prefix.
     @staticmethod
     def _detect_brand(number: str) -> str:
         if number.startswith("4"):
@@ -323,6 +337,7 @@ class SimulatedPaymentForm(forms.Form):
             return "American Express"
         return "Test card"
 
+    # This validation step checks and prepares the card number value before it is used.
     def clean_card_number(self) -> str:
         number = re.sub(r"\D", "", self.cleaned_data["card_number"])
         approved_test_numbers = {
@@ -336,18 +351,21 @@ class SimulatedPaymentForm(forms.Form):
             )
         return number
 
+    # This validation step checks and prepares the security code value before it is used.
     def clean_security_code(self) -> str:
         code = self.cleaned_data["security_code"].strip()
         if not re.fullmatch(r"\d{3,4}", code):
             raise forms.ValidationError("Enter a 3 or 4 digit security code.")
         return code
 
+    # This validation step checks and prepares the billing postal code value before it is used.
     def clean_billing_postal_code(self) -> str:
         postal_code = self.cleaned_data["billing_postal_code"].strip()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\s-]{2,9}", postal_code):
             raise forms.ValidationError("Enter a valid billing postal code.")
         return postal_code
 
+    # This validation step checks values that depend on more than one form field.
     def clean(self):
         cleaned_data = super().clean()
         month = cleaned_data.get("expiry_month")

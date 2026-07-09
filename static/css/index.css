@@ -1,5 +1,8 @@
+/*
+ * This stylesheet controls the appearance of the index page or component.
+ * The comments explain visual sections without changing the styles applied by the browser.
+ */
 /* Page-specific styles for index.html. */
-
 /* Home page */
 .hero-carousel {
     position: relative;
@@ -8,30 +11,47 @@
     background: #37233f;
 }
 
-.hero-carousel-slides,
-.hero-carousel-slide,
-.hero-carousel-slide img {
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-slides, .hero-carousel-slide, .hero-carousel-slide img {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-slide {
     margin: 0;
     opacity: 0;
     animation: hero-slide-cycle 20s infinite;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-slide img {
     object-fit: cover;
 }
 
-.hero-carousel-slide-one { animation-delay: 0s; }
-.hero-carousel-slide-two { animation-delay: 5s; }
-.hero-carousel-slide-three { animation-delay: 10s; }
-.hero-carousel-slide-four { animation-delay: 15s; }
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-slide-one {
+    animation-delay: 0s;
+}
 
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-slide-two {
+    animation-delay: 5s;
+}
+
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-slide-three {
+    animation-delay: 10s;
+}
+
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-slide-four {
+    animation-delay: 15s;
+}
+
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-overlay {
     position: relative;
     z-index: 2;
@@ -41,6 +61,7 @@
     background: linear-gradient(90deg, rgba(37, 24, 48, 0.88) 0%, rgba(62, 40, 77, 0.64) 50%, rgba(62, 40, 77, 0.16) 100%);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-content {
     max-width: 48rem;
     padding-block: 5rem;
@@ -48,17 +69,20 @@
     text-shadow: 0 0.15rem 0.8rem rgba(0, 0, 0, 0.38);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-content h1 {
     margin-bottom: 1.25rem;
     color: #ffffff;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-content p {
     max-width: 43rem;
     margin-bottom: 0;
     font-size: clamp(1.1rem, 2.3vw, 1.5rem);
 }
 
+/* These rules style the page introduction and its main heading. */
 .party-booking-hero {
     position: relative;
     min-height: clamp(26rem, 46vw, 38rem);
@@ -67,6 +91,7 @@
     background: var(--surface-pink);
 }
 
+/* These rules style this group of related page elements. */
 .party-booking-image {
     position: absolute;
     inset: 0;
@@ -76,6 +101,7 @@
     object-position: center;
 }
 
+/* These rules style this group of related page elements. */
 .party-booking-overlay {
     position: absolute;
     inset: 0;
@@ -85,18 +111,21 @@
     background: linear-gradient(90deg, rgba(70, 34, 57, 0.72) 0%, rgba(79, 42, 64, 0.4) 48%, rgba(79, 42, 64, 0.06) 75%);
 }
 
+/* These rules style this group of related page elements. */
 .party-booking-content {
     max-width: 39rem;
     color: #ffffff;
     text-shadow: 0 0.2rem 1rem rgba(50, 17, 35, 0.42);
 }
 
+/* These rules style this group of related page elements. */
 .party-booking-content h2 {
     margin-bottom: 1.5rem;
     color: #ffffff;
     font-size: clamp(2.4rem, 6vw, 5.25rem);
 }
 
+/* These rules make this action look and behave like an interactive control. */
 .party-booking-button {
     display: inline-flex;
     align-items: center;
@@ -115,55 +144,80 @@
     transition: background-color 180ms ease, transform 180ms ease;
 }
 
+/* These rules make this action look and behave like an interactive control. */
 .party-booking-button:hover {
     background: var(--color-button-background-hover);
     transform: translateY(-0.12rem);
 }
 
-html[data-theme="dark"] .hero-carousel-slide img,
-html[data-theme="dark"] .party-booking-image {
+/* These reusable values define the colours and measurements used by the selected theme. */
+html[data-theme="dark"] .hero-carousel-slide img, html[data-theme="dark"] .party-booking-image {
     filter: brightness(0.78) saturate(0.9);
 }
 
+/* This animation describes how the visual effect changes over time. */
 @keyframes hero-slide-cycle {
-    0%, 20% { opacity: 1; }
-    25%, 95% { opacity: 0; }
-    100% { opacity: 1; }
+    /* These rules style this group of related page elements. */
+    0%, 20% {
+        opacity: 1;
+    }
+
+    /* These rules style this group of related page elements. */
+    25%, 95% {
+        opacity: 0;
+    }
+
+    /* These rules style this group of related page elements. */
+    100% {
+        opacity: 1;
+    }
+
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (max-width: 42rem) {
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel-overlay {
         background: rgba(37, 24, 48, 0.72);
     }
 
+    /* These rules style the page introduction and its main heading. */
     .party-booking-hero {
         min-height: 30rem;
     }
 
+    /* These rules style this group of related page elements. */
     .party-booking-image {
         object-position: 64% center;
     }
 
+    /* These rules style this group of related page elements. */
     .party-booking-overlay {
         align-items: end;
         padding-bottom: 2rem;
         background: linear-gradient(0deg, rgba(65, 29, 51, 0.86) 0%, rgba(65, 29, 51, 0.38) 62%, rgba(65, 29, 51, 0.08) 100%);
     }
 
+    /* These rules style this group of related page elements. */
     .party-booking-content {
         max-width: 21rem;
     }
+
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (prefers-reduced-motion: reduce) {
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel-slide {
         display: none;
         opacity: 1;
     }
 
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel-slide-one {
         display: block;
     }
+
 }
 
 /* JavaScript-enhanced carousel state for icon controls and keyboard use. */
@@ -173,21 +227,27 @@ html[data-theme="dark"] .party-booking-image {
     transition: opacity 520ms ease;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel.is-carousel-enhanced .hero-carousel-slide.is-active {
     opacity: 1;
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (prefers-reduced-motion: reduce) {
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel.is-carousel-enhanced .hero-carousel-slide {
         display: block;
         transition: none;
     }
+
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-controls {
     display: none;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel.is-carousel-enhanced .hero-carousel-controls {
     position: absolute;
     inset: 0;
@@ -197,20 +257,18 @@ html[data-theme="dark"] .party-booking-image {
 }
 
 /* Shared control styling keeps arrow and indicator opacity behaviour consistent. */
-.hero-carousel-arrow,
-.hero-carousel-indicators {
+.hero-carousel-arrow, .hero-carousel-indicators {
     opacity: 0.18;
     transition: opacity 220ms ease, transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
     pointer-events: auto;
 }
 
-.hero-carousel-arrow:hover,
-.hero-carousel-arrow:focus-visible,
-.hero-carousel-indicators:hover,
-.hero-carousel-indicators:focus-within {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.hero-carousel-arrow:hover, .hero-carousel-arrow:focus-visible, .hero-carousel-indicators:hover, .hero-carousel-indicators:focus-within {
     opacity: 1;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-arrow {
     position: absolute;
     top: 50%;
@@ -237,32 +295,36 @@ html[data-theme="dark"] .party-booking-image {
     border-width: 0 0 0.2rem 0.2rem;
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-arrow-previous .hero-carousel-arrow-icon {
     transform: translateX(0.12rem) rotate(45deg);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-arrow-next .hero-carousel-arrow-icon {
     transform: translateX(-0.12rem) rotate(-135deg);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-arrow-previous {
     left: clamp(0.75rem, 3vw, 2.4rem);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-arrow-next {
     right: clamp(0.75rem, 3vw, 2.4rem);
 }
 
-.hero-carousel-arrow:hover,
-.hero-carousel-arrow:focus-visible {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.hero-carousel-arrow:hover, .hero-carousel-arrow:focus-visible {
     background: rgba(42, 42, 48, 0.98);
     color: #ffffff;
     box-shadow: 0 1rem 2.1rem rgba(0, 0, 0, 0.34);
     transform: translateY(-50%) scale(1.05);
 }
 
-.hero-carousel-arrow:focus-visible,
-.hero-carousel-indicator:focus-visible {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.hero-carousel-arrow:focus-visible, .hero-carousel-indicator:focus-visible {
     outline: 0.2rem solid var(--pastel-butter);
     outline-offset: 0.18rem;
 }
@@ -284,6 +346,7 @@ html[data-theme="dark"] .party-booking-image {
     transform: translateX(-50%);
 }
 
+/* These rules style the page introduction and its main heading. */
 .hero-carousel-indicator {
     width: 0.78rem;
     height: 0.78rem;
@@ -295,38 +358,43 @@ html[data-theme="dark"] .party-booking-image {
     transition: background-color 180ms ease, transform 180ms ease, width 180ms ease;
 }
 
-.hero-carousel-indicator.is-active,
-.hero-carousel-indicator[aria-current="true"] {
+/* These rules style the page introduction and its main heading. */
+.hero-carousel-indicator.is-active, .hero-carousel-indicator[aria-current="true"] {
     width: 1.85rem;
     background: #ffffff;
 }
 
-.hero-carousel-indicator:hover,
-.hero-carousel-indicator:focus-visible {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.hero-carousel-indicator:hover, .hero-carousel-indicator:focus-visible {
     background: #ffffff;
     transform: scale(1.08);
 }
 
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
 .hero-carousel:focus-visible {
     outline: 0.25rem solid var(--pastel-butter);
     outline-offset: -0.45rem;
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (max-width: 42rem) {
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel-arrow {
         top: auto;
         bottom: 1.2rem;
         transform: none;
     }
 
-    .hero-carousel-arrow:hover,
-    .hero-carousel-arrow:focus-visible {
+    /* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+    .hero-carousel-arrow:hover, .hero-carousel-arrow:focus-visible {
         transform: scale(1.05);
     }
 
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel-indicators {
         bottom: 5rem;
     }
+
 }
 
 /* Prominent landing-page pathway cards link users directly to key sections. */
@@ -335,21 +403,25 @@ html[data-theme="dark"] .party-booking-image {
     background: linear-gradient(135deg, var(--surface-sky), var(--surface-lavender));
 }
 
+/* These rules style the page introduction and its main heading. */
 .home-pathways-heading {
     max-width: 54rem;
     margin-bottom: 1.8rem;
 }
 
+/* These rules control spacing and the page layout for this group of content. */
 .home-pathway-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.25rem;
 }
 
+/* These rules present each item as a clear, reusable content card. */
 .home-pathway-card {
     min-width: 0;
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-link {
     position: relative;
     display: grid;
@@ -365,18 +437,18 @@ html[data-theme="dark"] .party-booking-image {
     transition: box-shadow 180ms ease, transform 180ms ease;
 }
 
-.home-pathway-link:hover,
-.home-pathway-link:focus-visible {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.home-pathway-link:hover, .home-pathway-link:focus-visible {
     box-shadow: var(--shadow-soft);
     transform: translateY(-0.18rem);
 }
 
-.home-pathway-link img,
-.home-pathway-overlay,
-.home-pathway-content {
+/* These rules style this group of related page elements. */
+.home-pathway-link img, .home-pathway-overlay, .home-pathway-content {
     grid-area: 1 / 1;
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-link img {
     width: 100%;
     height: 100%;
@@ -384,18 +456,18 @@ html[data-theme="dark"] .party-booking-image {
     transition: transform 500ms ease, filter 180ms ease;
 }
 
-.home-pathway-link:hover img,
-.home-pathway-link:focus-visible img {
+/* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+.home-pathway-link:hover img, .home-pathway-link:focus-visible img {
     transform: scale(1.04);
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-overlay {
     z-index: 1;
-    background:
-        linear-gradient(180deg, rgba(37, 24, 48, 0.08) 0%, rgba(37, 24, 48, 0.86) 100%),
-        linear-gradient(135deg, rgba(111, 74, 142, 0.48), rgba(168, 68, 115, 0.32));
+    background: linear-gradient(180deg, rgba(37, 24, 48, 0.08) 0%, rgba(37, 24, 48, 0.86) 100%), linear-gradient(135deg, rgba(111, 74, 142, 0.48), rgba(168, 68, 115, 0.32));
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-content {
     z-index: 2;
     align-self: end;
@@ -405,6 +477,7 @@ html[data-theme="dark"] .party-booking-image {
     text-shadow: 0 0.18rem 0.75rem rgba(0, 0, 0, 0.34);
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-label {
     width: fit-content;
     padding: 0.38rem 0.75rem;
@@ -418,6 +491,7 @@ html[data-theme="dark"] .party-booking-image {
     text-transform: uppercase;
 }
 
+/* These rules style the page introduction and its main heading. */
 .home-pathway-title {
     color: #ffffff;
     font-size: clamp(1.7rem, 3vw, 2.35rem);
@@ -425,12 +499,14 @@ html[data-theme="dark"] .party-booking-image {
     line-height: 1.05;
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-text {
     max-width: 22rem;
     color: rgba(255, 255, 255, 0.92);
     font-size: 1.02rem;
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-cta {
     display: inline-flex;
     align-items: center;
@@ -445,49 +521,56 @@ html[data-theme="dark"] .party-booking-image {
     text-shadow: none;
 }
 
+/* These rules style this group of related page elements. */
 .home-pathway-cta::after {
     content: "→";
     margin-left: 0.55rem;
 }
 
+/* These reusable values define the colours and measurements used by the selected theme. */
 html[data-theme="dark"] .home-pathways {
     background: linear-gradient(135deg, var(--surface-sky), var(--surface-lavender));
 }
 
+/* These reusable values define the colours and measurements used by the selected theme. */
 html[data-theme="dark"] .home-pathway-link img {
     filter: brightness(0.78) saturate(0.92);
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (max-width: 64rem) {
+    /* These rules control spacing and the page layout for this group of content. */
     .home-pathway-grid {
         grid-template-columns: 1fr;
     }
 
+    /* These rules style this group of related page elements. */
     .home-pathway-link {
         min-height: 23rem;
     }
+
 }
 
+/* The following rules adjust the layout for this screen size. */
 @media (prefers-reduced-motion: reduce) {
-    .hero-carousel.is-carousel-enhanced .hero-carousel-slide,
-    .home-pathway-link,
-    .home-pathway-link img,
-    .hero-carousel-arrow,
-    .hero-carousel-indicators,
-    .hero-carousel-indicator {
+    /* These rules style the page introduction and its main heading. */
+    .hero-carousel.is-carousel-enhanced .hero-carousel-slide, .home-pathway-link, .home-pathway-link img, .hero-carousel-arrow, .hero-carousel-indicators, .hero-carousel-indicator {
         transition: none;
     }
 
+    /* These rules style the page introduction and its main heading. */
     .hero-carousel.is-carousel-enhanced .hero-carousel-slide {
         display: block;
     }
 
-    .home-pathway-link:hover img,
-    .home-pathway-link:focus-visible img {
+    /* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+    .home-pathway-link:hover img, .home-pathway-link:focus-visible img {
         transform: none;
     }
+
 }
 
+/* These rules style the page introduction and its main heading. */
 .home-pathway-title {
     margin-bottom: 0;
 }

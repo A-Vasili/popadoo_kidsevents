@@ -1,9 +1,13 @@
+/*
+ * This stylesheet controls the appearance of the gallery page or component.
+ * The comments explain visual sections without changing the styles applied by the browser.
+ */
 /* Page-specific styles for gallery.html. */
-
 .gallery-grid {
     margin-top: 2rem;
 }
 
+/* These rules present each item as a clear, reusable content card. */
 .gallery-card {
     margin: 0;
     overflow: hidden;
@@ -14,17 +18,34 @@
     box-shadow: var(--shadow-card);
 }
 
-.gallery-grid > div:nth-child(1) .gallery-card { border-top: 0.35rem solid var(--pastel-pink); }
-.gallery-grid > div:nth-child(2) .gallery-card { border-top: 0.35rem solid var(--pastel-sky); }
-.gallery-grid > div:nth-child(3) .gallery-card { border-top: 0.35rem solid var(--pastel-mint); }
-.gallery-grid > div:nth-child(4) .gallery-card { border-top: 0.35rem solid var(--pastel-lavender); }
+/* These rules present each item as a clear, reusable content card. */
+.gallery-grid > div:nth-child(1) .gallery-card {
+    border-top: 0.35rem solid var(--pastel-pink);
+}
 
+/* These rules present each item as a clear, reusable content card. */
+.gallery-grid > div:nth-child(2) .gallery-card {
+    border-top: 0.35rem solid var(--pastel-sky);
+}
+
+/* These rules present each item as a clear, reusable content card. */
+.gallery-grid > div:nth-child(3) .gallery-card {
+    border-top: 0.35rem solid var(--pastel-mint);
+}
+
+/* These rules present each item as a clear, reusable content card. */
+.gallery-grid > div:nth-child(4) .gallery-card {
+    border-top: 0.35rem solid var(--pastel-lavender);
+}
+
+/* These rules present each item as a clear, reusable content card. */
 .gallery-card img {
     width: 100%;
     aspect-ratio: 16 / 9;
     object-fit: cover;
 }
 
+/* These rules present each item as a clear, reusable content card. */
 .gallery-card figcaption {
     color: var(--color-text);
     font-weight: 700;

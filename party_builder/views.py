@@ -1,3 +1,6 @@
+# This file controls the multi-step party builder, checkout, and confirmation pages.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from datetime import date, time
@@ -27,6 +30,7 @@ class CheckoutStateMixin:
         self.package = self.get_package()
         return super().dispatch(request, *args, **kwargs)
 
+    # This method finds or prepares the package needed by the rest of the code.
     def get_package(self) -> PartyPackage:
         package = (
             PartyPackage.objects.filter(is_active=True, is_default=True).first()
@@ -36,18 +40,22 @@ class CheckoutStateMixin:
             raise Http404("No active party package is currently available.")
         return package
 
+    # This method finds or prepares the checkout state needed by the rest of the code.
     def get_checkout_state(self) -> dict[str, Any]:
         state = self.request.session.get(CHECKOUT_SESSION_KEY, {})
         return state if isinstance(state, dict) else {}
 
+    # This method stores the current checkout step in the session so the user can continue to the next page.
     def save_checkout_state(self, state: dict[str, Any]) -> None:
         self.request.session[CHECKOUT_SESSION_KEY] = state
         self.request.session.modified = True
 
+    # This method removes completed or cancelled checkout information from the session.
     def clear_checkout_state(self) -> None:
         self.request.session.pop(CHECKOUT_SESSION_KEY, None)
         self.request.session.modified = True
 
+    # This method finds or prepares the selected tier needed by the rest of the code.
     def get_selected_tier(self) -> GuestPriceTier | None:
         tier_id = self.get_checkout_state().get("guest_tier_id")
         if not tier_id:
@@ -57,6 +65,7 @@ class CheckoutStateMixin:
             is_active=True,
         ).first()
 
+    # This method finds or prepares the selected addons needed by the rest of the code.
     def get_selected_addons(self) -> list[AddonExperience]:
         addon_ids = self.get_checkout_state().get("addon_ids", [])
         if not isinstance(addon_ids, list):
@@ -67,6 +76,7 @@ class CheckoutStateMixin:
             )
         )
 
+    # This method finds or prepares the quote context needed by the rest of the code.
     def get_quote_context(self) -> dict[str, Any]:
         guest_tier = self.get_selected_tier()
         addons = self.get_selected_addons()
@@ -86,6 +96,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
     template_name = "party_builder/options.html"
     form_class = PackageOptionsForm
 
+    # This method passes the extra information that the form needs when it is created.
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["package"] = self.package
@@ -107,6 +118,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
                 kwargs["initial"] = {"guest_tier": default_tier.pk}
         return kwargs
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form = context["form"]
@@ -143,6 +155,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
         )
         return context
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         guest_tier = form.cleaned_data["guest_tier"]
         addons = list(form.cleaned_data["addons"])
@@ -166,12 +179,14 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
     template_name = "party_builder/details.html"
     form_class = PartyDetailsForm
 
+    # This method performs setup and permission checks before the request reaches the page action.
     def dispatch(self, request, *args, **kwargs):
         self.package = self.get_package()
         if self.get_selected_tier() is None:
             return redirect("party_builder:party_builder_package_options")
         return FormView.dispatch(self, request, *args, **kwargs)
 
+    # This method passes the extra information that the form needs when it is created.
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         guest_tier = self.get_selected_tier()
@@ -193,12 +208,14 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
             }
         return kwargs
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_quote_context())
         context["current_step"] = 2
         return context
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         cleaned = form.cleaned_data
         state = self.get_checkout_state()
@@ -244,6 +261,7 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
     template_name = "party_builder/checkout.html"
     form_class = SimulatedPaymentForm
 
+    # This method performs setup and permission checks before the request reaches the page action.
     def dispatch(self, request, *args, **kwargs):
         self.package = self.get_package()
         state = self.get_checkout_state()
@@ -253,6 +271,7 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
             return redirect("party_builder:party_builder_customer_details")
         return FormView.dispatch(self, request, *args, **kwargs)
 
+    # This method adds the information that the template needs to display the page.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(self.get_quote_context())
@@ -260,6 +279,7 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
         context["current_step"] = 3
         return context
 
+    # This method converts session text values back into the date and time objects used by Django.
     @staticmethod
     def _deserialize_details(raw_details: dict[str, Any]) -> dict[str, Any]:
         return {
@@ -272,6 +292,7 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
             ),
         }
 
+    # This method handles a correctly completed form and performs the requested action.
     def form_valid(self, form):
         state = self.get_checkout_state()
         guest_tier = self.get_selected_tier()
@@ -317,6 +338,7 @@ class PartyBuildSuccessView(DetailView):
     slug_field = "public_id"
     slug_url_kwarg = "public_id"
 
+    # This method limits the database records to the ones the current user is allowed to see.
     def get_queryset(self):
         return (
             super()
@@ -325,6 +347,7 @@ class PartyBuildSuccessView(DetailView):
             .prefetch_related("addon_items__addon")
         )
 
+    # This method finds or prepares the object needed by the rest of the code.
     def get_object(self, queryset=None):
         party_build = super().get_object(queryset)
         permitted_builds = self.request.session.get(

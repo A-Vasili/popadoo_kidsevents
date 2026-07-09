@@ -1,16 +1,22 @@
 {% extends "base.html" %}
 {% load static %}
 
+{# This template confirms that the simulated checkout was completed and summarizes the booking. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+
 {% block title %}Simulated Purchase Complete | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Your customised Popadoo party request and simulated checkout have been completed.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}partyBuilderSuccess{% endblock %}
 
+{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
     <section class="checkout-success" aria-labelledby="success-heading">
         <div class="container narrow-content">
             <p class="success-icon" aria-hidden="true">✓</p>
@@ -21,7 +27,9 @@
                 Popadoo can now review the date, location, and final availability with you.
             </p>
 
+            {# This article represents one self-contained item that can be understood on its own. #}
             <article class="saved-build-card" aria-labelledby="saved-order-heading">
+                {# This header introduces the page and gives visitors the main context before they continue. #}
                 <header>
                     <h2 id="saved-order-heading">{{ party_build.package.name }}</h2>
                     <p>Reference: <strong>{{ party_build.public_id }}</strong></p>
@@ -37,9 +45,11 @@
                     <div class="review-detail-wide"><dt>Venue</dt><dd>{{ party_build.event_address }}, {{ party_build.postal_code }}</dd></div>
                 </dl>
 
+                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
                 <section aria-labelledby="saved-addons-heading">
                     <h3 id="saved-addons-heading">Optional experiences</h3>
                     <ul class="saved-addon-list">
+                        {# This loop creates one visible item for each record supplied by the Django view. #}
                         {% for item in party_build.addon_items.all %}
                             <li><span>{{ item.addon.name }}</span><strong>€{{ item.unit_price|floatformat:2 }}</strong></li>
                         {% empty %}
@@ -62,12 +72,14 @@
             </article>
 
             {% if request.user.is_authenticated %}
+                {# This supporting area summarizes useful information without interrupting the main task. #}
                 <aside class="guest-account-invitation" aria-labelledby="saved-account-heading">
                     <h2 id="saved-account-heading">This booking is saved to your account</h2>
                     <p>You can follow its assignment status from your personal dashboard.</p>
                     <a class="button button-outline" href="{% url 'accounts:accounts_customer_dashboard' %}">View my bookings</a>
                 </aside>
             {% else %}
+                {# This supporting area summarizes useful information without interrupting the main task. #}
                 <aside class="guest-account-invitation" aria-labelledby="create-account-heading">
                     <h2 id="create-account-heading">Make your next booking faster</h2>
                     <p>Create an optional account to save contact details and keep future booking history.</p>
@@ -75,6 +87,7 @@
                 </aside>
             {% endif %}
 
+            {# This navigation groups related links so users can move through this part of the website. #}
             <nav class="success-actions" aria-label="Completed checkout actions">
                 <a class="button" href="{% url 'party_builder:party_builder_package_options' %}">Plan another party</a>
                 <a class="button button-outline" href="{% url 'core:core_home' %}">Return home</a>

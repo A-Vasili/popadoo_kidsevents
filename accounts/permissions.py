@@ -1,3 +1,6 @@
+# This file provides small reusable checks for the project roles and permissions.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.contrib.auth.models import AbstractBaseUser
@@ -17,10 +20,12 @@ def user_in_group(user: AbstractBaseUser, group_name: str) -> bool:
     )
 
 
+# This helper returns whether is owner.
 def is_owner(user: AbstractBaseUser) -> bool:
     return bool(getattr(user, "is_superuser", False) or user_in_group(user, OWNER_GROUP))
 
 
+# This helper returns whether is worker.
 def is_worker(user: AbstractBaseUser) -> bool:
     if not getattr(user, "is_authenticated", False):
         return False
@@ -45,9 +50,11 @@ def can_manage_pricing(user: AbstractBaseUser) -> bool:
     )
 
 
+# This helper returns whether can access operations.
 def can_access_operations(user: AbstractBaseUser) -> bool:
     return bool(is_owner(user) or is_worker(user))
 
 
+# This helper returns whether can manage workers.
 def can_manage_workers(user: AbstractBaseUser) -> bool:
     return bool(is_owner(user) and user.has_perm("accounts.manage_worker_roles"))

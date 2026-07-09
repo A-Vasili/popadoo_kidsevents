@@ -1,6 +1,11 @@
 "use strict";
 
 /*
+ * This script manages shared browser behaviour such as language choice, theme changes, navigation, and booking-form enhancements.
+ * These comments explain the browser-side steps without changing the JavaScript behaviour.
+ */
+
+/*
  * Main site behavior.
  * Handles language switching, theme toggling, responsive navigation, and the
  * booking-form workflow shared across the Popadoo pages.
@@ -47,6 +52,7 @@
         }
     };
 
+    // This function handles the store value part of the browser interaction.
     const storeValue = (key, value) => {
         try {
             window.localStorage.setItem(key, value);
@@ -58,16 +64,19 @@
     /* Small validation helpers for language and package values. */
     const isSupportedLanguage = (language) => supportedLanguages.includes(language);
 
+    // This function handles the has select option part of the browser interaction.
     const hasSelectOption = (selectElement, value) => {
         return Boolean(selectElement)
             && Array.from(selectElement.options).some((option) => option.value === value);
     };
 
+    // This function reads or prepares url language for the next step.
     const getUrlLanguage = () => {
         const language = new URLSearchParams(window.location.search).get("lang");
         return isSupportedLanguage(language) ? language : null;
     };
 
+    // This function reads or prepares url package for the next step.
     const getUrlPackage = () => {
         const packageId = new URLSearchParams(window.location.search).get("package");
         return packageId && hasSelectOption(bookingPackage, packageId)
@@ -117,6 +126,7 @@
         }
     };
 
+    // This function handles the should localize href part of the browser interaction.
     const shouldLocalizeHref = (href) => {
         return href
             && !href.startsWith("#")
@@ -125,6 +135,7 @@
             && !href.startsWith("javascript:");
     };
 
+    // This function reads or prepares relative localized href for the next step.
     const getRelativeLocalizedHref = (url) => {
         return `${url.pathname}${url.search}${url.hash}`;
     };
@@ -154,6 +165,7 @@
         });
     };
 
+    // This function refreshes current url language so the page matches the latest user choice.
     const updateCurrentUrlLanguage = () => {
         const url = new URL(window.location.href);
         url.searchParams.set("lang", currentLanguage);
@@ -166,6 +178,7 @@
         return localDate.toISOString().slice(0, 10);
     };
 
+    // This function applies default booking values in one consistent place.
     const setDefaultBookingValues = () => {
         /* A late-afternoon default makes the time field useful without forcing a choice. */
         if (bookingTime && !bookingTime.value) {
@@ -205,6 +218,7 @@
         ].join("\n");
     };
 
+    // This function applies custom package details to the current page.
     const applyCustomPackageDetails = () => {
         if (!bookingDetails || bookingPackage?.value !== customPackageId) {
             return;
@@ -227,6 +241,7 @@
         }
     };
 
+    // This function applies selected package to booking form to the current page.
     const applySelectedPackageToBookingForm = () => {
         if (!bookingPackage) {
             return;
@@ -246,12 +261,14 @@
         }
     };
 
+    // This function handles the hide booking confirmation part of the browser interaction.
     const hideBookingConfirmation = () => {
         if (bookingConfirmation && !bookingConfirmation.hidden) {
             bookingConfirmation.hidden = true;
         }
     };
 
+    // This function returns booking form to its starting state.
     const clearBookingForm = ({ preserveConfirmation = false } = {}) => {
         if (!bookingForm) {
             return;
@@ -389,6 +406,7 @@
         }
     };
 
+    // This function changes whether navigation is visible.
     const openNavigation = () => {
         if (!navigationToggle || !navigationMenu) {
             return;

@@ -1,3 +1,6 @@
+# This file defines packages, guest-price brackets, add-ons, bookings, and saved price snapshots.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 import uuid
@@ -40,6 +43,7 @@ class PartyPackage(models.Model):
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "name")
         constraints = [
@@ -54,6 +58,7 @@ class PartyPackage(models.Model):
             ),
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return self.name
 
@@ -67,6 +72,7 @@ class PartyPackage(models.Model):
             if item.strip()
         ]
 
+    # This method finds or prepares the absolute url needed by the rest of the code.
     def get_absolute_url(self) -> str:
         return reverse("party_builder:party_builder_package_options")
 
@@ -95,6 +101,7 @@ class GuestPriceTier(models.Model):
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "min_guests")
         constraints = [
@@ -117,6 +124,7 @@ class GuestPriceTier(models.Model):
             ),
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.package.name}: {self.label}"
 
@@ -130,6 +138,7 @@ class GuestPriceTier(models.Model):
             Decimal("0.01")
         )
 
+    # This method returns whether a number of children belongs inside this price bracket.
     def contains_guest_count(self, guest_count: int) -> bool:
         return self.min_guests <= guest_count <= self.max_guests
 
@@ -159,6 +168,7 @@ class AddonExperience(models.Model):
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "name")
         constraints = [
@@ -168,6 +178,7 @@ class AddonExperience(models.Model):
             )
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return self.name
 
@@ -181,10 +192,12 @@ class PartyBuild(models.Model):
         CONFIRMED = "confirmed", "Confirmed"
         CANCELLED = "cancelled", "Cancelled"
 
+    # This database model stores payment status information.
     class PaymentStatus(models.TextChoices):
         SIMULATED = "simulated", "Simulated payment accepted"
         NOT_REQUIRED = "not_required", "No payment data"
 
+    # This database model stores assignment state information.
     class AssignmentState(models.TextChoices):
         UNASSIGNED = "unassigned", "Unassigned"
         PENDING = "pending_acceptance", "Awaiting worker response"
@@ -288,12 +301,15 @@ class PartyBuild(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("-created_at",)
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.contact_name} — {self.package.name} ({self.event_date})"
 
+    # This method finds or prepares the absolute url needed by the rest of the code.
     def get_absolute_url(self) -> str:
         return reverse(
             "party_builder:party_builder_order_success",
@@ -320,6 +336,7 @@ class PartyBuildAddon(models.Model):
         validators=[MinValueValidator(Decimal("0.00"))],
     )
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("addon__display_order", "addon__name")
         constraints = [
@@ -329,5 +346,6 @@ class PartyBuildAddon(models.Model):
             )
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.build.public_id}: {self.addon.name}"

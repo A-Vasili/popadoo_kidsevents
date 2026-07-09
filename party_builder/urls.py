@@ -1,9 +1,13 @@
+# This file gives clear names and paths to every step of the party checkout.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from django.urls import path
 
 from . import views
 
 app_name = "party_builder"
 
+# These URL patterns connect web addresses to the views that handle them.
 urlpatterns = [
     path(
         "",

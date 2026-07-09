@@ -1,3 +1,6 @@
+# This file defines the extra profile information stored for customers and workers.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -42,9 +45,11 @@ class CustomerProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("user__last_name", "user__first_name", "user__username")
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"Customer profile: {self.user.get_full_name() or self.user.username}"
 
@@ -75,6 +80,7 @@ class WorkerProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This database model stores meta information.
     class Meta:
         ordering = ("display_name", "user__username")
         permissions = [
@@ -83,5 +89,6 @@ class WorkerProfile(models.Model):
             ("view_all_worker_schedules", "Can view all worker schedules"),
         ]
 
+    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return self.display_name or self.user.get_full_name() or self.user.username

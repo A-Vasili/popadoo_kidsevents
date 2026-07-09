@@ -1,5 +1,10 @@
 "use strict";
 
+/*
+ * This script opens and closes the signed-in account menu in a keyboard-friendly way.
+ * These comments explain the browser-side steps without changing the JavaScript behaviour.
+ */
+
 (() => {
     const menu = document.querySelector("[data-account-menu]");
     if (!menu) return;
@@ -8,12 +13,14 @@
     const panel = menu.querySelector("[data-account-menu-panel]");
     const focusableSelector = "a[href], button:not([disabled])";
 
+    // This function changes whether close is visible.
     const close = (returnFocus = false) => {
         panel.hidden = true;
         button.setAttribute("aria-expanded", "false");
         if (returnFocus) button.focus();
     };
 
+    // This function changes whether open is visible.
     const open = () => {
         panel.hidden = false;
         button.setAttribute("aria-expanded", "true");

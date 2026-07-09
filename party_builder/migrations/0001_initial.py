@@ -1,3 +1,6 @@
+# This migration records a database change so every environment can build the same structure.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 # Generated for the Popadoo party builder.
 
 import django.core.validators
@@ -9,6 +12,7 @@ from django.db import migrations, models
 from django.db.models import Q
 
 
+# This migration tells Django how to update the database in a repeatable way.
 class Migration(migrations.Migration):
     initial = True
 

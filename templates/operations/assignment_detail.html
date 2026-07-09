@@ -1,26 +1,169 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Assignment Details | Popadoo Kids Events{% endblock %}
-{% block meta_robots %}noindex,nofollow{% endblock %}
-{% block page_name %}operationsAssignmentDetail{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/operations.css' %}">{% endblock %}
+{# This template displays the assignment detail page or reusable section for the operations area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+{% block title %}
+    Assignment Details | Popadoo Kids Events
+{% endblock %}
+{% block meta_robots %}
+    noindex,nofollow
+{% endblock %}
+{% block page_name %}
+    operationsAssignmentDetail
+{% endblock %}
+{# This block adds only the stylesheet needed by this page. #}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/operations.css' %}">
+{% endblock %}
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-<section class="operations-page" aria-labelledby="assignment-heading"><div class="container">
-{% include "operations/includes/nav.html" %}
-<article class="operations-panel assignment-detail">
-<header><div><p class="section-kicker">{{ assignment.get_assignment_source_display }}</p><h1 id="assignment-heading">Party for {{ assignment.party_build.contact_name }}</h1></div><span class="status-pill status-{{ assignment.status }}">{{ assignment.get_status_display }}</span></header>
-<dl class="detail-grid">
-<div><dt>Date</dt><dd>{{ assignment.party_build.event_date|date:"j F Y" }}</dd></div><div><dt>Time</dt><dd>{{ assignment.party_build.event_time|time:"H:i"|default:"To confirm" }}</dd></div><div><dt>Children</dt><dd>{{ assignment.party_build.guest_count }}</dd></div><div><dt>Package</dt><dd>{{ assignment.party_build.package.name }}</dd></div><div><dt>Phone</dt><dd><a href="tel:{{ assignment.party_build.contact_phone }}">{{ assignment.party_build.contact_phone }}</a></dd></div><div><dt>Email</dt><dd><a href="mailto:{{ assignment.party_build.contact_email }}">{{ assignment.party_build.contact_email }}</a></dd></div><div class="detail-wide"><dt>Venue</dt><dd>{{ assignment.party_build.event_address }}, {{ assignment.party_build.postal_code }}</dd></div><div class="detail-wide"><dt>Notes</dt><dd>{{ assignment.party_build.notes|default:"No extra notes." }}</dd></div>
-</dl>
-<section><h2>Optional experiences</h2><ul>{% for item in assignment.party_build.addon_items.all %}<li>{{ item.addon.name }}</li>{% empty %}<li>None selected.</li>{% endfor %}</ul></section>
-{% if assignment.status == 'pending' and assignment.worker.user == request.user %}
-<div class="assignment-actions">
-<form method="post" action="{% url 'operations:operations_worker_assignment_accept' assignment.pk %}">{% csrf_token %}<button class="button" type="submit">Accept assignment</button></form>
-<form class="decline-form" method="post" action="{% url 'operations:operations_worker_assignment_decline' assignment.pk %}" novalidate>{% csrf_token %}
-{% if decline_form.non_field_errors %}<div role="alert">{{ decline_form.non_field_errors }}</div>{% endif %}
-<label for="{{ decline_form.reason.id_for_label }}">{{ decline_form.reason.label }}</label>{{ decline_form.reason }}<p class="form-help">{{ decline_form.reason.help_text }}</p>{% for error in decline_form.reason.errors %}<p class="form-error" role="alert">{{ error }}</p>{% endfor %}
-<button class="button button-danger" type="submit">Decline assignment</button></form>
-</div>
-{% endif %}
-</article></div></section>
+    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
+    <section class="operations-page" aria-labelledby="assignment-heading">
+        <div class="container">
+            {# This include reuses a shared template fragment instead of repeating the same markup. #}
+            {% include "operations/includes/nav.html" %}
+            {# This article represents one self-contained item that can be understood on its own. #}
+            <article class="operations-panel assignment-detail">
+                {# This header introduces the page and gives visitors the main context before they continue. #}
+                <header>
+                    <div>
+                        <p class="section-kicker">
+                            {{ assignment.get_assignment_source_display }}
+                        </p>
+                        <h1 id="assignment-heading">
+                            Party for
+                            {{ assignment.party_build.contact_name }}
+                        </h1>
+                    </div>
+                    <span class="status-pill status-{{ assignment.status }}">
+                        {{ assignment.get_status_display }}
+                    </span>
+                </header>
+                <dl class="detail-grid">
+                    <div>
+                        <dt>
+                            Date
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.event_date|date:"j F Y" }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            Time
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.event_time|time:"H:i"|default:"To confirm" }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            Children
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.guest_count }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            Package
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.package.name }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            Phone
+                        </dt>
+                        <dd>
+                            <a href="tel:{{ assignment.party_build.contact_phone }}">
+                                {{ assignment.party_build.contact_phone }}
+                            </a>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
+                            Email
+                        </dt>
+                        <dd>
+                            <a href="mailto:{{ assignment.party_build.contact_email }}">
+                                {{ assignment.party_build.contact_email }}
+                            </a>
+                        </dd>
+                    </div>
+                    <div class="detail-wide">
+                        <dt>
+                            Venue
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.event_address }},
+                            {{ assignment.party_build.postal_code }}
+                        </dd>
+                    </div>
+                    <div class="detail-wide">
+                        <dt>
+                            Notes
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.notes|default:"No extra notes." }}
+                        </dd>
+                    </div>
+                </dl>
+                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
+                <section>
+                    <h2>
+                        Optional experiences
+                    </h2>
+                    <ul>
+                        {% for item in assignment.party_build.addon_items.all %}
+                            <li>
+                                {{ item.addon.name }}
+                            </li>
+                        {% empty %}
+                            <li>
+                                None selected.
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% if assignment.status == 'pending' and assignment.worker.user == request.user %}
+                    <div class="assignment-actions">
+                        {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
+                        <form method="post" action="{% url 'operations:operations_worker_assignment_accept' assignment.pk %}">
+                            {% csrf_token %}
+                            <button class="button" type="submit">
+                                Accept assignment
+                            </button>
+                        </form>
+                        {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
+                        <form class="decline-form" method="post" action="{% url 'operations:operations_worker_assignment_decline' assignment.pk %}" novalidate>
+                            {% csrf_token %}
+                            {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
+                            {% if decline_form.non_field_errors %}
+                                <div role="alert">
+                                    {{ decline_form.non_field_errors }}
+                                </div>
+                            {% endif %}
+                            <label for="{{ decline_form.reason.id_for_label }}">
+                                {{ decline_form.reason.label }}
+                            </label>
+                            {{ decline_form.reason }}
+                            <p class="form-help">
+                                {{ decline_form.reason.help_text }}
+                            </p>
+                            {% for error in decline_form.reason.errors %}
+                                <p class="form-error" role="alert">
+                                    {{ error }}
+                                </p>
+                            {% endfor %}
+                            <button class="button button-danger" type="submit">
+                                Decline assignment
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </article>
+        </div>
+    </section>
 {% endblock %}

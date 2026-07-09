@@ -1,3 +1,6 @@
+# This file collects the main Django settings that control installed apps, templates, the database, security, and static files.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 """
 Django settings for config project.
 
@@ -62,6 +65,7 @@ INSTALLED_APPS = [
     'operations.apps.OperationsConfig',
 ]
 
+# Middleware runs around each request to provide security, sessions, authentication, and other shared behaviour.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -72,8 +76,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# This setting points Django to the main URL file for the project.
 ROOT_URLCONF = 'config.urls'
 
+# These settings tell Django where templates live and which shared template helpers are available.
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -90,6 +96,7 @@ TEMPLATES = [
     },
 ]
 
+# This setting points deployment servers to the WSGI application.
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
@@ -142,9 +149,12 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Deployment collects all static files into this folder.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# This address prefix is used for files uploaded through the website.
 MEDIA_URL = "media/"
+# Uploaded files are stored in this folder.
 MEDIA_ROOT = BASE_DIR / "media"
 
 # Default primary key field type
@@ -165,4 +175,5 @@ X_FRAME_OPTIONS = "DENY"
 # Authentication routes used by Django's LoginRequiredMixin and safe redirects.
 LOGIN_URL = "accounts:accounts_sign_in"
 LOGIN_REDIRECT_URL = "accounts:accounts_customer_dashboard"
+# After signing out, users return to this public page.
 LOGOUT_REDIRECT_URL = "core:core_home"

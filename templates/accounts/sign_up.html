@@ -1,23 +1,33 @@
 {% extends "base.html" %}
 {% load static %}
 
+{# This template displays the sign up page or reusable section for the accounts area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+
 {% block title %}Create Account | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Create a Popadoo account to save your details and view your party bookings.{% endblock %}
 {% block page_name %}accountSignUp{% endblock %}
+{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
+{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section class="account-page" aria-labelledby="sign-up-heading">
     <div class="container account-shell">
+        {# This header introduces the page and gives visitors the main context before they continue. #}
         <header class="account-heading">
             <p class="section-kicker">A faster next booking</p>
             <h1 id="sign-up-heading">Create your Popadoo account</h1>
             <p>Save your contact details and keep your party history in one secure place.</p>
         </header>
+        {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
         <form method="post" class="account-card" novalidate>
             {% csrf_token %}
+            {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
             {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
             <div class="account-form-grid">
+                {# This loop creates one visible item for each record supplied by the Django view. #}
                 {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
             </div>
             <button class="button" type="submit">Create account</button>

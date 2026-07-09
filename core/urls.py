@@ -1,3 +1,6 @@
+# This file gives clear names and paths to the public information pages.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from django.urls import path
 from django.views.generic import RedirectView
 
@@ -5,6 +8,7 @@ from . import views
 
 app_name = "core"
 
+# These URL patterns connect web addresses to the views that handle them.
 urlpatterns = [
     path("", views.home, name="core_home"),
     path("gallery/", views.gallery, name="core_gallery"),

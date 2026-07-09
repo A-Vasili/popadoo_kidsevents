@@ -1,21 +1,28 @@
 {% extends "base.html" %}
 {% load static %}
 
+{# This template displays the testimonials page or reusable section for the core area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
+
 {% block title %}Testimonials | Popadoo Kids Events{% endblock %}
 {% block page_name %}testimonials{% endblock %}
 
+{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/testimonials.css' %}">
 {% endblock %}
 
+{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
 <div class="page-main">
 <div class="container">
+{# This header introduces the page and gives visitors the main context before they continue. #}
 <header class="page-heading">
 <p class="section-kicker" data-i18n="testimonials.kicker">Honest feedback</p>
 <h1 data-i18n="testimonials.heading">Testimonials</h1>
 <p class="lead" data-i18n="testimonials.lead">Popadoo publishes client comments only with permission. This coursework version does not invent quotations; instead, it explains the feedback standards used to improve each event.</p>
 </header>
+{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section aria-labelledby="testimonial-list-heading">
 <div class="section-heading-group">
 <h2 data-i18n="testimonials.listHeading" id="testimonial-list-heading">How we approach feedback</h2>
@@ -23,6 +30,7 @@
 </div>
 <div class="row g-4 testimonial-grid">
 <div class="col-md-4">
+{# This article represents one self-contained item that can be understood on its own. #}
 <article class="testimonial-card card h-100">
 <div class="card-body">
 <span aria-hidden="true" class="feedback-icon">1</span>
@@ -32,6 +40,7 @@
 </article>
 </div>
 <div class="col-md-4">
+{# This article represents one self-contained item that can be understood on its own. #}
 <article class="testimonial-card card h-100">
 <div class="card-body">
 <span aria-hidden="true" class="feedback-icon">2</span>
@@ -41,6 +50,7 @@
 </article>
 </div>
 <div class="col-md-4">
+{# This article represents one self-contained item that can be understood on its own. #}
 <article class="testimonial-card card h-100">
 <div class="card-body">
 <span aria-hidden="true" class="feedback-icon">3</span>

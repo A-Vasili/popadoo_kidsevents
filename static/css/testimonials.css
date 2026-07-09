@@ -1,9 +1,13 @@
+/*
+ * This stylesheet controls the appearance of the testimonials page or component.
+ * The comments explain visual sections without changing the styles applied by the browser.
+ */
 /* Page-specific styles for testimonials.html. */
-
 .testimonial-grid {
     margin-top: 2rem;
 }
 
+/* These rules present each item as a clear, reusable content card. */
 .testimonial-card {
     min-height: 14rem;
     border: 1px solid var(--color-border);
@@ -13,9 +17,17 @@
     box-shadow: var(--shadow-card);
 }
 
-.testimonial-grid > div:nth-child(2) .testimonial-card { background: var(--surface-mint); }
-.testimonial-grid > div:nth-child(3) .testimonial-card { background: var(--surface-peach); }
+/* These rules present each item as a clear, reusable content card. */
+.testimonial-grid > div:nth-child(2) .testimonial-card {
+    background: var(--surface-mint);
+}
 
+/* These rules present each item as a clear, reusable content card. */
+.testimonial-grid > div:nth-child(3) .testimonial-card {
+    background: var(--surface-peach);
+}
+
+/* These rules style this group of related page elements. */
 .feedback-icon {
     width: 2.5rem;
     height: 2.5rem;
@@ -28,6 +40,7 @@
     font-weight: 900;
 }
 
+/* These rules present each item as a clear, reusable content card. */
 .testimonial-card p {
     margin-bottom: 0;
 }

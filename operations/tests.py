@@ -1,3 +1,6 @@
+# This file checks role access, assignment workflows, and owner controls.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -14,10 +17,13 @@ from .models import AuditEvent, PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, offer_assignment
 
 
+# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
+# This test class groups checks related to operations permissions.
 class OperationsPermissionTests(TestCase):
+    # This setup method creates shared sample records once for all tests in this class.
     @classmethod
     def setUpTestData(cls):
         cls.customer = User.objects.create_user("customer", password="pass-12345")
@@ -31,6 +37,7 @@ class OperationsPermissionTests(TestCase):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
         cls.tier = GuestPriceTier.objects.filter(package=cls.package).first()
 
+    # This test helper creates a complete sample booking for assignment tests.
     def make_build(self, event_date=None):
         return PartyBuild.objects.create(
             package=self.package,
@@ -49,6 +56,7 @@ class OperationsPermissionTests(TestCase):
             total_price=Decimal("180.00"),
         )
 
+    # This test helper creates an availability period for a sample worker.
     def add_availability(self, worker, build):
         tz = timezone.get_current_timezone()
         start = timezone.make_aware(datetime.combine(build.event_date, build.event_time), tz)
@@ -59,11 +67,13 @@ class OperationsPermissionTests(TestCase):
             availability_type=WorkerAvailability.AvailabilityType.AVAILABLE,
         )
 
+    # This test checks that customer cannot access operations.
     def test_customer_cannot_access_operations(self):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("operations:operations_dashboard"))
         self.assertEqual(response.status_code, 403)
 
+    # This test checks that worker sees only own assignment.
     def test_worker_sees_only_own_assignment(self):
         build = self.make_build()
         assignment = PartyAssignment.objects.create(party_build=build, worker=self.other_worker)
@@ -73,6 +83,7 @@ class OperationsPermissionTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    # This test checks that available worker receives and accepts offer.
     def test_available_worker_receives_and_accepts_offer(self):
         build = self.make_build()
         self.add_availability(self.worker, build)
@@ -85,6 +96,7 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(assignment.status, PartyAssignment.Status.ACCEPTED)
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.ASSIGNED)
 
+    # This test checks that no available worker requires owner review.
     def test_no_available_worker_requires_owner_review(self):
         build = self.make_build()
         self.assertIsNone(offer_assignment(build.pk))
@@ -92,6 +104,7 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.MANUAL_REVIEW)
 
 
+    # This test checks that owner can promote customer and grant pricing.
     def test_owner_can_promote_customer_and_grant_pricing(self):
         self.client.force_login(self.owner)
         response = self.client.post(
@@ -116,6 +129,7 @@ class OperationsPermissionTests(TestCase):
         self.assertRedirects(response, reverse("operations:operations_owner_workers"))
         self.assertTrue(self.customer.groups.filter(name="Pricing Managers").exists())
 
+    # This test checks that owner pricing update changes future package price and audits.
     def test_owner_pricing_update_changes_future_package_price_and_audits(self):
         self.client.force_login(self.owner)
         response = self.client.post(
@@ -135,6 +149,7 @@ class OperationsPermissionTests(TestCase):
         self.assertTrue(AuditEvent.objects.filter(event_type="pricing_changed").exists())
 
 
+    # This test checks that pricing manager can edit prices but not manage workers.
     def test_pricing_manager_can_edit_prices_but_not_manage_workers(self):
         Group.objects.get(name="Pricing Managers").user_set.add(self.worker_user)
         self.client.force_login(self.worker_user)
@@ -147,6 +162,7 @@ class OperationsPermissionTests(TestCase):
             403,
         )
 
+    # This test checks that normal worker cannot open pricing.
     def test_normal_worker_cannot_open_pricing(self):
         self.client.force_login(self.other_worker_user)
         self.assertEqual(
@@ -154,6 +170,7 @@ class OperationsPermissionTests(TestCase):
             403,
         )
 
+    # This test checks that superuser has full operations access.
     def test_superuser_has_full_operations_access(self):
         admin = User.objects.create_superuser("admin_test", "admin@example.com", "pass-12345")
         self.client.force_login(admin)
@@ -167,6 +184,7 @@ class OperationsPermissionTests(TestCase):
             with self.subTest(route=route):
                 self.assertEqual(self.client.get(reverse(route)).status_code, 200)
 
+    # This test checks that owner can open worker and pricing pages.
     def test_owner_can_open_worker_and_pricing_pages(self):
         self.client.force_login(self.owner)
         self.assertEqual(

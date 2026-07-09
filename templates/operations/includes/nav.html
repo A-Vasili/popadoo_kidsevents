@@ -1,17 +1,37 @@
+{# This template displays the nav page or reusable section for the includes area. #}
+{# The comments guide future readers and do not appear in the rendered web page. #}
 <nav class="operations-subnav" aria-label="Staff portal">
-    <a href="{% url 'operations:operations_dashboard' %}">Overview</a>
-    <a href="{% url 'operations:operations_worker_assignments' %}">Assignments</a>
+    <a href="{% url 'operations:operations_dashboard' %}">
+        Overview
+    </a>
+    <a href="{% url 'operations:operations_worker_assignments' %}">
+        Assignments
+    </a>
     {% if nav_is_worker and not nav_is_owner %}
-        <a href="{% url 'operations:operations_worker_profile' %}">Worker profile</a>
-        <a href="{% url 'operations:operations_worker_availability' %}">Availability</a>
-        <a href="{% url 'operations:operations_worker_schedule' %}">My schedule</a>
+        <a href="{% url 'operations:operations_worker_profile' %}">
+            Worker profile
+        </a>
+        <a href="{% url 'operations:operations_worker_availability' %}">
+            Availability
+        </a>
+        <a href="{% url 'operations:operations_worker_schedule' %}">
+            My schedule
+        </a>
     {% endif %}
     {% if nav_is_owner %}
-        <a href="{% url 'operations:operations_owner_workers' %}">Workers</a>
-        <a href="{% url 'operations:operations_owner_schedule' %}">All schedules</a>
-        <a href="{% url 'operations:operations_owner_audit' %}">Audit history</a>
+        <a href="{% url 'operations:operations_owner_workers' %}">
+            Workers
+        </a>
+        <a href="{% url 'operations:operations_owner_schedule' %}">
+            All schedules
+        </a>
+        <a href="{% url 'operations:operations_owner_audit' %}">
+            Audit history
+        </a>
     {% endif %}
     {% if nav_can_manage_pricing %}
-        <a href="{% url 'operations:operations_owner_pricing' %}">Pricing</a>
+        <a href="{% url 'operations:operations_owner_pricing' %}">
+            Pricing
+        </a>
     {% endif %}
 </nav>

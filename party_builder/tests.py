@@ -1,3 +1,6 @@
+# This file checks pricing, form validation, checkout safety, and booking creation.
+# Comments in this file explain the purpose of each section without changing how the program works.
+
 from datetime import timedelta
 from decimal import Decimal
 
@@ -9,7 +12,9 @@ from .models import AddonExperience, GuestPriceTier, PartyBuild, PartyPackage
 from .services import calculate_party_quote
 
 
+# This test class groups checks related to party checkouts.
 class PartyCheckoutTests(TestCase):
+    # This setup method creates shared sample records once for all tests in this class.
     @classmethod
     def setUpTestData(cls):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
@@ -25,6 +30,7 @@ class PartyCheckoutTests(TestCase):
         )
         cls.addon = AddonExperience.objects.get(slug="face-painting")
 
+    # This test helper submits the package-size and add-on choices for checkout step one.
     def select_options(self, tier=None, addons=None):
         return self.client.post(
             reverse("party_builder:party_builder_package_options"),
@@ -34,6 +40,7 @@ class PartyCheckoutTests(TestCase):
             },
         )
 
+    # This test helper submits the customer and event details for checkout step two.
     def submit_details(self, guest_count=8):
         return self.client.post(
             reverse("party_builder:party_builder_customer_details"),
@@ -52,6 +59,7 @@ class PartyCheckoutTests(TestCase):
             },
         )
 
+    # This test checks that descriptive namespaced urls.
     def test_descriptive_namespaced_urls(self):
         self.assertEqual(
             reverse("party_builder:party_builder_package_options"),
@@ -66,6 +74,7 @@ class PartyCheckoutTests(TestCase):
             "/party-builder/checkout/",
         )
 
+    # This test checks that options page contains tiers addons and accessibility status.
     def test_options_page_contains_tiers_addons_and_accessibility_status(self):
         response = self.client.get(
             reverse("party_builder:party_builder_package_options")
@@ -76,6 +85,7 @@ class PartyCheckoutTests(TestCase):
         self.assertContains(response, self.addon.name)
         self.assertContains(response, 'aria-live="polite"')
 
+    # This test checks that larger tiers reduce effective price per child.
     def test_larger_tiers_reduce_effective_price_per_child(self):
         self.assertEqual(self.default_tier.total_price, Decimal("180.00"))
         self.assertEqual(
@@ -88,12 +98,14 @@ class PartyCheckoutTests(TestCase):
         )
         self.assertGreater(self.large_tier.total_price, self.default_tier.total_price)
 
+    # This test checks that quote uses selected tier and database addon prices.
     def test_quote_uses_selected_tier_and_database_addon_prices(self):
         quote = calculate_party_quote(self.large_tier, [self.addon])
         self.assertEqual(quote.package_price, Decimal("255.00"))
         self.assertEqual(quote.addon_price, Decimal("70.00"))
         self.assertEqual(quote.total_price, Decimal("325.00"))
 
+    # This test checks that later steps redirect when cart is missing.
     def test_later_steps_redirect_when_cart_is_missing(self):
         details_response = self.client.get(
             reverse("party_builder:party_builder_customer_details")
@@ -105,12 +117,14 @@ class PartyCheckoutTests(TestCase):
         self.assertRedirects(details_response, target)
         self.assertRedirects(checkout_response, target)
 
+    # This test checks that guest count must match selected bracket.
     def test_guest_count_must_match_selected_bracket(self):
         self.select_options(tier=self.large_tier)
         response = self.submit_details(guest_count=8)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This option covers 11–15 children.")
 
+    # This test checks that complete simulated checkout saves only safe card metadata.
     def test_complete_simulated_checkout_saves_only_safe_card_metadata(self):
         self.assertRedirects(
             self.select_options(tier=self.large_tier, addons=[self.addon]),
@@ -145,6 +159,7 @@ class PartyCheckoutTests(TestCase):
         self.assertNotIn("4242424242424242", str(build.__dict__))
         self.assertFalse(hasattr(build, "security_code"))
 
+    # This test checks that invalid test card is rejected.
     def test_invalid_test_card_is_rejected(self):
         self.select_options()
         self.submit_details(guest_count=8)
