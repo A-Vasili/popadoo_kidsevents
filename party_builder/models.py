@@ -3,14 +3,14 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.urls import reverse
 
 
 class PartyPackage(models.Model):
-    """A starting package containing the essential party experiences."""
+    """The essential Popadoo experience used as the checkout foundation."""
 
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True)
@@ -19,13 +19,14 @@ class PartyPackage(models.Model):
         max_digits=8,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="Reference price for the smallest active guest bracket.",
     )
     duration_minutes = models.PositiveIntegerField(
         default=120,
         validators=[MinValueValidator(30), MaxValueValidator(600)],
     )
     included_guest_count = models.PositiveIntegerField(
-        default=15,
+        default=10,
         validators=[MinValueValidator(1), MaxValueValidator(200)],
     )
     included_experiences = models.TextField(
@@ -33,7 +34,7 @@ class PartyPackage(models.Model):
     )
     is_default = models.BooleanField(
         default=False,
-        help_text="The default package shown when the builder opens.",
+        help_text="The package used when the multi-step checkout opens.",
     )
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
@@ -66,14 +67,74 @@ class PartyPackage(models.Model):
         ]
 
     def get_absolute_url(self) -> str:
-        return reverse(
-            "party_builder:party_builder_package",
-            kwargs={"package_slug": self.slug},
+        return reverse("party_builder:party_builder_package_options")
+
+
+class GuestPriceTier(models.Model):
+    """A fixed package price for a clearly defined children-count bracket."""
+
+    package = models.ForeignKey(
+        PartyPackage,
+        on_delete=models.CASCADE,
+        related_name="guest_price_tiers",
+    )
+    label = models.CharField(max_length=60)
+    min_guests = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(200)]
+    )
+    max_guests = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(200)]
+    )
+    total_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ("display_order", "min_guests")
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(total_price__gte=0),
+                name="guest_tier_price_non_negative",
+            ),
+            models.CheckConstraint(
+                condition=Q(max_guests__gte=models.F("min_guests")),
+                name="guest_tier_valid_range",
+            ),
+            models.UniqueConstraint(
+                fields=("package", "min_guests", "max_guests"),
+                name="guest_tier_unique_range_per_package",
+            ),
+            models.UniqueConstraint(
+                fields=("package",),
+                condition=Q(is_default=True),
+                name="guest_tier_single_default_per_package",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.package.name}: {self.label}"
+
+    @property
+    def price_per_child_at_capacity(self) -> Decimal:
+        """Show the effective rate when the bracket is filled to capacity."""
+
+        if not self.max_guests:
+            return Decimal("0.00")
+        return (self.total_price / Decimal(self.max_guests)).quantize(
+            Decimal("0.01")
         )
+
+    def contains_guest_count(self, guest_count: int) -> bool:
+        return self.min_guests <= guest_count <= self.max_guests
 
 
 class AddonExperience(models.Model):
-    """An optional paid experience that can be added to a party package."""
+    """An optional paid experience that can be added to the base package."""
 
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True)
@@ -91,7 +152,7 @@ class AddonExperience(models.Model):
     icon = models.CharField(
         max_length=8,
         default="✦",
-        help_text="A short decorative symbol; it is hidden from assistive technology.",
+        help_text="A short decorative symbol hidden from assistive technology.",
     )
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -111,24 +172,31 @@ class AddonExperience(models.Model):
 
 
 class PartyBuild(models.Model):
-    """A saved customer configuration with server-side price snapshots."""
+    """A completed simulated order with trusted server-side price snapshots."""
 
     class Status(models.TextChoices):
-        DRAFT = "draft", "Draft"
         SUBMITTED = "submitted", "Submitted"
         CONTACTED = "contacted", "Contacted"
         CONFIRMED = "confirmed", "Confirmed"
         CANCELLED = "cancelled", "Cancelled"
 
-    public_id = models.UUIDField(
-        default=uuid.uuid4,
-        editable=False,
-        unique=True,
-    )
+    class PaymentStatus(models.TextChoices):
+        SIMULATED = "simulated", "Simulated payment accepted"
+        NOT_REQUIRED = "not_required", "No payment data"
+
+    public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     package = models.ForeignKey(
         PartyPackage,
         on_delete=models.PROTECT,
         related_name="builds",
+    )
+    guest_tier = models.ForeignKey(
+        GuestPriceTier,
+        on_delete=models.PROTECT,
+        related_name="builds",
+        null=True,
+        blank=True,
+        help_text="Nullable only for legacy requests created before tiered pricing.",
     )
     addons = models.ManyToManyField(
         AddonExperience,
@@ -136,20 +204,61 @@ class PartyBuild(models.Model):
         related_name="party_builds",
         blank=True,
     )
+
+    # Personal and event details collected during checkout step two.
     contact_name = models.CharField(max_length=120)
     contact_email = models.EmailField()
     contact_phone = models.CharField(max_length=30)
     event_date = models.DateField()
+    event_time = models.TimeField(null=True, blank=True)
+    event_address = models.CharField(max_length=240, blank=True)
+    postal_code = models.CharField(
+        max_length=10,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r"^[A-Za-z0-9][A-Za-z0-9\s-]{2,9}$",
+                message="Enter a valid postal code.",
+            )
+        ],
+    )
     guest_count = models.PositiveIntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(200)]
     )
     notes = models.TextField(blank=True, max_length=1500)
+
+    # Snapshots protect historical orders when administrators change prices later.
+    guest_tier_label = models.CharField(max_length=60, blank=True)
+    package_price = models.DecimalField(
+        max_digits=9,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    addon_price = models.DecimalField(
+        max_digits=9,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
     total_price = models.DecimalField(
         max_digits=9,
         decimal_places=2,
         validators=[MinValueValidator(Decimal("0.00"))],
-        help_text="Server-calculated price snapshot at submission time.",
+        help_text="Server-calculated total at simulated checkout.",
     )
+
+    # Only non-sensitive payment metadata is stored. Card number and CVV are discarded.
+    payment_status = models.CharField(
+        max_length=20,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_REQUIRED,
+    )
+    card_brand = models.CharField(max_length=30, blank=True)
+    card_last_four = models.CharField(max_length=4, blank=True)
+    payment_reference = models.CharField(max_length=40, blank=True)
+    checkout_completed_at = models.DateTimeField(null=True, blank=True)
+
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
@@ -166,13 +275,13 @@ class PartyBuild(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse(
-            "party_builder:party_builder_success",
+            "party_builder:party_builder_order_success",
             kwargs={"public_id": self.public_id},
         )
 
 
 class PartyBuildAddon(models.Model):
-    """Join model preserving the addon price used for a submitted build."""
+    """Join model preserving the addon price used for a completed checkout."""
 
     build = models.ForeignKey(
         PartyBuild,

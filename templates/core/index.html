@@ -189,7 +189,7 @@
 
                     <a
                         class="party-booking-button"
-                        href="{% url 'core:contact' %}"
+                        href="{% url 'party_builder:party_builder_package_options' %}"
                         data-i18n="nav.bookNow"
                     >
                         Book Now
@@ -234,7 +234,7 @@
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
-                        href="{% url 'core:gallery' %}"
+                        href="{% url 'core:core_gallery' %}"
                         aria-labelledby="home-gallery-card-title"
                     >
                         <img
@@ -288,7 +288,7 @@
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
-                        href="{% url 'core:about' %}"
+                        href="{% url 'core:core_about' %}"
                         aria-labelledby="home-about-card-title"
                     >
                         <img
@@ -342,7 +342,7 @@
                 <article class="home-pathway-card">
                     <a
                         class="home-pathway-link"
-                        href="{% url 'core:packages' %}"
+                        href="{% url 'party_builder:party_builder_package_options' %}"
                         aria-labelledby="home-packages-card-title"
                     >
                         <img
@@ -362,9 +362,9 @@
                         <span class="home-pathway-content">
                             <span
                                 class="home-pathway-label"
-                                data-i18n="nav.packages"
+                                data-i18n="nav.buildParty"
                             >
-                                Packages
+                                Build Your Party
                             </span>
 
                             <h3
@@ -372,22 +372,21 @@
                                 id="home-packages-card-title"
                                 data-i18n="home.packagesCardTitle"
                             >
-                                Choose your package
+                                Build your party
                             </h3>
 
                             <span
                                 class="home-pathway-text"
                                 data-i18n="home.packagesCardText"
                             >
-                                Compare party options and find the best
-                                fit for your event.
+                                Choose your group size, add experiences, and complete a simulated checkout.
                             </span>
 
                             <span
                                 class="home-pathway-cta"
                                 data-i18n="home.packagesCardCta"
                             >
-                                View Packages
+                                Start Building
                             </span>
                         </span>
                     </a>

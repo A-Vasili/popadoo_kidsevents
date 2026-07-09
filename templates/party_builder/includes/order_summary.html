@@ -1,0 +1,36 @@
+<aside class="checkout-summary" aria-labelledby="checkout-summary-heading">
+    <div class="checkout-summary-inner">
+        <p class="section-kicker">Your cart</p>
+        <h2 id="checkout-summary-heading">Party summary</h2>
+        <dl class="price-breakdown">
+            <div>
+                <dt>{{ package.name }}</dt>
+                <dd>€{{ quote.package_price|floatformat:2 }}</dd>
+            </div>
+            {% if guest_tier %}
+                <div class="summary-subline">
+                    <dt>Group size</dt>
+                    <dd>{{ guest_tier.label }}</dd>
+                </div>
+            {% endif %}
+            {% for addon in selected_addons %}
+                <div>
+                    <dt>{{ addon.name }}</dt>
+                    <dd>€{{ addon.price|floatformat:2 }}</dd>
+                </div>
+            {% empty %}
+                <div class="summary-subline">
+                    <dt>Add-ons</dt>
+                    <dd>None</dd>
+                </div>
+            {% endfor %}
+        </dl>
+        <div class="price-total">
+            <span>Estimated total</span>
+            <strong>€{{ quote.total_price|floatformat:2 }}</strong>
+        </div>
+        <p class="price-note">
+            Simulated checkout only. No card charge or financial transaction occurs.
+        </p>
+    </div>
+</aside>

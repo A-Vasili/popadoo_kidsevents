@@ -1,0 +1,14 @@
+<div class="form-field{% if wide %} form-field-wide{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    <span class="field-help" id="{{ field.id_for_label }}_help">
+        {% if help_text %}{{ help_text }}{% elif field.help_text %}{{ field.help_text }}{% else %}Required.{% endif %}
+    </span>
+    {% if field.errors %}
+        <ul class="field-errors" id="{{ field.id_for_label }}_error" role="alert">
+            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% else %}
+        <span class="visually-hidden" id="{{ field.id_for_label }}_error"></span>
+    {% endif %}
+</div>

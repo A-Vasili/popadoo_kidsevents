@@ -1,143 +1,170 @@
 "use strict";
 
 /*
- * Accessible client-side enhancement for the Django party builder.
+ * Multi-step Popadoo checkout enhancements.
  *
- * The browser provides immediate feedback, while Django recalculates every
- * price from database records during submission. Client totals are never
- * trusted by the server.
+ * All essential validation remains server-side through Django forms. This file
+ * adds live cart pricing, keyboard navigation, card-number formatting, and
+ * double-submit protection without making JavaScript mandatory.
  */
 (() => {
-    const form = document.querySelector("[data-party-builder]");
-
-    if (!form) {
-        return;
-    }
-
-    const addonGrid = form.querySelector("[data-addon-grid]");
-    const addonCheckboxes = Array.from(
-        form.querySelectorAll("[data-addon-checkbox]")
-    );
-    const summaryList = form.querySelector("#selected-addon-summary");
-    const summaryEmpty = form.querySelector("#summary-empty");
-    const totalOutput = form.querySelector("#party-total");
-    const liveStatus = form.querySelector("#builder-live-status");
-    const currency = form.dataset.currency || "EUR";
-    const basePrice = Number.parseFloat(form.dataset.basePrice || "0");
-
-    const currencyFormatter = new Intl.NumberFormat("el-GR", {
+    const currencyFormatter = new Intl.NumberFormat("en-IE", {
         style: "currency",
-        currency,
+        currency: "EUR",
         minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
     });
 
-    const parsePrice = (checkbox) => {
-        const value = Number.parseFloat(checkbox.dataset.addonPrice || "0");
-        return Number.isFinite(value) ? value : 0;
-    };
+    const toNumber = (value) => Number.parseFloat(value || "0") || 0;
 
-    const selectedCheckboxes = () => {
-        return addonCheckboxes.filter((checkbox) => checkbox.checked);
-    };
-
-    const setActionText = (checkbox) => {
-        const card = checkbox.nextElementSibling;
-        const action = card?.querySelector("[data-addon-action]");
-
-        if (!action) {
-            return;
-        }
-
-        action.textContent = checkbox.checked
-            ? "Added — remove"
-            : "Add experience";
-    };
-
-    const createSummaryItem = (checkbox) => {
-        const item = document.createElement("li");
-        const name = document.createElement("span");
-        const price = document.createElement("strong");
-
-        item.className = "summary-addon-item";
-        name.textContent = checkbox.dataset.addonName || "Experience";
-        price.textContent = currencyFormatter.format(parsePrice(checkbox));
-
-        item.append(name, price);
-        return item;
-    };
-
-    const renderSummary = ({ announce = false, changedCheckbox = null } = {}) => {
-        const selected = selectedCheckboxes();
-        const addonTotal = selected.reduce(
-            (total, checkbox) => total + parsePrice(checkbox),
-            0
+    const optionsForm = document.querySelector("[data-party-options-form]");
+    if (optionsForm) {
+        const tierRadios = Array.from(
+            optionsForm.querySelectorAll("[data-tier-radio]")
         );
-        const total = basePrice + addonTotal;
+        const addonCheckboxes = Array.from(
+            optionsForm.querySelectorAll("[data-addon-checkbox]")
+        );
+        const tierGrid = optionsForm.querySelector("[data-tier-grid]");
+        const addonGrid = optionsForm.querySelector("[data-addon-grid]");
+        const selectedTierLabel = document.querySelector("#selected-tier-label");
+        const selectedTierPrice = document.querySelector("#selected-tier-price");
+        const addonSummary = document.querySelector("#selected-addon-summary");
+        const emptySummary = document.querySelector("#summary-empty");
+        const totalOutput = document.querySelector("#party-total");
+        const liveStatus = document.querySelector("#builder-live-status");
 
-        addonCheckboxes.forEach(setActionText);
-        summaryList.replaceChildren(...selected.map(createSummaryItem));
-        summaryEmpty.hidden = selected.length > 0;
-        totalOutput.value = currencyFormatter.format(total);
-        totalOutput.textContent = currencyFormatter.format(total);
+        const updateChoiceLabels = () => {
+            tierRadios.forEach((radio) => {
+                const action = radio
+                    .closest(".tier-option")
+                    ?.querySelector("[data-tier-action]");
+                if (action) {
+                    action.textContent = radio.checked
+                        ? "Selected"
+                        : "Choose this group size";
+                }
+            });
 
-        if (announce && liveStatus) {
-            const name = changedCheckbox?.dataset.addonName || "Experience";
-            const action = changedCheckbox?.checked ? "added" : "removed";
-            liveStatus.textContent = `${name} ${action}. Estimated total ${currencyFormatter.format(total)}.`;
-        }
-    };
-
-    const focusCheckbox = (index) => {
-        if (addonCheckboxes.length === 0) {
-            return;
-        }
-
-        const normalizedIndex =
-            (index + addonCheckboxes.length) % addonCheckboxes.length;
-        addonCheckboxes[normalizedIndex].focus();
-    };
-
-    const handleGridKeyboard = (event) => {
-        const currentIndex = addonCheckboxes.indexOf(event.target);
-
-        if (currentIndex === -1) {
-            return;
-        }
-
-        const navigationKeys = {
-            ArrowRight: currentIndex + 1,
-            ArrowDown: currentIndex + 1,
-            ArrowLeft: currentIndex - 1,
-            ArrowUp: currentIndex - 1,
-            Home: 0,
-            End: addonCheckboxes.length - 1,
+            addonCheckboxes.forEach((checkbox) => {
+                const action = checkbox
+                    .closest(".addon-option")
+                    ?.querySelector("[data-addon-action]");
+                if (action) {
+                    action.textContent = checkbox.checked
+                        ? "Added — remove"
+                        : "Add experience";
+                }
+            });
         };
 
-        if (!(event.key in navigationKeys)) {
-            return;
-        }
+        const renderCart = ({ announce = false } = {}) => {
+            const selectedTier = tierRadios.find((radio) => radio.checked);
+            const selectedAddons = addonCheckboxes.filter(
+                (checkbox) => checkbox.checked
+            );
+            const tierPrice = toNumber(selectedTier?.dataset.tierPrice);
+            const addonTotal = selectedAddons.reduce(
+                (total, checkbox) => total + toNumber(checkbox.dataset.addonPrice),
+                0
+            );
+            const total = tierPrice + addonTotal;
 
-        event.preventDefault();
-        focusCheckbox(navigationKeys[event.key]);
-    };
+            if (selectedTierLabel) {
+                selectedTierLabel.textContent =
+                    selectedTier?.dataset.tierLabel || "Select a group size";
+            }
+            if (selectedTierPrice) {
+                selectedTierPrice.textContent = selectedTier
+                    ? currencyFormatter.format(tierPrice)
+                    : "—";
+            }
+            if (totalOutput) {
+                totalOutput.textContent = selectedTier
+                    ? currencyFormatter.format(total)
+                    : "—";
+            }
 
-    addonCheckboxes.forEach((checkbox) => {
-        checkbox.addEventListener("change", () => {
-            renderSummary({ announce: true, changedCheckbox: checkbox });
+            if (addonSummary) {
+                addonSummary.replaceChildren();
+                selectedAddons.forEach((checkbox) => {
+                    const item = document.createElement("li");
+                    const name = document.createElement("span");
+                    const price = document.createElement("strong");
+                    item.className = "summary-addon-item";
+                    name.textContent = checkbox.dataset.addonName;
+                    price.textContent = currencyFormatter.format(
+                        toNumber(checkbox.dataset.addonPrice)
+                    );
+                    item.append(name, price);
+                    addonSummary.append(item);
+                });
+            }
+
+            if (emptySummary) {
+                emptySummary.hidden = selectedAddons.length > 0;
+            }
+
+            updateChoiceLabels();
+
+            if (announce && liveStatus) {
+                liveStatus.textContent = selectedTier
+                    ? `Cart updated. ${selectedAddons.length} optional experiences. Total ${currencyFormatter.format(total)}.`
+                    : "Choose a guest bracket to continue.";
+            }
+        };
+
+        const addKeyboardNavigation = (container, controls) => {
+            container?.addEventListener("keydown", (event) => {
+                const currentIndex = controls.indexOf(event.target);
+                if (currentIndex === -1) {
+                    return;
+                }
+
+                const destinations = {
+                    ArrowRight: currentIndex + 1,
+                    ArrowDown: currentIndex + 1,
+                    ArrowLeft: currentIndex - 1,
+                    ArrowUp: currentIndex - 1,
+                    Home: 0,
+                    End: controls.length - 1,
+                };
+
+                if (!(event.key in destinations)) {
+                    return;
+                }
+
+                event.preventDefault();
+                const destination =
+                    (destinations[event.key] + controls.length) % controls.length;
+                controls[destination]?.focus();
+            });
+        };
+
+        tierRadios.forEach((radio) => {
+            radio.addEventListener("change", () => renderCart({ announce: true }));
         });
+        addonCheckboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", () =>
+                renderCart({ announce: true })
+            );
+        });
+        addKeyboardNavigation(tierGrid, tierRadios);
+        addKeyboardNavigation(addonGrid, addonCheckboxes);
+        renderCart();
+    }
+
+    const cardNumberInput = document.querySelector("[data-card-number]");
+    cardNumberInput?.addEventListener("input", () => {
+        const digits = cardNumberInput.value.replace(/\D/g, "").slice(0, 19);
+        cardNumberInput.value = digits.replace(/(.{4})/g, "$1 ").trim();
     });
 
-    addonGrid?.addEventListener("keydown", handleGridKeyboard);
-
-    form.addEventListener("submit", () => {
-        const submitButton = form.querySelector('button[type="submit"]');
-
+    const paymentForm = document.querySelector("[data-payment-form]");
+    paymentForm?.addEventListener("submit", () => {
+        const submitButton = paymentForm.querySelector("[data-checkout-submit]");
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = "Saving your request…";
+            submitButton.textContent = "Completing simulation…";
         }
     });
-
-    renderSummary();
 })();

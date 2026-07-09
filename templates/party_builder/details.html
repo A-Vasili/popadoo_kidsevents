@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Event Details | Popadoo Kids Events{% endblock %}
+{% block meta_description %}Provide the personal and venue details required for your customised Popadoo party request.{% endblock %}
+{% block meta_robots %}noindex,follow{% endblock %}
+{% block page_name %}partyBuilder{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
+{% endblock %}
+
+{% block content %}
+    <header class="checkout-hero" aria-labelledby="party-details-heading">
+        <div class="container narrow-content">
+            <p class="section-kicker">Step two</p>
+            <h1 id="party-details-heading">Tell us about your event</h1>
+            <p class="lead">Your selections are saved in this browser while you complete the checkout.</p>
+            {% include "party_builder/includes/progress.html" %}
+        </div>
+    </header>
+
+    <form
+        class="checkout-form"
+        method="post"
+        action="{% url 'party_builder:party_builder_customer_details' %}"
+        novalidate
+    >
+        {% csrf_token %}
+        <div class="container checkout-layout">
+            <section class="checkout-panel" aria-labelledby="details-form-heading">
+                <div class="panel-heading">
+                    <span class="panel-step" aria-hidden="true">2</span>
+                    <div>
+                        <p class="section-kicker">Personal and venue information</p>
+                        <h2 id="details-form-heading">Booking details</h2>
+                        <p>Fields marked by the browser as required must be completed.</p>
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    <div class="form-alert" role="alert">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                <div class="builder-form-grid">
+                    {% include "party_builder/includes/form_field.html" with field=form.contact_name only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.contact_email only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.contact_phone only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.guest_count only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.event_date only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.event_time help_text="Optional. The final time is confirmed after availability review." only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.event_address wide=True only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.postal_code only %}
+                    {% include "party_builder/includes/form_field.html" with field=form.notes wide=True only %}
+                </div>
+
+                <nav class="checkout-actions" aria-label="Event details actions">
+                    <a class="button button-outline" href="{% url 'party_builder:party_builder_package_options' %}">
+                        Back to package
+                    </a>
+                    <button class="button" type="submit">Review and checkout</button>
+                </nav>
+            </section>
+
+            {% include "party_builder/includes/order_summary.html" %}
+        </div>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/party-builder.js' %}" defer></script>
+{% endblock %}

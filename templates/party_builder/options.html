@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Build Your Party | Popadoo Kids Events{% endblock %}
+{% block meta_description %}Choose a guest bracket and optional children’s party experiences, then continue through a clear simulated checkout.{% endblock %}
+{% block og_title %}Build Your Party | Popadoo Kids Events{% endblock %}
+{% block og_description %}Create a personalised Popadoo party with transparent group pricing and optional experiences.{% endblock %}
+{% block page_name %}partyBuilder{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
+{% endblock %}
+
+{% block content %}
+    <header class="checkout-hero" aria-labelledby="party-options-heading">
+        <div class="container narrow-content">
+            <p class="section-kicker">Plan and book in three steps</p>
+            <h1 id="party-options-heading">Build your Popadoo party</h1>
+            <p class="lead">
+                Start with the complete basic experience, choose the group-size price,
+                and add only the extras that fit your celebration.
+            </p>
+            {% include "party_builder/includes/progress.html" %}
+        </div>
+    </header>
+
+    <form
+        class="checkout-form"
+        id="party-options-form"
+        method="post"
+        action="{% url 'party_builder:party_builder_package_options' %}"
+        data-party-options-form
+        novalidate
+    >
+        {% csrf_token %}
+        <div class="container checkout-layout">
+            <div class="checkout-main-column">
+                {% if form.non_field_errors %}
+                    <section class="form-alert" role="alert" aria-labelledby="options-error-heading">
+                        <h2 id="options-error-heading">Please review your selections</h2>
+                        {{ form.non_field_errors }}
+                    </section>
+                {% endif %}
+
+                <section class="checkout-panel" aria-labelledby="base-package-heading">
+                    <div class="panel-heading">
+                        <span class="panel-step" aria-hidden="true">1A</span>
+                        <div>
+                            <p class="section-kicker">Included foundation</p>
+                            <h2 id="base-package-heading">{{ package.name }}</h2>
+                        </div>
+                    </div>
+                    <div class="base-package-card">
+                        <div>
+                            <p>{{ package.short_description }}</p>
+                            <h3>Every group option includes</h3>
+                            <ul class="included-experience-list">
+                                {% for experience in package.included_experiences_list %}
+                                    <li>{{ experience }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="base-package-price">
+                            <span>From</span>
+                            <strong>€{{ package.base_price|floatformat:2 }}</strong>
+                            <small>for 0–10 children</small>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="checkout-panel" aria-labelledby="guest-tier-heading">
+                    <div class="panel-heading">
+                        <span class="panel-step" aria-hidden="true">1B</span>
+                        <div>
+                            <p class="section-kicker">Choose the party size</p>
+                            <h2 id="guest-tier-heading">How many children are expected?</h2>
+                            <p id="guest-tier-help">
+                                Each bracket has a fixed total. The effective price per child
+                                decreases gradually as the group grows.
+                            </p>
+                        </div>
+                    </div>
+                    <fieldset class="choice-fieldset" aria-describedby="guest-tier-help id_guest_tier_error">
+                        <legend class="visually-hidden">Guest pricing bracket</legend>
+                        {% if form.guest_tier.errors %}
+                            <ul class="field-errors" id="id_guest_tier_error" role="alert">
+                                {% for error in form.guest_tier.errors %}<li>{{ error }}</li>{% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="visually-hidden" id="id_guest_tier_error"></span>
+                        {% endif %}
+                        <div class="tier-grid" data-tier-grid>
+                            {% for tier in price_tiers %}
+                                {% include "party_builder/includes/tier_card.html" with tier=tier selected_tier_id=selected_tier_id only %}
+                            {% empty %}
+                                <p>No guest pricing options are currently available.</p>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </section>
+
+                <section class="checkout-panel" aria-labelledby="addon-heading">
+                    <div class="panel-heading">
+                        <span class="panel-step" aria-hidden="true">1C</span>
+                        <div>
+                            <p class="section-kicker">Optional experiences</p>
+                            <h2 id="addon-heading">Add the moments you want</h2>
+                            <p id="addon-help">
+                                Select any number of cards. All choices remain editable before checkout.
+                                Use Space to select and arrow keys to move between options.
+                            </p>
+                        </div>
+                    </div>
+                    <fieldset class="choice-fieldset" aria-describedby="addon-help id_addons_error">
+                        <legend class="visually-hidden">Optional experiences</legend>
+                        {% if form.addons.errors %}
+                            <ul class="field-errors" id="id_addons_error" role="alert">
+                                {% for error in form.addons.errors %}<li>{{ error }}</li>{% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="visually-hidden" id="id_addons_error"></span>
+                        {% endif %}
+                        <div class="addon-grid" data-addon-grid>
+                            {% for option in addon_options %}
+                                {% include "party_builder/includes/addon_card.html" with addon=option.addon selected=option.selected only %}
+                            {% empty %}
+                                <p>No optional experiences are currently available.</p>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                </section>
+            </div>
+
+            <aside class="checkout-summary live-summary" aria-labelledby="live-summary-heading">
+                <div class="checkout-summary-inner">
+                    <p class="section-kicker">Live cart</p>
+                    <h2 id="live-summary-heading">Your party total</h2>
+                    <dl class="price-breakdown">
+                        <div>
+                            <dt id="selected-tier-label">Selected group</dt>
+                            <dd id="selected-tier-price">
+                                {% if initial_quote %}€{{ initial_quote.package_price|floatformat:2 }}{% else %}—{% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                    <section class="selected-addon-summary" aria-labelledby="selected-addons-heading">
+                        <h3 id="selected-addons-heading">Added experiences</h3>
+                        <p id="summary-empty"{% if initial_quote and initial_quote.addon_price %} hidden{% endif %}>
+                            No optional experiences selected.
+                        </p>
+                        <ul id="selected-addon-summary" aria-label="Selected optional experiences"></ul>
+                    </section>
+                    <div class="price-total">
+                        <span>Estimated total</span>
+                        <output id="party-total" aria-live="polite">
+                            {% if initial_quote %}€{{ initial_quote.total_price|floatformat:2 }}{% else %}—{% endif %}
+                        </output>
+                    </div>
+                    <p class="price-note">
+                        Travel outside the agreed service area may be confirmed separately.
+                    </p>
+                    <p class="visually-hidden" id="builder-live-status" role="status" aria-live="polite" aria-atomic="true"></p>
+                    <button class="button checkout-primary-action" type="submit">
+                        Continue to your details
+                    </button>
+                    <p class="checkout-security-note">You can return and edit the cart before the simulated payment step.</p>
+                </div>
+            </aside>
+        </div>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/party-builder.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,31 @@
+<article class="tier-option">
+    <input
+        class="tier-radio"
+        type="radio"
+        name="guest_tier"
+        value="{{ tier.pk }}"
+        id="tier-{{ tier.pk }}"
+        data-tier-radio
+        data-tier-label="{{ tier.label }}"
+        data-tier-price="{{ tier.total_price }}"
+        data-tier-min="{{ tier.min_guests }}"
+        data-tier-max="{{ tier.max_guests }}"
+        {% if tier.pk|stringformat:'s' == selected_tier_id %}checked{% endif %}
+        aria-describedby="tier-{{ tier.pk }}-price tier-{{ tier.pk }}-rate"
+    >
+    <label class="tier-card" for="tier-{{ tier.pk }}">
+        <span class="tier-card-heading">
+            <strong>{{ tier.label }}</strong>
+            {% if tier.is_default %}<span class="tier-badge">Default</span>{% endif %}
+        </span>
+        <span class="tier-card-price" id="tier-{{ tier.pk }}-price">
+            €{{ tier.total_price|floatformat:2 }} total
+        </span>
+        <span class="tier-card-rate" id="tier-{{ tier.pk }}-rate">
+            €{{ tier.price_per_child_at_capacity|floatformat:2 }} per child at full capacity
+        </span>
+        <span class="tier-card-action" data-tier-action>
+            {% if tier.pk|stringformat:'s' == selected_tier_id %}Selected{% else %}Choose this group size{% endif %}
+        </span>
+    </label>
+</article>
