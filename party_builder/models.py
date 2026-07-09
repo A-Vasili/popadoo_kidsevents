@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
@@ -184,7 +185,21 @@ class PartyBuild(models.Model):
         SIMULATED = "simulated", "Simulated payment accepted"
         NOT_REQUIRED = "not_required", "No payment data"
 
+    class AssignmentState(models.TextChoices):
+        UNASSIGNED = "unassigned", "Unassigned"
+        PENDING = "pending_acceptance", "Awaiting worker response"
+        ASSIGNED = "assigned", "Worker assigned"
+        MANUAL_REVIEW = "manual_review", "Owner review required"
+
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="party_bookings",
+        help_text="Empty for guest checkouts.",
+    )
     package = models.ForeignKey(
         PartyPackage,
         on_delete=models.PROTECT,
@@ -264,6 +279,12 @@ class PartyBuild(models.Model):
         choices=Status.choices,
         default=Status.SUBMITTED,
     )
+    assignment_state = models.CharField(
+        max_length=30,
+        choices=AssignmentState.choices,
+        default=AssignmentState.UNASSIGNED,
+    )
+    assignment_requested_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

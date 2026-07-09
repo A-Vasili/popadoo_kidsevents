@@ -52,6 +52,9 @@
                     {% include "party_builder/includes/form_field.html" with field=form.event_address wide=True only %}
                     {% include "party_builder/includes/form_field.html" with field=form.postal_code only %}
                     {% include "party_builder/includes/form_field.html" with field=form.notes wide=True only %}
+                    {% if form.save_profile %}
+                        {% include "party_builder/includes/form_field.html" with field=form.save_profile wide=True only %}
+                    {% endif %}
                 </div>
 
                 <nav class="checkout-actions" aria-label="Event details actions">

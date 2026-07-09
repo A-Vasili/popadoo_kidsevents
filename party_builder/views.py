@@ -176,9 +176,21 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
         kwargs = super().get_form_kwargs()
         guest_tier = self.get_selected_tier()
         kwargs["guest_tier"] = guest_tier
+        kwargs["show_save_profile"] = self.request.user.is_authenticated
+        kwargs["user"] = self.request.user
         state = self.get_checkout_state()
         if self.request.method == "GET" and state.get("details"):
             kwargs["initial"] = state["details"]
+        elif self.request.method == "GET" and self.request.user.is_authenticated:
+            from accounts.models import CustomerProfile
+            profile, _ = CustomerProfile.objects.get_or_create(user=self.request.user)
+            kwargs["initial"] = {
+                "contact_name": self.request.user.get_full_name(),
+                "contact_email": self.request.user.email,
+                "contact_phone": profile.phone,
+                "event_address": profile.default_address,
+                "postal_code": profile.default_postal_code,
+            }
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -204,6 +216,25 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
             "notes": cleaned.get("notes", ""),
         }
         self.save_checkout_state(state)
+        if self.request.user.is_authenticated and cleaned.get("save_profile"):
+            from accounts.models import CustomerProfile
+            profile, _ = CustomerProfile.objects.get_or_create(user=self.request.user)
+            profile.phone = cleaned["contact_phone"]
+            profile.default_address = cleaned["event_address"]
+            profile.default_postal_code = cleaned["postal_code"]
+            profile.save(
+                update_fields=[
+                    "phone",
+                    "default_address",
+                    "default_postal_code",
+                    "updated_at",
+                ]
+            )
+            self.request.user.first_name = cleaned["contact_name"].split(" ", 1)[0]
+            if " " in cleaned["contact_name"]:
+                self.request.user.last_name = cleaned["contact_name"].split(" ", 1)[1]
+            self.request.user.email = cleaned["contact_email"]
+            self.request.user.save(update_fields=["first_name", "last_name", "email"])
         return redirect("party_builder:party_builder_simulated_checkout")
 
 
@@ -254,6 +285,7 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
             addons=addons,
             details=self._deserialize_details(state["details"]),
             payment=form.safe_payment_result(),
+            customer=self.request.user,
         )
 
         permitted_builds = self.request.session.get(
@@ -299,6 +331,14 @@ class PartyBuildSuccessView(DetailView):
             AUTHORIZED_BUILD_SESSION_KEY,
             [],
         )
-        if str(party_build.public_id) not in permitted_builds:
-            raise Http404("This order summary is not available in this session.")
+        owns_booking = (
+            self.request.user.is_authenticated
+            and party_build.customer_id == self.request.user.pk
+        )
+        if (
+            str(party_build.public_id) not in permitted_builds
+            and not owns_booking
+            and not self.request.user.is_superuser
+        ):
+            raise Http404("This order summary is not available to this account or session.")
         return party_build

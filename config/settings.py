@@ -57,7 +57,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'accounts.apps.AccountsConfig',
     'party_builder.apps.PartyBuilderConfig',
+    'operations.apps.OperationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.role_context",
             ],
         },
     },
@@ -158,3 +161,8 @@ SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
+# Authentication routes used by Django's LoginRequiredMixin and safe redirects.
+LOGIN_URL = "accounts:accounts_sign_in"
+LOGIN_REDIRECT_URL = "accounts:accounts_customer_dashboard"
+LOGOUT_REDIRECT_URL = "core:core_home"

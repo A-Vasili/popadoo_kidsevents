@@ -56,6 +56,7 @@ def create_completed_party_build(
     addons: Iterable[AddonExperience],
     details: Mapping[str, Any],
     payment: SafePaymentResult,
+    customer=None,
 ) -> PartyBuild:
     """Create the simulated order and all trusted price snapshots atomically."""
 
@@ -63,6 +64,7 @@ def create_completed_party_build(
     quote = calculate_party_quote(guest_tier, selected_addons)
 
     build = PartyBuild.objects.create(
+        customer=customer if getattr(customer, "is_authenticated", False) else None,
         package=package,
         guest_tier=guest_tier,
         contact_name=details["contact_name"],
@@ -95,4 +97,8 @@ def create_completed_party_build(
         for addon in selected_addons
     )
 
+    # Assignment happens only after the checkout transaction commits successfully.
+    from operations.services.assignment import offer_assignment
+
+    transaction.on_commit(lambda: offer_assignment(build.pk), robust=True)
     return build

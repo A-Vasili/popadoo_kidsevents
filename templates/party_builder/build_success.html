@@ -61,6 +61,20 @@
                 </div>
             </article>
 
+            {% if request.user.is_authenticated %}
+                <aside class="guest-account-invitation" aria-labelledby="saved-account-heading">
+                    <h2 id="saved-account-heading">This booking is saved to your account</h2>
+                    <p>You can follow its assignment status from your personal dashboard.</p>
+                    <a class="button button-outline" href="{% url 'accounts:accounts_customer_dashboard' %}">View my bookings</a>
+                </aside>
+            {% else %}
+                <aside class="guest-account-invitation" aria-labelledby="create-account-heading">
+                    <h2 id="create-account-heading">Make your next booking faster</h2>
+                    <p>Create an optional account to save contact details and keep future booking history.</p>
+                    <a class="button button-outline" href="{% url 'accounts:accounts_sign_up' %}">Create an account</a>
+                </aside>
+            {% endif %}
+
             <nav class="success-actions" aria-label="Completed checkout actions">
                 <a class="button" href="{% url 'party_builder:party_builder_package_options' %}">Plan another party</a>
                 <a class="button button-outline" href="{% url 'core:core_home' %}">Return home</a>

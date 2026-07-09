@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Profile | Popadoo Kids Events{% endblock %}
+{% block meta_description %}Manage your saved Popadoo contact and booking details.{% endblock %}
+{% block meta_robots %}noindex,nofollow{% endblock %}
+{% block page_name %}accountProfile{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
+
+{% block content %}
+<section class="account-page" aria-labelledby="profile-heading">
+    <div class="container account-shell">
+        <header class="account-heading">
+            <p class="section-kicker">Account settings</p>
+            <h1 id="profile-heading">My profile</h1>
+            <p>These saved details can prefill the event-details step. You remain in control of every update.</p>
+        </header>
+        <form method="post" class="account-card" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="account-form-grid">
+                {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
+            </div>
+            <button class="button" type="submit">Save profile</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

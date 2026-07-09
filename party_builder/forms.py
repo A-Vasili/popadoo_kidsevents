@@ -4,6 +4,7 @@ import re
 from datetime import date
 
 from django import forms
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
 from .models import AddonExperience, GuestPriceTier, PartyPackage
@@ -137,6 +138,10 @@ class PartyDetailsForm(forms.Form):
             }
         ),
     )
+    save_profile = forms.BooleanField(
+        required=False,
+        label="Save these details to my profile for future bookings",
+    )
     notes = forms.CharField(
         required=False,
         max_length=1500,
@@ -151,9 +156,12 @@ class PartyDetailsForm(forms.Form):
         ),
     )
 
-    def __init__(self, *args, guest_tier: GuestPriceTier, **kwargs):
+    def __init__(self, *args, guest_tier: GuestPriceTier, show_save_profile=False, user=None, **kwargs):
         self.guest_tier = guest_tier
+        self.user = user
         super().__init__(*args, **kwargs)
+        if not show_save_profile:
+            self.fields.pop("save_profile", None)
         self.fields["event_date"].widget.attrs["min"] = date.today().isoformat()
         self.fields["guest_count"].widget.attrs.update(
             {
@@ -194,6 +202,23 @@ class PartyDetailsForm(forms.Form):
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\s-]{2,9}", postal_code):
             raise forms.ValidationError("Enter a valid postal code.")
         return postal_code
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if (
+            self.user
+            and getattr(self.user, "is_authenticated", False)
+            and cleaned_data.get("save_profile")
+            and cleaned_data.get("contact_email")
+        ):
+            User = get_user_model()
+            email = cleaned_data["contact_email"].strip().lower()
+            if User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():
+                self.add_error(
+                    "contact_email",
+                    "Another account already uses this email address.",
+                )
+        return cleaned_data
 
 
 class SimulatedPaymentForm(forms.Form):

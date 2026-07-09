@@ -3,29 +3,12 @@
 <header class="site-header">
     <div class="container">
         <nav class="site-navigation" aria-label="Primary navigation" data-i18n-aria-label="nav.primaryLabel">
-            <a
-                class="site-logo"
-                href="{% url 'core:core_home' %}"
-                aria-label="Popadoo Kids Events home"
-                data-i18n-aria-label="nav.logoLabel"
-            >
-                <img
-                    class="site-logo-mark"
-                    src="{% static 'assets/svg/popadoo-logo.svg' %}"
-                    alt=""
-                    width="128"
-                    height="128"
-                >
+            <a class="site-logo" href="{% url 'core:core_home' %}" aria-label="Popadoo Kids Events home">
+                <img class="site-logo-mark" src="{% static 'assets/svg/popadoo-logo.svg' %}" alt="" width="128" height="128">
                 <span class="site-logo-text">Popadoo Kids Events</span>
             </a>
 
-            <button
-                class="site-navigation-toggle"
-                type="button"
-                aria-controls="primary-navigation"
-                aria-expanded="false"
-                aria-label="Open primary navigation"
-            >
+            <button class="site-navigation-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" aria-label="Open primary navigation">
                 <span class="site-navigation-toggle-line" aria-hidden="true"></span>
                 <span class="site-navigation-toggle-line" aria-hidden="true"></span>
                 <span class="site-navigation-toggle-line" aria-hidden="true"></span>
@@ -33,73 +16,28 @@
 
             <div class="site-navigation-menu" id="primary-navigation">
                 <ul class="site-navigation-links">
-                    <li>
-                        <a
-                            class="site-navigation-link{% if request.resolver_match.url_name == 'core_home' %} active{% endif %}"
-                            href="{% url 'core:core_home' %}"
-                            {% if request.resolver_match.url_name == 'core_home' %}aria-current="page"{% endif %}
-                            data-i18n="nav.home"
-                        >Home</a>
-                    </li>
-                    <li>
-                        <a
-                            class="site-navigation-link{% if request.resolver_match.url_name == 'core_gallery' %} active{% endif %}"
-                            href="{% url 'core:core_gallery' %}"
-                            {% if request.resolver_match.url_name == 'core_gallery' %}aria-current="page"{% endif %}
-                            data-i18n="nav.gallery"
-                        >Gallery</a>
-                    </li>
-                    <li>
-                        <a
-                            class="site-navigation-link{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}"
-                            href="{% url 'party_builder:party_builder_package_options' %}"
-                            {% if request.resolver_match.app_name == 'party_builder' %}aria-current="page"{% endif %}
-                            data-i18n="nav.buildParty"
-                        >Build Your Party</a>
-                    </li>
-                    <li>
-                        <a
-                            class="site-navigation-link{% if request.resolver_match.url_name == 'core_about' %} active{% endif %}"
-                            href="{% url 'core:core_about' %}"
-                            {% if request.resolver_match.url_name == 'core_about' %}aria-current="page"{% endif %}
-                            data-i18n="nav.about"
-                        >About Us</a>
-                    </li>
-                    <li>
-                        <a
-                            class="site-navigation-link{% if request.resolver_match.url_name == 'core_testimonials' %} active{% endif %}"
-                            href="{% url 'core:core_testimonials' %}"
-                            {% if request.resolver_match.url_name == 'core_testimonials' %}aria-current="page"{% endif %}
-                            data-i18n="nav.testimonials"
-                        >Testimonials</a>
-                    </li>
+                    <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_home' %} active{% endif %}" href="{% url 'core:core_home' %}" {% if request.resolver_match.url_name == 'core_home' %}aria-current="page"{% endif %} data-i18n="nav.home">Home</a></li>
+                    <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_gallery' %} active{% endif %}" href="{% url 'core:core_gallery' %}" {% if request.resolver_match.url_name == 'core_gallery' %}aria-current="page"{% endif %} data-i18n="nav.gallery">Gallery</a></li>
+                    <li><a class="site-navigation-link{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}" href="{% url 'party_builder:party_builder_package_options' %}" {% if request.resolver_match.app_name == 'party_builder' %}aria-current="page"{% endif %} data-i18n="nav.buildParty">Build Your Party</a></li>
+                    <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_about' %} active{% endif %}" href="{% url 'core:core_about' %}" {% if request.resolver_match.url_name == 'core_about' %}aria-current="page"{% endif %} data-i18n="nav.about">About Us</a></li>
+                    <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_testimonials' %} active{% endif %}" href="{% url 'core:core_testimonials' %}" {% if request.resolver_match.url_name == 'core_testimonials' %}aria-current="page"{% endif %} data-i18n="nav.testimonials">Testimonials</a></li>
+                    {% if nav_can_access_operations %}
+                        <li><a class="site-navigation-link{% if request.resolver_match.app_name == 'operations' %} active{% endif %}" href="{% url 'operations:operations_dashboard' %}" {% if request.resolver_match.app_name == 'operations' %}aria-current="page"{% endif %}>Operations</a></li>
+                    {% endif %}
                 </ul>
 
                 <div class="site-controls">
                     <div class="language-control">
                         <label class="visually-hidden" for="language-selector" data-i18n="language.label">Language</label>
-                        <select
-                            class="language-selector"
-                            id="language-selector"
-                            aria-label="Language"
-                            data-i18n-aria-label="language.label"
-                        >
+                        <select class="language-selector" id="language-selector" aria-label="Language" data-i18n-aria-label="language.label">
                             <option value="en" lang="en" data-i18n="language.english">English</option>
                             <option value="el" lang="el" data-i18n="language.greek">Greek</option>
                         </select>
                     </div>
 
-                    <button
-                        class="theme-toggle"
-                        id="theme-toggle"
-                        type="button"
-                        role="switch"
-                        aria-checked="false"
-                        aria-label="Switch to dark mode"
-                    >
+                    <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Switch to dark mode">
                         <span class="theme-toggle-track" aria-hidden="true">
-                            <span class="theme-toggle-stars"></span>
-                            <span class="theme-toggle-clouds"></span>
+                            <span class="theme-toggle-stars"></span><span class="theme-toggle-clouds"></span>
                             <span class="theme-toggle-knob">
                                 <img class="theme-toggle-icon theme-toggle-icon-moon" src="{% static 'assets/svg/moon-toggle.svg' %}" alt="" width="82" height="82">
                                 <img class="theme-toggle-icon theme-toggle-icon-sun" src="{% static 'assets/svg/sun-toggle.svg' %}" alt="" width="82" height="82">
@@ -108,11 +46,26 @@
                         <span class="visually-hidden" data-theme-status>Light mode</span>
                     </button>
 
-                    <a
-                        class="book-now-button{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}"
-                        href="{% url 'party_builder:party_builder_package_options' %}"
-                        data-i18n="nav.bookNow"
-                    >Book Now</a>
+                    {% if request.user.is_authenticated %}
+                        <div class="account-menu" data-account-menu>
+                            <button class="account-menu-button" type="button" aria-expanded="false" aria-controls="account-menu-panel" aria-haspopup="true" data-account-menu-button>
+                                <span class="account-avatar" aria-hidden="true">{{ request.user.first_name|first|default:request.user.username|first|upper }}</span>
+                                <span class="visually-hidden">Open account menu</span>
+                            </button>
+                            <div class="account-menu-panel" id="account-menu-panel" hidden data-account-menu-panel>
+                                <p class="account-menu-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+                                <a href="{% url 'accounts:accounts_customer_dashboard' %}">My bookings</a>
+                                <a href="{% url 'accounts:accounts_profile' %}">My profile</a>
+                                {% if request.user.is_superuser %}<a href="{% url 'admin:index' %}">Site administration</a>{% endif %}
+                                <form method="post" action="{% url 'accounts:accounts_sign_out' %}">{% csrf_token %}<button type="submit">Sign out</button></form>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a class="account-link" href="{% url 'accounts:accounts_sign_in' %}">Sign in</a>
+                        <a class="button button-small" href="{% url 'accounts:accounts_sign_up' %}">Sign up</a>
+                    {% endif %}
+
+                    <a class="book-now-button{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}" href="{% url 'party_builder:party_builder_package_options' %}" data-i18n="nav.bookNow">Book Now</a>
                 </div>
             </div>
         </nav>

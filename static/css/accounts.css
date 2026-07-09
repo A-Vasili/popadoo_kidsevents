@@ -1,0 +1,128 @@
+.account-page {
+    padding: clamp(3rem, 7vw, 6rem) 0;
+}
+
+.account-shell {
+    max-width: 960px;
+}
+
+.account-shell-small {
+    max-width: 640px;
+}
+
+.account-heading {
+    margin-bottom: 2rem;
+}
+
+.account-heading-row {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.account-card,
+.booking-card,
+.empty-state {
+    background: var(--surface, #fff);
+    border: 1px solid var(--border-color, #ded7e3);
+    border-radius: 1.25rem;
+    box-shadow: 0 1rem 2.4rem rgba(35, 20, 45, 0.08);
+    padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.account-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-field {
+    display: grid;
+    gap: 0.4rem;
+}
+
+.form-field:has(textarea),
+.form-field:has(.form-check-input) {
+    grid-column: 1 / -1;
+}
+
+.form-field label {
+    font-weight: 700;
+}
+
+.form-help,
+.form-error,
+.account-switch {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.form-error {
+    color: #9b1c31;
+    min-height: 0.25rem;
+}
+
+.form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.account-switch {
+    margin-top: 1rem;
+}
+
+.booking-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.booking-card header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+}
+
+.booking-card dl {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.booking-card dt {
+    color: var(--muted-text, #665d6c);
+    font-size: 0.85rem;
+}
+
+.booking-card dd {
+    margin: 0.2rem 0 0;
+    font-weight: 700;
+}
+
+.status-pill {
+    border-radius: 999px;
+    padding: 0.35rem 0.75rem;
+    background: #eee8f1;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.status-assigned {
+    background: #dff5e7;
+    color: #145c34;
+}
+
+.status-manual_review {
+    background: #fff0cf;
+    color: #714c00;
+}
+
+@media (max-width: 720px) {
+    .account-form-grid,
+    .booking-card dl {
+        grid-template-columns: 1fr;
+    }
+}

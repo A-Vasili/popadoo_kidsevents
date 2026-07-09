@@ -85,16 +85,19 @@ class PartyBuildAddonInline(admin.TabularInline):
 class PartyBuildAdmin(admin.ModelAdmin):
     list_display = (
         "contact_name",
+        "customer",
         "event_date",
         "guest_tier_label",
         "guest_count",
         "total_price",
         "payment_status",
         "status",
+        "assignment_state",
         "created_at",
     )
     list_filter = (
         "status",
+        "assignment_state",
         "payment_status",
         "event_date",
         "package",
@@ -102,13 +105,16 @@ class PartyBuildAdmin(admin.ModelAdmin):
     )
     search_fields = (
         "contact_name",
+        "customer",
         "contact_email",
         "contact_phone",
         "public_id",
+        "customer",
         "payment_reference",
     )
     readonly_fields = (
         "public_id",
+        "customer",
         "package",
         "guest_tier",
         "guest_tier_label",
@@ -120,6 +126,7 @@ class PartyBuildAdmin(admin.ModelAdmin):
         "card_last_four",
         "payment_reference",
         "checkout_completed_at",
+        "assignment_requested_at",
         "created_at",
         "updated_at",
     )

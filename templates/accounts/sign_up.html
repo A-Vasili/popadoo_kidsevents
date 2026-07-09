@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Account | Popadoo Kids Events{% endblock %}
+{% block meta_description %}Create a Popadoo account to save your details and view your party bookings.{% endblock %}
+{% block page_name %}accountSignUp{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
+
+{% block content %}
+<section class="account-page" aria-labelledby="sign-up-heading">
+    <div class="container account-shell">
+        <header class="account-heading">
+            <p class="section-kicker">A faster next booking</p>
+            <h1 id="sign-up-heading">Create your Popadoo account</h1>
+            <p>Save your contact details and keep your party history in one secure place.</p>
+        </header>
+        <form method="post" class="account-card" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="account-form-grid">
+                {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
+            </div>
+            <button class="button" type="submit">Create account</button>
+            <p class="account-switch">Already registered? <a href="{% url 'accounts:accounts_sign_in' %}">Sign in</a>.</p>
+        </form>
+    </div>
+</section>
+{% endblock %}
