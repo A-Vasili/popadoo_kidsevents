@@ -473,3 +473,35 @@
         grid-template-columns: repeat(2, minmax(12rem, 1fr));
     }
 }
+
+/* Link the legacy package catalogue to the database-backed party builder. */
+.advanced-builder-cta {
+    padding: clamp(2.5rem, 6vw, 5rem) 0;
+}
+
+.advanced-builder-cta-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: clamp(1.4rem, 4vw, 2.4rem);
+    border: 1px solid var(--color-border);
+    border-radius: 1.4rem;
+    background: linear-gradient(135deg, var(--surface-lavender), var(--surface-butter));
+    box-shadow: var(--shadow-card);
+}
+
+.advanced-builder-cta-inner p:last-child {
+    margin-bottom: 0;
+}
+
+.advanced-builder-cta .button {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 46rem) {
+    .advanced-builder-cta-inner {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Party Request Saved | Popadoo Kids Events{% endblock %}
+{% block meta_description %}Your Popadoo party request has been saved for review.{% endblock %}
+{% block meta_robots %}noindex,nofollow{% endblock %}
+{% block page_name %}partyBuilderSuccess{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
+{% endblock %}
+
+{% block content %}
+    <section class="builder-success" aria-labelledby="success-heading">
+        <div class="container narrow-content">
+            <p class="success-icon" aria-hidden="true">✓</p>
+            <p class="section-kicker">Request received</p>
+            <h1 id="success-heading">Your party plan has been saved</h1>
+            <p class="lead">
+                Thank you, {{ party_build.contact_name }}. This is a request rather than a
+                confirmed booking. The Popadoo team can now review the date, venue needs,
+                and final availability with you.
+            </p>
+
+            <article class="saved-build-card" aria-labelledby="saved-build-heading">
+                <header>
+                    <h2 id="saved-build-heading">{{ party_build.package.name }}</h2>
+                    <p>Reference: <strong>{{ party_build.public_id }}</strong></p>
+                </header>
+
+                <dl class="saved-build-details">
+                    <div><dt>Preferred date</dt><dd>{{ party_build.event_date|date:"j F Y" }}</dd></div>
+                    <div><dt>Expected children</dt><dd>{{ party_build.guest_count }}</dd></div>
+                    <div><dt>Contact email</dt><dd>{{ party_build.contact_email }}</dd></div>
+                    <div><dt>Contact phone</dt><dd>{{ party_build.contact_phone }}</dd></div>
+                </dl>
+
+                <section aria-labelledby="saved-addons-heading">
+                    <h3 id="saved-addons-heading">Optional experiences</h3>
+                    {% if party_build.addon_items.all %}
+                        <ul class="saved-addon-list">
+                            {% for item in party_build.addon_items.all %}
+                                <li>
+                                    <span>{{ item.addon.name }}</span>
+                                    <strong>€{{ item.unit_price|floatformat:2 }}</strong>
+                                </li>
+                            {% empty %}
+                                <li>No optional experiences selected.</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </section>
+
+                <dl class="saved-price-breakdown">
+                    <div>
+                        <dt>Basic package</dt>
+                        <dd>€{{ party_build.package.base_price|floatformat:2 }}</dd>
+                    </div>
+                    <div>
+                        <dt>Addons</dt>
+                        <dd>€{{ addon_total|floatformat:2 }}</dd>
+                    </div>
+                    <div class="saved-price-total">
+                        <dt>Estimated total</dt>
+                        <dd>€{{ party_build.total_price|floatformat:2 }}</dd>
+                    </div>
+                </dl>
+            </article>
+
+            <nav class="success-actions" aria-label="Party request next actions">
+                <a class="button" href="{% url 'party_builder:party_builder_builder' %}">
+                    Create another party
+                </a>
+                <a class="button button-outline" href="{% url 'core:contact' %}">
+                    Contact Popadoo
+                </a>
+            </nav>
+        </div>
+    </section>
+{% endblock %}

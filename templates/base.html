@@ -7,12 +7,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Popadoo Kids Events">
     <meta name="theme-color" content="#fff9fc">
+    <meta name="robots" content="{% block meta_robots %}index,follow{% endblock %}">
     <meta
         name="description"
-        content="Creative children’s events planned around your family, theme, and chosen venue."
+        content="{% block meta_description %}Creative children’s events planned around your family, theme, and chosen venue.{% endblock %}"
     >
 
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Popadoo Kids Events">
+    <meta property="og:title" content="{% block og_title %}Popadoo Kids Events{% endblock %}">
+    <meta
+        property="og:description"
+        content="{% block og_description %}Creative children’s parties designed around your family and venue.{% endblock %}"
+    >
+    <meta
+        property="og:image"
+        content="{{ request.scheme }}://{{ request.get_host }}{% static 'assets/images/party-equipment-hero.jpg' %}"
+    >
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+
     <title>{% block title %}Popadoo Kids Events{% endblock %}</title>
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
 
     <script src="{% static 'js/theme-init.js' %}"></script>
 
@@ -21,16 +36,11 @@
         href="{% static 'assets/svg/popadoo-logo.svg' %}"
         type="image/svg+xml"
     >
-
     <link
         rel="stylesheet"
         href="{% static 'vendor/bootstrap/bootstrap.css' %}"
     >
-
-    <link
-        rel="stylesheet"
-        href="{% static 'css/styles.css' %}"
-    >
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -52,10 +62,7 @@
 
     {% include "includes/footer.html" %}
 
-    <script
-        src="{% static 'vendor/bootstrap/bootstrap.js' %}"
-        defer
-    ></script>
+    <script src="{% static 'vendor/bootstrap/bootstrap.js' %}" defer></script>
     <script src="{% static 'js/translations.js' %}" defer></script>
     <script src="{% static 'js/main.js' %}" defer></script>
 

@@ -43,9 +43,7 @@
                             href="{% url 'core:home' %}"
                             {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}
                             data-i18n="nav.home"
-                        >
-                            Home
-                        </a>
+                        >Home</a>
                     </li>
                     <li>
                         <a
@@ -53,9 +51,7 @@
                             href="{% url 'core:gallery' %}"
                             {% if request.resolver_match.url_name == 'gallery' %}aria-current="page"{% endif %}
                             data-i18n="nav.gallery"
-                        >
-                            Gallery
-                        </a>
+                        >Gallery</a>
                     </li>
                     <li>
                         <a
@@ -63,9 +59,15 @@
                             href="{% url 'core:packages' %}"
                             {% if request.resolver_match.url_name == 'packages' %}aria-current="page"{% endif %}
                             data-i18n="nav.packages"
-                        >
-                            Packages
-                        </a>
+                        >Packages</a>
+                    </li>
+                    <li>
+                        <a
+                            class="site-navigation-link{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}"
+                            href="{% url 'party_builder:party_builder_builder' %}"
+                            {% if request.resolver_match.app_name == 'party_builder' %}aria-current="page"{% endif %}
+                            data-i18n="nav.buildParty"
+                        >Build Your Party</a>
                     </li>
                     <li>
                         <a
@@ -73,9 +75,7 @@
                             href="{% url 'core:about' %}"
                             {% if request.resolver_match.url_name == 'about' %}aria-current="page"{% endif %}
                             data-i18n="nav.about"
-                        >
-                            About Us
-                        </a>
+                        >About Us</a>
                     </li>
                     <li>
                         <a
@@ -83,9 +83,7 @@
                             href="{% url 'core:testimonials' %}"
                             {% if request.resolver_match.url_name == 'testimonials' %}aria-current="page"{% endif %}
                             data-i18n="nav.testimonials"
-                        >
-                            Testimonials
-                        </a>
+                        >Testimonials</a>
                     </li>
                 </ul>
 
@@ -95,9 +93,7 @@
                             class="visually-hidden"
                             for="language-selector"
                             data-i18n="language.label"
-                        >
-                            Language
-                        </label>
+                        >Language</label>
                         <select
                             class="language-selector"
                             id="language-selector"
@@ -145,9 +141,7 @@
                         href="{% url 'core:contact' %}"
                         {% if request.resolver_match.url_name == 'contact' %}aria-current="page"{% endif %}
                         data-i18n="nav.bookNow"
-                    >
-                        Book Now
-                    </a>
+                    >Book Now</a>
                 </div>
             </div>
         </nav>
