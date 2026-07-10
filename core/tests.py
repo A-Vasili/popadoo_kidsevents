@@ -66,6 +66,19 @@ class NavigationAndSecurityTests(TestCase):
             1,
         )
 
+    def test_header_has_separate_language_and_account_stripe(self):
+        response = self.client.get(reverse("core:core_home"))
+        html = response.content.decode("utf-8")
+        header = html.split("<header", 1)[1].split("</header>", 1)[0]
+
+        self.assertIn("header-utility-stripe", header)
+        self.assertIn("custom-language-picker", header)
+        self.assertIn("header-account-selector", header)
+        self.assertLess(
+            header.index("header-utility-stripe"),
+            header.index("header-main-row"),
+        )
+
     def test_security_headers_are_added_to_public_pages(self):
         response = self.client.get(reverse("core:core_home"))
         self.assertIn("default-src 'self'", response["Content-Security-Policy"])

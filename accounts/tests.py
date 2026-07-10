@@ -46,16 +46,21 @@ class AccountTests(TestCase):
         response = self.client.get(reverse("accounts:accounts_customer_dashboard"))
         self.assertEqual(response.status_code, 302)
 
-    def test_signed_in_account_control_follows_book_now(self):
+    def test_signed_in_account_selector_is_in_upper_stripe(self):
         user = User.objects.create_user("nav-user", password="pass-12345")
         self.client.force_login(user)
         response = self.client.get(reverse("core:core_home"))
         html = response.content.decode("utf-8")
         header = html.split("<header", 1)[1].split("</header>", 1)[0]
+
         self.assertLess(
-            header.index("book-now-button"),
-            header.index("account-menu-button"),
+            header.index("header-utility-stripe"),
+            header.index("header-main-row"),
         )
+        utility = header.split("header-utility-stripe", 1)[1].split("header-main-row", 1)[0]
+        self.assertIn("header-account-selector", utility)
+        self.assertIn("custom-language-picker", utility)
+        self.assertIn("book-now-button", header)
 
     def test_account_name_is_escaped_before_rendering(self):
         user = User.objects.create_user(
