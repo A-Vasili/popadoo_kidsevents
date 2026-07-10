@@ -21,11 +21,12 @@ def apply_accessibility(form: forms.BaseForm) -> None:
     for name, field in form.fields.items():
         if isinstance(field.widget, forms.CheckboxInput):
             field.widget.attrs.setdefault("class", "form-check-input")
-        else:
+        elif not field.widget.is_hidden:
             field.widget.attrs.setdefault("class", "form-control")
         element_id = field.widget.attrs.get("id", f"id_{name}")
         field.widget.attrs.setdefault("id", element_id)
-        field.widget.attrs["aria-describedby"] = f"{element_id}_help {element_id}_error"
+        if not field.widget.is_hidden:
+            field.widget.attrs["aria-describedby"] = f"{element_id}_help {element_id}_error"
         if form.is_bound and name in form.errors:
             field.widget.attrs["aria-invalid"] = "true"
 
@@ -50,8 +51,16 @@ class WorkerAvailabilityForm(forms.ModelForm):
         model = WorkerAvailability
         fields = ("start_at", "end_at", "availability_type", "notes")
         widgets = {
-            "start_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "end_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            # The custom date/time component writes one ISO local datetime into
+            # each hidden field before Django validates and saves the model.
+            "start_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "hidden", "data-datetime-input": ""},
+            ),
+            "end_at": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M",
+                attrs={"type": "hidden", "data-datetime-input": ""},
+            ),
             "notes": forms.TextInput(attrs={"placeholder": "Optional note"}),
         }
 

@@ -111,3 +111,38 @@
     }
 
 }
+
+/* Keep guest account links grouped and keep the signed-in bubble after Book Now. */
+.account-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.account-menu {
+    flex: 0 0 auto;
+    order: 20;
+}
+
+.book-now-button {
+    order: 10;
+}
+
+.account-actions {
+    order: 20;
+}
+
+html[data-theme="dark"] .account-menu-panel a:hover,
+html[data-theme="dark"] .account-menu-panel button:hover,
+html[data-theme="dark"] .account-menu-panel a:focus-visible,
+html[data-theme="dark"] .account-menu-panel button:focus-visible {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+}
+
+@media (max-width: 72rem) {
+    .account-actions {
+        width: 100%;
+        justify-content: center;
+    }
+}

@@ -20,9 +20,10 @@ def _apply_accessible_attributes(form: forms.BaseForm) -> None:
     for field_name, field in form.fields.items():
         element_id = field.widget.attrs.get("id", f"id_{field_name}")
         field.widget.attrs.setdefault("id", element_id)
-        field.widget.attrs["aria-describedby"] = (
-            f"{element_id}_help {element_id}_error"
-        )
+        if not field.widget.is_hidden:
+            field.widget.attrs["aria-describedby"] = (
+                f"{element_id}_help {element_id}_error"
+            )
 
     if form.is_bound:
         for field_name in form.errors:
@@ -104,13 +105,23 @@ class PartyDetailsForm(forms.Form):
     )
     event_date = forms.DateField(
         label="Preferred event date",
-        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+        # The browser submits this hidden ISO value. The visible calendar is a
+        # custom div-based control rendered by the template.
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={"type": "hidden", "data-custom-date-input": ""},
+        ),
         help_text="Choose today or a future date. Availability is confirmed later.",
     )
     event_time = forms.TimeField(
         required=False,
         label="Preferred start time",
-        widget=forms.TimeInput(attrs={"class": "form-control", "type": "time"}),
+        # Keeping an HH:MM hidden value lets Django perform normal TimeField
+        # validation without relying on the browser's visual component.
+        widget=forms.TimeInput(
+            format="%H:%M",
+            attrs={"type": "hidden", "data-custom-time-input": ""},
+        ),
     )
     guest_count = forms.IntegerField(
         min_value=1,
@@ -168,7 +179,7 @@ class PartyDetailsForm(forms.Form):
         super().__init__(*args, **kwargs)
         if not show_save_profile:
             self.fields.pop("save_profile", None)
-        self.fields["event_date"].widget.attrs["min"] = date.today().isoformat()
+        self.fields["event_date"].widget.attrs["data-min"] = date.today().isoformat()
         self.fields["guest_count"].widget.attrs.update(
             {
                 "min": str(guest_tier.min_guests),

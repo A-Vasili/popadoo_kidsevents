@@ -178,3 +178,18 @@ class PartyCheckoutTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Use an approved demo number such as 4242 4242 4242 4242.")
         self.assertFalse(PartyBuild.objects.exists())
+
+    def test_details_step_uses_custom_date_and_time_controls(self):
+        self.select_options()
+        response = self.client.get(
+            reverse("party_builder:party_builder_customer_details")
+        )
+        self.assertContains(response, 'data-date-picker')
+        self.assertContains(response, 'data-time-picker')
+        self.assertContains(response, 'type="hidden" name="event_date"')
+        self.assertContains(response, 'type="hidden" name="event_time"')
+        self.assertNotContains(response, 'type="date"')
+        self.assertNotContains(response, 'type="time"')
+        self.assertNotContains(response, '{#')
+        self.assertNotContains(response, 'Reusable custom date control')
+        self.assertNotContains(response, 'Reusable custom time control')

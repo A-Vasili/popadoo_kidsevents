@@ -825,3 +825,24 @@ html[data-theme="light"] .theme-toggle-icon-sun {
     }
 
 }
+
+/*
+ * Navigation alignment refinements.
+ * The menu may grow, while the control group stays in a predictable order:
+ * language, theme, Book Now, then account access at the far right.
+ */
+@media (min-width: 72.001rem) {
+    .site-navigation-menu {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .site-navigation-links {
+        margin-left: auto;
+    }
+
+    .site-controls {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+}

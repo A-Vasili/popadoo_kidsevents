@@ -62,9 +62,9 @@
                     {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.guest_count only %}
                     {# This include reuses a shared template fragment instead of repeating the same markup. #}
-                    {% include "party_builder/includes/form_field.html" with field=form.event_date only %}
+                    {% include "includes/custom_date_field.html" with field=form.event_date placeholder="Choose a date" only %}
                     {# This include reuses a shared template fragment instead of repeating the same markup. #}
-                    {% include "party_builder/includes/form_field.html" with field=form.event_time help_text="Optional. The final time is confirmed after availability review." only %}
+                    {% include "includes/custom_time_field.html" with field=form.event_time placeholder="To be confirmed" help_text="Optional. The final time is confirmed after availability review." start="10:00" end="22:00" step="30" only %}
                     {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.event_address wide=True only %}
                     {# This include reuses a shared template fragment instead of repeating the same markup. #}

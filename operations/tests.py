@@ -195,3 +195,14 @@ class OperationsPermissionTests(TestCase):
             self.client.get(reverse("operations:operations_owner_pricing")).status_code,
             200,
         )
+
+    def test_availability_form_uses_custom_datetime_controls(self):
+        self.client.force_login(self.worker_user)
+        response = self.client.get(
+            reverse("operations:operations_worker_availability")
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-custom-datetime')
+        self.assertContains(response, 'type="hidden" name="start_at"')
+        self.assertContains(response, 'type="hidden" name="end_at"')
+        self.assertNotContains(response, 'type="datetime-local"')

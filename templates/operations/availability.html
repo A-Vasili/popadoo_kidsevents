@@ -31,22 +31,18 @@
                     <form method="post" novalidate>
                         {% csrf_token %}
                         {% for field in form %}
-                            <div class="form-field">
-                                <label for="{{ field.id_for_label }}">
-                                    {{ field.label }}
-                                </label>
-                                {{ field }}
-                                {% if field.help_text %}
-                                    <p class="form-help">
-                                        {{ field.help_text }}
-                                    </p>
-                                {% endif %}
-                                {% for error in field.errors %}
-                                    <p class="form-error" role="alert">
-                                        {{ error }}
-                                    </p>
-                                {% endfor %}
-                            </div>
+                            {% if field.name == "start_at" or field.name == "end_at" %}
+                                {% include "includes/custom_datetime_field.html" with field=field only %}
+                            {% else %}
+                                <div class="form-field">
+                                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.help_text %}<p class="form-help" id="{{ field.id_for_label }}_help">{{ field.help_text }}</p>{% endif %}
+                                    <div class="form-error" id="{{ field.id_for_label }}_error" aria-live="polite">
+                                        {% for error in field.errors %}<p role="alert">{{ error }}</p>{% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% endfor %}
                         <button class="button" type="submit">
                             Save availability

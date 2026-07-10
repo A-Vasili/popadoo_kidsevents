@@ -68,6 +68,7 @@ INSTALLED_APPS = [
 # Middleware runs around each request to provide security, sessions, authentication, and other shared behaviour.
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.PopadooSecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -177,3 +178,58 @@ LOGIN_URL = "accounts:accounts_sign_in"
 LOGIN_REDIRECT_URL = "accounts:accounts_customer_dashboard"
 # After signing out, users return to this public page.
 LOGOUT_REDIRECT_URL = "core:core_home"
+
+
+# Browser and transport hardening.
+# These values are safe for local development; production-only HTTPS features
+# are enabled automatically when DEBUG is false or through environment flags.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", str(not DEBUG)).lower() in {
+    "1", "true", "yes", "on"
+}
+SECURE_HSTS_SECONDS = int(
+    os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Conservative request limits reduce abuse without affecting normal booking forms.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
+
+# Public pages use only local scripts and styles. Data images are allowed
+# because the bundled Bootstrap stylesheet contains small embedded SVG icons.
+CONTENT_SECURITY_POLICY = "; ".join(
+    (
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    )
+)
+
+# Django admin uses a limited amount of framework-owned inline code. The
+# exception is restricted to /admin/ by PopadooSecurityHeadersMiddleware.
+ADMIN_CONTENT_SECURITY_POLICY = "; ".join(
+    (
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+    )
+)

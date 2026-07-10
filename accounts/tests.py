@@ -45,3 +45,34 @@ class AccountTests(TestCase):
     def test_guest_cannot_open_dashboard(self):
         response = self.client.get(reverse("accounts:accounts_customer_dashboard"))
         self.assertEqual(response.status_code, 302)
+
+    def test_signed_in_account_control_follows_book_now(self):
+        user = User.objects.create_user("nav-user", password="pass-12345")
+        self.client.force_login(user)
+        response = self.client.get(reverse("core:core_home"))
+        html = response.content.decode("utf-8")
+        header = html.split("<header", 1)[1].split("</header>", 1)[0]
+        self.assertLess(
+            header.index("book-now-button"),
+            header.index("account-menu-button"),
+        )
+
+    def test_account_name_is_escaped_before_rendering(self):
+        user = User.objects.create_user(
+            "escaped-user",
+            password="pass-12345",
+            first_name="<script>alert(1)</script>",
+        )
+        self.client.force_login(user)
+        response = self.client.get(reverse("core:core_home"))
+        self.assertNotContains(response, "<script>alert(1)</script>")
+        self.assertContains(response, "&lt;script&gt;alert(1)&lt;/script&gt;")
+
+    def test_sql_like_username_does_not_bypass_authentication(self):
+        User.objects.create_user("real-user", password="safe-pass-12345")
+        response = self.client.post(
+            reverse("accounts:accounts_sign_in"),
+            {"username": "' OR 1=1 --", "password": "anything"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)

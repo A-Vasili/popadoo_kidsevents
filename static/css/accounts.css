@@ -148,3 +148,65 @@
     }
 
 }
+
+/*
+ * Account form colour fixes.
+ * Explicit theme-aware colours prevent browser defaults, placeholders, and
+ * help descriptions from fading into the dark card background.
+ */
+.account-card .form-control {
+    width: 100%;
+    min-height: 2.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    caret-color: var(--color-text);
+}
+
+.account-card textarea.form-control {
+    min-height: 7rem;
+}
+
+.account-card .form-control::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+}
+
+.account-card .form-help,
+.account-card .form-help ul,
+.account-card .account-switch {
+    color: var(--color-muted);
+}
+
+.account-card .form-help ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.account-card .form-control:focus {
+    border-color: var(--color-primary);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+}
+
+/* Browser autofill can otherwise force a bright field with unreadable text. */
+.account-card input:-webkit-autofill,
+.account-card input:-webkit-autofill:hover,
+.account-card input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-text);
+    box-shadow: 0 0 0 1000px var(--color-surface-raised) inset;
+    transition: background-color 9999s ease-out 0s;
+}
+
+html[data-theme="dark"] .account-card,
+html[data-theme="dark"] .booking-card,
+html[data-theme="dark"] .empty-state {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+}
+
+html[data-theme="dark"] .account-card .form-error {
+    color: #ff9daf;
+}

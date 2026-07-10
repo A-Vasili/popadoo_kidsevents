@@ -51,3 +51,23 @@ class PublicPageTests(TestCase):
                     status_code=301,
                     fetch_redirect_response=False,
                 )
+
+
+class NavigationAndSecurityTests(TestCase):
+    """Check the shared navigation order and browser security boundary."""
+
+    def test_header_uses_only_book_now_for_party_builder(self):
+        response = self.client.get(reverse("core:core_home"))
+        html = response.content.decode("utf-8")
+        header = html.split("<header", 1)[1].split("</header>", 1)[0]
+        self.assertNotIn("Build Your Party", header)
+        self.assertEqual(
+            header.count(reverse("party_builder:party_builder_package_options")),
+            1,
+        )
+
+    def test_security_headers_are_added_to_public_pages(self):
+        response = self.client.get(reverse("core:core_home"))
+        self.assertIn("default-src 'self'", response["Content-Security-Policy"])
+        self.assertEqual(response["Cross-Origin-Resource-Policy"], "same-origin")
+        self.assertIn("payment=()", response["Permissions-Policy"])
