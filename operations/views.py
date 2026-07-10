@@ -16,7 +16,13 @@ from django.views import View
 from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from accounts.models import WorkerProfile
-from accounts.permissions import can_access_operations, can_manage_pricing, is_owner, is_worker
+from accounts.permissions import (
+    OWNER_GROUP,
+    can_access_operations,
+    can_manage_pricing,
+    is_owner,
+    is_worker,
+)
 from party_builder.models import AddonExperience, GuestPriceTier, PartyBuild, PartyPackage
 
 from .forms import (
@@ -24,6 +30,7 @@ from .forms import (
     DeclineAssignmentForm,
     GuestTierPricingForm,
     ManualAssignmentForm,
+    OwnerWorkerCreationForm,
     PackagePricingForm,
     WorkerAvailabilityForm,
     WorkerProfileForm,
@@ -314,7 +321,14 @@ class OwnerWorkersView(OwnerRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         query = self.request.GET.get("q", "").strip()
-        users = User.objects.filter(is_superuser=False).prefetch_related("groups")
+        # Owners manage customers and workers only. Excluding owner accounts
+        # prevents one owner from changing another owner's role or permissions.
+        users = (
+            User.objects.filter(is_superuser=False)
+            .exclude(groups__name=OWNER_GROUP)
+            .prefetch_related("groups")
+            .distinct()
+        )
         if query:
             users = users.filter(
                 Q(username__icontains=query)
@@ -327,13 +341,35 @@ class OwnerWorkersView(OwnerRequiredMixin, TemplateView):
         return context
 
 
+class OwnerWorkerCreateView(OwnerRequiredMixin, FormView):
+    """Allow an owner to create a worker without granting admin access."""
+
+    template_name = "operations/owner_worker_create.html"
+    form_class = OwnerWorkerCreationForm
+    success_url = reverse_lazy("operations:operations_owner_workers")
+
+    def form_valid(self, form):
+        worker_user = form.save(actor=self.request.user)
+        messages.success(
+            self.request,
+            f"Worker account {worker_user.username} was created successfully.",
+        )
+        return super().form_valid(form)
+
+
 # This view controls the owner worker permission page or action.
 class OwnerWorkerPermissionView(OwnerRequiredMixin, View):
     http_method_names = ["post"]
 
     # This method processes a submitted form and performs the protected action requested by the user.
     def post(self, request, user_id):
-        user = get_object_or_404(User, pk=user_id, is_superuser=False)
+        # Owner accounts are deliberately excluded from this endpoint. Owners
+        # edit only their own account through the normal profile page.
+        user = get_object_or_404(
+            User.objects.exclude(groups__name=OWNER_GROUP).distinct(),
+            pk=user_id,
+            is_superuser=False,
+        )
         action = request.POST.get("action")
         try:
             if action == "promote":

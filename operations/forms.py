@@ -5,8 +5,10 @@ from __future__ import annotations
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
+from django.db import transaction
 
-from accounts.models import WorkerProfile
+from accounts.models import CustomerProfile, WorkerProfile, phone_validator
 from party_builder.models import AddonExperience, GuestPriceTier, PartyPackage
 
 from .models import WorkerAvailability
@@ -29,6 +31,89 @@ def apply_accessibility(form: forms.BaseForm) -> None:
             field.widget.attrs["aria-describedby"] = f"{element_id}_help {element_id}_error"
         if form.is_bound and name in form.errors:
             field.widget.attrs["aria-invalid"] = "true"
+
+
+class OwnerWorkerCreationForm(UserCreationForm):
+    """Create a worker account from the protected owner operations panel.
+
+    Public visitors can create customer accounts only. This separate owner-only
+    form keeps staff creation inside the authorised workflow and still uses
+    Django's built-in password validation.
+    """
+
+    first_name = forms.CharField(max_length=150, required=True)
+    last_name = forms.CharField(max_length=150, required=True)
+    email = forms.EmailField(required=True)
+    phone = forms.CharField(
+        max_length=30,
+        required=False,
+        validators=[phone_validator],
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+            "phone",
+            "password1",
+            "password2",
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].help_text = (
+            "This is the name the worker will use to sign in."
+        )
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
+        self.fields["phone"].widget.attrs["autocomplete"] = "tel"
+        self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
+        apply_accessibility(self)
+
+    def clean_email(self) -> str:
+        """Prevent duplicate email addresses regardless of letter case."""
+
+        email = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "An account already uses this email address."
+            )
+        return email
+
+    @transaction.atomic
+    def save(self, *, actor, commit=True):
+        """Save the account and promote it through the audited role service.
+
+        The actor is the signed-in owner. Passing it explicitly makes the audit
+        trail clear and avoids silently changing permissions inside the form.
+        """
+
+        from .services.permissions import promote_to_worker
+
+        user = super().save(commit=False)
+        user.first_name = self.cleaned_data["first_name"].strip()
+        user.last_name = self.cleaned_data["last_name"].strip()
+        user.email = self.cleaned_data["email"]
+
+        if commit:
+            user.save()
+            profile, _ = CustomerProfile.objects.get_or_create(user=user)
+            profile.phone = self.cleaned_data.get("phone", "").strip()
+            profile.save(update_fields=["phone", "updated_at"])
+
+            worker_profile = promote_to_worker(user, actor)
+            worker_profile.display_name = (
+                user.get_full_name() or user.username
+            )
+            worker_profile.phone = profile.phone
+            worker_profile.save(
+                update_fields=["display_name", "phone", "updated_at"]
+            )
+
+        return user
 
 
 class WorkerProfileForm(forms.ModelForm):

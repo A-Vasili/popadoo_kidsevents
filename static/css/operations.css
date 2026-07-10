@@ -18,9 +18,9 @@
     gap: .6rem;
     margin-bottom: 1.5rem;
     padding: .75rem;
-    border: 1px solid var(--border-color, #ddd4e0);
+    border: 1px solid var(--color-border);
     border-radius: 1rem;
-    background: var(--surface, #fff);
+    background: var(--color-surface);
 }
 
 /* These rules arrange and style the site navigation area. */
@@ -42,7 +42,7 @@
 .operations-stats article {
     padding: 1.25rem;
     border-radius: 1rem;
-    background: #f5edf8;
+    background: var(--surface-lavender);
     display: grid;
     gap: .2rem;
 }
@@ -54,8 +54,8 @@
 
 /* These rules present each item as a clear, reusable content card. */
 .operations-panel, .assignment-card, .user-role-card, .empty-state {
-    background: var(--surface, #fff);
-    border: 1px solid var(--border-color, #ded7e3);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 1.2rem;
     padding: clamp(1.1rem, 3vw, 2rem);
     margin-bottom: 1.25rem;
@@ -84,7 +84,7 @@
 
 /* These rules style this group of related page elements. */
 .operations-row span {
-    color: var(--muted-text, #675f6c);
+    color: var(--color-muted);
 }
 
 /* These rules arrange and style the site navigation area. */
@@ -110,7 +110,7 @@
 /* These rules style this group of related page elements. */
 dt {
     font-size: .85rem;
-    color: var(--muted-text, #675f6c);
+    color: var(--color-muted);
 }
 
 dd {
@@ -165,7 +165,7 @@ dd {
 }
 
 .form-help {
-    color: var(--muted-text, #675f6c);
+    color: var(--color-muted);
     font-size: .9rem;
 }
 
@@ -183,7 +183,7 @@ dd {
 .text-button {
     background: transparent;
     border: 0;
-    color: #7b2869;
+    color: var(--color-primary);
     text-decoration: underline;
     cursor: pointer;
 }
@@ -231,7 +231,7 @@ dd {
 
 .schedule-table th, .schedule-table td {
     padding: .75rem;
-    border-bottom: 1px solid var(--border-color, #ded7e3);
+    border-bottom: 1px solid var(--color-border);
     text-align: left;
 }
 
@@ -245,7 +245,7 @@ dd {
 .pricing-card {
     display: grid;
     gap: .6rem;
-    border: 1px solid var(--border-color, #ded7e3);
+    border: 1px solid var(--color-border);
     border-radius: .9rem;
     padding: 1rem;
 }
@@ -286,4 +286,239 @@ dd {
         justify-content: start;
     }
 
+}
+
+
+/*
+ * Theme-safe operations colours
+ *
+ * All private staff pages use the shared theme variables rather than fixed
+ * white backgrounds. This prevents white text from disappearing on white cards
+ * when dark mode is active.
+ */
+.operations-page {
+    color: var(--color-text);
+}
+
+.operations-heading,
+.operations-panel,
+.assignment-card,
+.user-role-card,
+.empty-state,
+.pricing-card,
+.schedule-table,
+.operations-subnav {
+    color: var(--color-text);
+}
+
+.operations-heading-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.operations-heading-row > div {
+    max-width: 48rem;
+}
+
+.operations-subnav a {
+    color: var(--color-primary-strong);
+    text-decoration: none;
+}
+
+.operations-subnav a:hover,
+.operations-subnav a:focus-visible {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+}
+
+.operations-stats article {
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+}
+
+.operations-row span,
+.user-role-card p,
+.operations-heading p,
+.pricing-card p {
+    color: var(--color-muted);
+}
+
+.role-tag,
+.status-pill {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-strong);
+    border: 1px solid var(--color-border);
+}
+
+/* Status labels keep explicit high-contrast colours in both themes. */
+.status-accepted {
+    background: #dff5e7;
+    color: #145c34;
+    border-color: #94d4ad;
+}
+
+.status-declined {
+    background: #fde2e5;
+    color: #8c1d2f;
+    border-color: #e8a8b2;
+}
+
+.status-pending {
+    background: #fff0cf;
+    color: #714c00;
+    border-color: #e7c774;
+}
+
+/*
+ * Form controls inherit the active theme explicitly. Browser defaults often
+ * use a white field even inside dark pages, making labels and entered text hard
+ * to read.
+ */
+.operations-page .form-control,
+.operations-page input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.operations-page select,
+.operations-page textarea {
+    width: 100%;
+    min-height: 2.85rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    caret-color: var(--color-text);
+    font: inherit;
+}
+
+.operations-page textarea {
+    min-height: 7rem;
+    resize: vertical;
+}
+
+.operations-page .form-control::placeholder,
+.operations-page input::placeholder,
+.operations-page textarea::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+}
+
+.operations-page .form-control:focus,
+.operations-page input:focus,
+.operations-page select:focus,
+.operations-page textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0.22rem var(--color-primary-soft);
+}
+
+.operations-page .form-error,
+.operations-page .conflict-text {
+    color: #b4233c;
+}
+
+html[data-theme="dark"] .operations-page .form-error,
+html[data-theme="dark"] .operations-page .conflict-text {
+    color: #ff9daf;
+}
+
+.operations-search label,
+.pricing-form label,
+.operations-form label {
+    color: var(--color-heading);
+    font-weight: 700;
+}
+
+.schedule-table th {
+    color: var(--color-heading);
+    background: var(--color-surface-soft);
+}
+
+.schedule-table td {
+    color: var(--color-text);
+    background: var(--color-surface);
+}
+
+.schedule-table th,
+.schedule-table td {
+    border-color: var(--color-border);
+}
+
+.text-button {
+    color: var(--color-primary-strong);
+}
+
+/* Owner worker creation form */
+.operations-narrow-shell {
+    max-width: 58rem;
+}
+
+.operations-form {
+    margin-inline: auto;
+}
+
+.operations-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+    align-items: start;
+}
+
+.operations-form-grid .form-field {
+    min-width: 0;
+    align-content: start;
+}
+
+.operations-form-grid .form-field--username,
+.operations-form-grid .form-field--password1,
+.operations-form-grid .form-field--password2 {
+    grid-column: 1 / -1;
+}
+
+.operations-form-grid .form-help,
+.operations-form-grid .form-error {
+    margin: 0;
+}
+
+.operations-form-grid .form-help ul {
+    margin: 0.4rem 0 0;
+    padding-inline-start: 1.2rem;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+html[data-theme="dark"] .operations-panel,
+html[data-theme="dark"] .assignment-card,
+html[data-theme="dark"] .user-role-card,
+html[data-theme="dark"] .empty-state,
+html[data-theme="dark"] .pricing-card,
+html[data-theme="dark"] .operations-subnav {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+    box-shadow: var(--shadow-card);
+}
+
+/* Browser autofill should match the selected theme instead of forcing white. */
+.operations-page input:-webkit-autofill,
+.operations-page input:-webkit-autofill:hover,
+.operations-page input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-text);
+    box-shadow: 0 0 0 1000px var(--color-surface-raised) inset;
+    transition: background-color 9999s ease-out 0s;
+}
+
+@media (max-width: 720px) {
+    .operations-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .operations-form-grid .form-field {
+        grid-column: 1;
+    }
 }

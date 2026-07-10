@@ -210,3 +210,84 @@ html[data-theme="dark"] .empty-state {
 html[data-theme="dark"] .account-card .form-error {
     color: #ff9daf;
 }
+
+/*
+ * Registration-grid alignment
+ *
+ * Named field classes keep related fields in predictable rows. This avoids a
+ * long password-help block shifting unrelated fields into visually mismatched
+ * cells, while preserving a single-column layout on small screens.
+ */
+.account-form-grid {
+    align-items: start;
+}
+
+.account-form-grid .form-field {
+    min-width: 0;
+    align-content: start;
+}
+
+.account-form-grid .form-field--username,
+.account-form-grid .form-field--privacy_consent {
+    grid-column: 1 / -1;
+}
+
+.account-form-grid .form-field--first_name,
+.account-form-grid .form-field--last_name,
+.account-form-grid .form-field--email,
+.account-form-grid .form-field--phone,
+.account-form-grid .form-field--password1,
+.account-form-grid .form-field--password2 {
+    grid-column: auto;
+}
+
+.form-check-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.7rem;
+}
+
+.form-check-row label {
+    margin: 0;
+    line-height: 1.45;
+}
+
+.form-field--checkbox .form-help,
+.form-field--checkbox .form-error {
+    margin-inline-start: 2rem;
+}
+
+.account-card .form-control {
+    display: block;
+    padding: 0.7rem 0.8rem;
+    font: inherit;
+}
+
+.account-card .form-help {
+    color: var(--color-muted);
+    overflow-wrap: anywhere;
+}
+
+.account-card .form-error p {
+    margin: 0.2rem 0 0;
+}
+
+/* All visible text in dark account cards uses theme-aware tokens. */
+html[data-theme="dark"] .account-card,
+html[data-theme="dark"] .account-card label,
+html[data-theme="dark"] .account-card .form-check-row,
+html[data-theme="dark"] .account-switch {
+    color: var(--color-text);
+}
+
+@media (max-width: 720px) {
+    .account-form-grid .form-field {
+        grid-column: 1;
+    }
+
+    .form-field--checkbox .form-help,
+    .form-field--checkbox .form-error {
+        margin-inline-start: 0;
+    }
+}

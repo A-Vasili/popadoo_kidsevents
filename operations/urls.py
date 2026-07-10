@@ -52,6 +52,11 @@ urlpatterns = [
     ),
     path("owner/workers/", views.OwnerWorkersView.as_view(), name="operations_owner_workers"),
     path(
+        "owner/workers/create/",
+        views.OwnerWorkerCreateView.as_view(),
+        name="operations_owner_worker_create",
+    ),
+    path(
         "owner/workers/<int:user_id>/permissions/",
         views.OwnerWorkerPermissionView.as_view(),
         name="operations_owner_worker_permissions",

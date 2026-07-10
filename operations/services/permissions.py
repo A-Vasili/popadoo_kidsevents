@@ -19,10 +19,25 @@ def _require_owner(actor):
         raise PermissionDenied("Owner permission is required.")
 
 
+def _reject_protected_account(user):
+    """Keep superusers and owners outside the worker-management workflow.
+
+    Owner accounts are maintained through their own profile and, when needed,
+    by a Django administrator. This prevents one owner from changing another
+    owner's role through a crafted request.
+    """
+
+    if user.is_superuser or user.groups.filter(name=OWNER_GROUP).exists():
+        raise PermissionDenied(
+            "Owner and administrator accounts cannot be changed here."
+        )
+
+
 # This helper changes a user role through the approved permission workflow.
 @transaction.atomic
 def promote_to_worker(user, actor):
     _require_owner(actor)
+    _reject_protected_account(user)
     Workers, _ = Group.objects.get_or_create(name=WORKER_GROUP)
     Workers.user_set.add(user)
     profile, _ = WorkerProfile.objects.get_or_create(user=user)
@@ -42,6 +57,7 @@ def promote_to_worker(user, actor):
 @transaction.atomic
 def demote_worker(user, actor):
     _require_owner(actor)
+    _reject_protected_account(user)
     worker_group = Group.objects.filter(name=WORKER_GROUP).first()
     if worker_group:
         worker_group.user_set.remove(user)
@@ -65,6 +81,7 @@ def demote_worker(user, actor):
 @transaction.atomic
 def grant_pricing_management(user, actor):
     _require_owner(actor)
+    _reject_protected_account(user)
     if not user.groups.filter(name=WORKER_GROUP).exists():
         raise ValidationError("Pricing rights can be granted only to a worker.")
     group, _ = Group.objects.get_or_create(name=PRICING_GROUP)
@@ -82,6 +99,7 @@ def grant_pricing_management(user, actor):
 @transaction.atomic
 def revoke_pricing_management(user, actor):
     _require_owner(actor)
+    _reject_protected_account(user)
     group = Group.objects.filter(name=PRICING_GROUP).first()
     if group:
         group.user_set.remove(user)

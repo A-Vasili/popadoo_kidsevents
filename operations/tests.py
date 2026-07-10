@@ -206,3 +206,136 @@ class OperationsPermissionTests(TestCase):
         self.assertContains(response, 'type="hidden" name="start_at"')
         self.assertContains(response, 'type="hidden" name="end_at"')
         self.assertNotContains(response, 'type="datetime-local"')
+
+
+class OwnerAccountManagementTests(TestCase):
+    """Checks for the owner-only worker account workflow and account isolation."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user(
+            "owner-manager",
+            password="Owner-test-pass-123!",
+            email="owner-manager@example.test",
+        )
+        cls.other_owner = User.objects.create_user(
+            "other-owner",
+            password="Owner-test-pass-456!",
+            email="other-owner@example.test",
+        )
+        owners = Group.objects.get(name="Owners")
+        owners.user_set.add(cls.owner, cls.other_owner)
+
+    def test_owner_can_create_worker_account(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse("operations:operations_owner_worker_create"),
+            {
+                "username": "new-worker",
+                "first_name": "New",
+                "last_name": "Worker",
+                "email": "new-worker@example.test",
+                "phone": "+30 690 000 0000",
+                "password1": "Worker-account-test-2026!",
+                "password2": "Worker-account-test-2026!",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("operations:operations_owner_workers"),
+        )
+        worker = User.objects.get(username="new-worker")
+        self.assertTrue(worker.groups.filter(name="Workers").exists())
+        self.assertTrue(worker.worker_profile.is_active_worker)
+        self.assertFalse(worker.is_staff)
+        self.assertFalse(worker.is_superuser)
+
+    def test_owner_list_hides_all_owner_accounts(self):
+        customer = User.objects.create_user(
+            "visible-customer",
+            password="Customer-test-pass-123!",
+        )
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse("operations:operations_owner_workers")
+        )
+
+        html = response.content.decode("utf-8")
+        user_list = html.split('<div class="operations-list">', 1)[1].split(
+            "</div>\n        </div>\n    </section>", 1
+        )[0]
+        self.assertIn(customer.username, user_list)
+        self.assertNotIn(self.owner.username, user_list)
+        self.assertNotIn(self.other_owner.username, user_list)
+
+    def test_owner_cannot_change_another_owner_through_permission_url(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse(
+                "operations:operations_owner_worker_permissions",
+                args=[self.other_owner.pk],
+            ),
+            {"action": "promote"},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_worker_schedule_contains_only_the_signed_in_worker_assignments(self):
+        worker_one_user = User.objects.create_user(
+            "schedule-worker-one",
+            password="Worker-test-pass-123!",
+        )
+        worker_two_user = User.objects.create_user(
+            "schedule-worker-two",
+            password="Worker-test-pass-456!",
+        )
+        Group.objects.get(name="Workers").user_set.add(
+            worker_one_user,
+            worker_two_user,
+        )
+        worker_one = WorkerProfile.objects.create(
+            user=worker_one_user,
+            display_name="Schedule Worker One",
+        )
+        worker_two = WorkerProfile.objects.create(
+            user=worker_two_user,
+            display_name="Schedule Worker Two",
+        )
+        package = PartyPackage.objects.get(slug="basic-popadoo-party")
+        tier = GuestPriceTier.objects.filter(package=package).first()
+
+        def booking(name):
+            return PartyBuild.objects.create(
+                package=package,
+                guest_tier=tier,
+                contact_name=name,
+                contact_email=f"{name.lower().replace(' ', '-')}@example.test",
+                contact_phone="+306900000000",
+                event_date=timezone.localdate() + timedelta(days=7),
+                event_time=timezone.datetime.strptime("16:00", "%H:%M").time(),
+                event_address="Athens",
+                postal_code="10558",
+                guest_count=8,
+                guest_tier_label=tier.label,
+                package_price=Decimal("180.00"),
+                addon_price=Decimal("0.00"),
+                total_price=Decimal("180.00"),
+            )
+
+        PartyAssignment.objects.create(
+            party_build=booking("Own Client"),
+            worker=worker_one,
+            status=PartyAssignment.Status.ACCEPTED,
+        )
+        PartyAssignment.objects.create(
+            party_build=booking("Other Client"),
+            worker=worker_two,
+            status=PartyAssignment.Status.ACCEPTED,
+        )
+
+        self.client.force_login(worker_one_user)
+        response = self.client.get(
+            reverse("operations:operations_worker_schedule")
+        )
+        self.assertContains(response, "Own Client")
+        self.assertNotContains(response, "Other Client")

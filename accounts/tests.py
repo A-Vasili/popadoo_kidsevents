@@ -81,3 +81,10 @@ class AccountTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_sign_up_uses_named_grid_cells_for_alignment(self):
+        response = self.client.get(reverse("accounts:accounts_sign_up"))
+        self.assertContains(response, "form-field--username")
+        self.assertContains(response, "form-field--first_name")
+        self.assertContains(response, "form-field--privacy_consent")
+        self.assertContains(response, "form-check-row")

@@ -20,13 +20,21 @@
     <section class="operations-page" aria-labelledby="workers-heading">
         <div class="container">
             {% include "operations/includes/nav.html" %}
-            <header class="operations-heading">
-                <h1 id="workers-heading">
-                    Workers and permissions
-                </h1>
-                <p>
-                    Promote customers to workers and delegate pricing without granting owner access.
-                </p>
+            <header class="operations-heading operations-heading-row">
+                <div>
+                    <h1 id="workers-heading">Workers and permissions</h1>
+                    <p>
+                        Create worker accounts, promote customers, and delegate pricing
+                        without granting owner access. Owner accounts are intentionally
+                        hidden from this page.
+                    </p>
+                </div>
+                <a
+                    class="button"
+                    href="{% url 'operations:operations_owner_worker_create' %}"
+                >
+                    Create worker
+                </a>
             </header>
             <form class="operations-search" method="get">
                 <label for="worker-search">
