@@ -1,5 +1,3 @@
-# This file defines and validates each step of the party-building and simulated checkout process.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -47,7 +45,6 @@ class PackageOptionsForm(forms.Form):
         label="Optional experiences",
     )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, package: PartyPackage, **kwargs):
         self.package = package
         super().__init__(*args, **kwargs)
@@ -172,7 +169,6 @@ class PartyDetailsForm(forms.Form):
         ),
     )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, guest_tier: GuestPriceTier, show_save_profile=False, user=None, **kwargs):
         self.guest_tier = guest_tier
         self.user = user
@@ -314,7 +310,6 @@ class SimulatedPaymentForm(forms.Form):
         ),
     )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_year = timezone.localdate().year
@@ -323,7 +318,6 @@ class SimulatedPaymentForm(forms.Form):
         ]
         _apply_accessible_attributes(self)
 
-    # This method checks the demonstration card number with the standard checksum rule.
     @staticmethod
     def _passes_luhn(number: str) -> bool:
         digits = [int(character) for character in number]
@@ -337,7 +331,6 @@ class SimulatedPaymentForm(forms.Form):
             checksum += digit
         return checksum % 10 == 0
 
-    # This method identifies the demonstration card brand from the number prefix.
     @staticmethod
     def _detect_brand(number: str) -> str:
         if number.startswith("4"):

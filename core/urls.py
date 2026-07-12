@@ -1,20 +1,15 @@
-# This file gives clear names and paths to the public information pages.
-# Comments in this file explain the purpose of each section without changing how the program works.
+"""Public information pages and compatibility redirects."""
 
 from django.urls import path
-from django.views.generic import RedirectView
-
-from . import views
+from django.views.generic import RedirectView, TemplateView
 
 app_name = "core"
 
-# These URL patterns connect web addresses to the views that handle them.
 urlpatterns = [
-    path("", views.home, name="core_home"),
-    path("gallery/", views.gallery, name="core_gallery"),
-    path("about/", views.about, name="core_about"),
-    path("testimonials/", views.testimonials, name="core_testimonials"),
-    # Preserve old bookmarks while removing the obsolete standalone pages.
+    path("", TemplateView.as_view(template_name="core/index.html"), name="core_home"),
+    path("gallery/", TemplateView.as_view(template_name="core/gallery.html"), name="core_gallery"),
+    path("about/", TemplateView.as_view(template_name="core/about.html"), name="core_about"),
+    path("testimonials/", TemplateView.as_view(template_name="core/testimonials.html"), name="core_testimonials"),
     path(
         "packages/",
         RedirectView.as_view(

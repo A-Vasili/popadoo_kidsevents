@@ -1,0 +1,14 @@
+{% extends "operations/management/base.html" %}
+
+{% block management_content %}
+<section class="management-page-section">
+    <div class="management-page-header">
+        <div><p class="management-eyebrow">Add-on details</p><h2>{{ addon.name }}</h2><p>{{ addon.short_description }}</p></div>
+        <div class="management-quick-actions"><a class="management-button" href="{% url 'management:management_addon_update' addon.pk %}">Edit add-on</a><a class="management-button danger" href="{% url 'management:management_addon_remove' addon.pk %}">Delete/Archive</a></div>
+    </div>
+    <section class="management-panel">
+        {% if addon.image %}<img class="management-detail-image" src="{{ addon.image.url }}" alt="{{ addon.image_alt_text }}">{% endif %}
+        <dl class="management-definition-grid"><div><dt>Category</dt><dd>{{ addon.category|default:"Uncategorised" }}</dd></div><div><dt>Price</dt><dd>€{{ addon.price }}</dd></div><div><dt>Duration</dt><dd>{{ addon.duration_minutes }} minutes</dd></div><div><dt>Icon</dt><dd>{{ addon.icon }}</dd></div><div><dt>Featured</dt><dd>{{ addon.is_featured|yesno:"Yes,No" }}</dd></div><div><dt>Status</dt><dd>{{ addon.is_active|yesno:"Active,Archived" }}</dd></div><div><dt>Display order</dt><dd>{{ addon.display_order }}</dd></div><div><dt>Slug</dt><dd>{{ addon.slug }}</dd></div></dl>
+    </section>
+</section>
+{% endblock %}

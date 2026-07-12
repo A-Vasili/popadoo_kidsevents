@@ -1,5 +1,4 @@
-# This file checks role access, assignment workflows, and owner controls.
-# Comments in this file explain the purpose of each section without changing how the program works.
+"""Worker portal, role access, and compatibility-route tests."""
 
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -17,13 +16,10 @@ from .models import AuditEvent, PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, offer_assignment
 
 
-# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
-# This test class groups checks related to operations permissions.
 class OperationsPermissionTests(TestCase):
-    # This setup method creates shared sample records once for all tests in this class.
     @classmethod
     def setUpTestData(cls):
         cls.customer = User.objects.create_user("customer", password="pass-12345")
@@ -37,7 +33,6 @@ class OperationsPermissionTests(TestCase):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
         cls.tier = GuestPriceTier.objects.filter(package=cls.package).first()
 
-    # This test helper creates a complete sample booking for assignment tests.
     def make_build(self, event_date=None):
         return PartyBuild.objects.create(
             package=self.package,
@@ -56,7 +51,6 @@ class OperationsPermissionTests(TestCase):
             total_price=Decimal("180.00"),
         )
 
-    # This test helper creates an availability period for a sample worker.
     def add_availability(self, worker, build):
         tz = timezone.get_current_timezone()
         start = timezone.make_aware(datetime.combine(build.event_date, build.event_time), tz)
@@ -67,13 +61,11 @@ class OperationsPermissionTests(TestCase):
             availability_type=WorkerAvailability.AvailabilityType.AVAILABLE,
         )
 
-    # This test checks that customer cannot access operations.
     def test_customer_cannot_access_operations(self):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("operations:operations_dashboard"))
         self.assertEqual(response.status_code, 403)
 
-    # This test checks that worker sees only own assignment.
     def test_worker_sees_only_own_assignment(self):
         build = self.make_build()
         assignment = PartyAssignment.objects.create(party_build=build, worker=self.other_worker)
@@ -83,7 +75,6 @@ class OperationsPermissionTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
-    # This test checks that available worker receives and accepts offer.
     def test_available_worker_receives_and_accepts_offer(self):
         build = self.make_build()
         self.add_availability(self.worker, build)
@@ -96,7 +87,6 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(assignment.status, PartyAssignment.Status.ACCEPTED)
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.ASSIGNED)
 
-    # This test checks that no available worker requires owner review.
     def test_no_available_worker_requires_owner_review(self):
         build = self.make_build()
         self.assertIsNone(offer_assignment(build.pk))
@@ -104,96 +94,108 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.MANUAL_REVIEW)
 
 
-    # This test checks that owner can promote customer and grant pricing.
-    def test_owner_can_promote_customer_and_grant_pricing(self):
+    def test_owner_role_actions_use_canonical_management_endpoint(self):
         self.client.force_login(self.owner)
         response = self.client.post(
             reverse(
-                "operations:operations_owner_worker_permissions",
-                args=[self.customer.pk],
+                "management:management_user_action",
+                args=[self.customer.pk, "promote"],
             ),
-            {"action": "promote"},
+            {"confirmation": "on"},
         )
-        self.assertRedirects(response, reverse("operations:operations_owner_workers"))
+        self.assertRedirects(
+            response,
+            reverse("management:management_user_detail", args=[self.customer.pk]),
+        )
         self.customer.refresh_from_db()
         self.assertTrue(self.customer.groups.filter(name="Workers").exists())
         self.assertTrue(self.customer.worker_profile.is_active_worker)
 
         response = self.client.post(
             reverse(
-                "operations:operations_owner_worker_permissions",
-                args=[self.customer.pk],
+                "management:management_user_action",
+                args=[self.customer.pk, "grant_pricing"],
             ),
-            {"action": "grant_pricing"},
+            {"confirmation": "on"},
         )
-        self.assertRedirects(response, reverse("operations:operations_owner_workers"))
+        self.assertRedirects(
+            response,
+            reverse("management:management_user_detail", args=[self.customer.pk]),
+        )
         self.assertTrue(self.customer.groups.filter(name="Pricing Managers").exists())
 
-    # This test checks that owner pricing update changes future package price and audits.
-    def test_owner_pricing_update_changes_future_package_price_and_audits(self):
-        self.client.force_login(self.owner)
-        response = self.client.post(
-            reverse("operations:operations_owner_pricing"),
-            {
-                "action": "update_package",
-                "object_id": str(self.package.pk),
-                f"package-{self.package.pk}-base_price": "190.00",
-                f"package-{self.package.pk}-duration_minutes": "135",
-                f"package-{self.package.pk}-is_active": "on",
-            },
-        )
-        self.assertRedirects(response, reverse("operations:operations_owner_pricing"))
-        self.package.refresh_from_db()
-        self.assertEqual(self.package.base_price, Decimal("190.00"))
-        self.assertEqual(self.package.duration_minutes, 135)
-        self.assertTrue(AuditEvent.objects.filter(event_type="pricing_changed").exists())
-
-
-    # This test checks that pricing manager can edit prices but not manage workers.
-    def test_pricing_manager_can_edit_prices_but_not_manage_workers(self):
+    def test_pricing_manager_can_access_catalogue_only(self):
         Group.objects.get(name="Pricing Managers").user_set.add(self.worker_user)
         self.client.force_login(self.worker_user)
         self.assertEqual(
-            self.client.get(reverse("operations:operations_owner_pricing")).status_code,
+            self.client.get(reverse("management:management_catalogue")).status_code,
             200,
         )
         self.assertEqual(
-            self.client.get(reverse("operations:operations_owner_workers")).status_code,
+            self.client.get(reverse("management:management_user_list")).status_code,
             403,
         )
 
-    # This test checks that normal worker cannot open pricing.
-    def test_normal_worker_cannot_open_pricing(self):
+    def test_normal_worker_cannot_open_catalogue_management(self):
         self.client.force_login(self.other_worker_user)
         self.assertEqual(
-            self.client.get(reverse("operations:operations_owner_pricing")).status_code,
+            self.client.get(reverse("management:management_catalogue")).status_code,
             403,
         )
 
-    # This test checks that superuser has full operations access.
-    def test_superuser_has_full_operations_access(self):
-        admin = User.objects.create_superuser("admin_test", "admin@example.com", "pass-12345")
-        self.client.force_login(admin)
-        for route in (
-            "operations:operations_dashboard",
-            "operations:operations_owner_workers",
-            "operations:operations_owner_schedule",
-            "operations:operations_owner_pricing",
-            "operations:operations_owner_audit",
+    def test_owner_and_superuser_use_management_not_worker_dashboard(self):
+        for user in (
+            self.owner,
+            User.objects.create_superuser(
+                "admin_test", "admin@example.com", "pass-12345"
+            ),
         ):
-            with self.subTest(route=route):
-                self.assertEqual(self.client.get(reverse(route)).status_code, 200)
+            with self.subTest(user=user.username):
+                self.client.force_login(user)
+                response = self.client.get(reverse("operations:operations_dashboard"))
+                self.assertRedirects(
+                    response,
+                    reverse("management:management_dashboard"),
+                )
+                self.assertEqual(
+                    self.client.get(reverse("management:management_dashboard")).status_code,
+                    200,
+                )
 
-    # This test checks that owner can open worker and pricing pages.
-    def test_owner_can_open_worker_and_pricing_pages(self):
+    def test_legacy_owner_get_routes_redirect_to_management(self):
         self.client.force_login(self.owner)
-        self.assertEqual(
-            self.client.get(reverse("operations:operations_owner_workers")).status_code,
-            200,
+        routes = {
+            "operations:operations_owner_workers": "management:management_user_list",
+            "operations:operations_owner_worker_create": "management:management_user_create_worker",
+            "operations:operations_owner_schedule": "management:management_schedule",
+            "operations:operations_owner_pricing": "management:management_catalogue",
+            "operations:operations_owner_audit": "management:management_audit",
+        }
+        for legacy, canonical in routes.items():
+            with self.subTest(legacy=legacy):
+                response = self.client.get(reverse(legacy))
+                self.assertRedirects(
+                    response,
+                    reverse(canonical),
+                    status_code=301,
+                )
+
+    def test_legacy_integer_assignment_route_redirects_to_uuid_management_route(self):
+        booking = self.make_build()
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse(
+                "operations:operations_owner_manual_assignment",
+                args=[booking.pk],
+            )
         )
-        self.assertEqual(
-            self.client.get(reverse("operations:operations_owner_pricing")).status_code,
-            200,
+        self.assertRedirects(
+            response,
+            reverse(
+                "management:management_booking_assign",
+                args=[booking.public_id],
+            ),
+            status_code=301,
         )
 
     def test_availability_form_uses_custom_datetime_controls(self):
@@ -229,7 +231,7 @@ class OwnerAccountManagementTests(TestCase):
     def test_owner_can_create_worker_account(self):
         self.client.force_login(self.owner)
         response = self.client.post(
-            reverse("operations:operations_owner_worker_create"),
+            reverse("management:management_user_create_worker"),
             {
                 "username": "new-worker",
                 "first_name": "New",
@@ -241,9 +243,10 @@ class OwnerAccountManagementTests(TestCase):
             },
         )
 
+        worker = User.objects.get(username="new-worker")
         self.assertRedirects(
             response,
-            reverse("operations:operations_owner_workers"),
+            reverse("management:management_user_detail", args=[worker.pk]),
         )
         worker = User.objects.get(username="new-worker")
         self.assertTrue(worker.groups.filter(name="Workers").exists())
@@ -258,25 +261,21 @@ class OwnerAccountManagementTests(TestCase):
         )
         self.client.force_login(self.owner)
         response = self.client.get(
-            reverse("operations:operations_owner_workers")
+            reverse("management:management_user_list")
         )
 
-        html = response.content.decode("utf-8")
-        user_list = html.split('<div class="operations-list">', 1)[1].split(
-            "</div>\n        </div>\n    </section>", 1
-        )[0]
-        self.assertIn(customer.username, user_list)
-        self.assertNotIn(self.owner.username, user_list)
-        self.assertNotIn(self.other_owner.username, user_list)
+        self.assertContains(response, customer.username)
+        self.assertContains(response, self.owner.username)
+        self.assertNotContains(response, self.other_owner.username)
 
     def test_owner_cannot_change_another_owner_through_permission_url(self):
         self.client.force_login(self.owner)
         response = self.client.post(
             reverse(
-                "operations:operations_owner_worker_permissions",
-                args=[self.other_owner.pk],
+                "management:management_user_action",
+                args=[self.other_owner.pk, "promote"],
             ),
-            {"action": "promote"},
+            {"confirmation": "on"},
         )
         self.assertEqual(response.status_code, 404)
 

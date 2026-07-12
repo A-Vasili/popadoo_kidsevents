@@ -1,5 +1,3 @@
-# This file defines worker availability, party assignments, and the audit history stored in the database.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -36,7 +34,6 @@ class WorkerAvailability(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("start_at", "worker__display_name")
         permissions = [
@@ -52,7 +49,6 @@ class WorkerAvailability(models.Model):
         if self.start_at and self.end_at and self.end_at <= self.start_at:
             raise ValidationError({"end_at": "End time must be after start time."})
 
-    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.worker}: {self.get_availability_type_display()} {self.start_at:%d/%m/%Y %H:%M}"
 
@@ -102,7 +98,6 @@ class PartyAssignment(models.Model):
     owner_note = models.CharField(max_length=500, blank=True)
     conflict_override_reason = models.CharField(max_length=500, blank=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("-assigned_at",)
         permissions = [
@@ -126,7 +121,6 @@ class PartyAssignment(models.Model):
             models.Index(fields=("party_build", "status")),
         ]
 
-    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.party_build.public_id} → {self.worker} ({self.status})"
 
@@ -149,10 +143,13 @@ class AuditEvent(models.Model):
     after_data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("event_type", "created_at")),
+            models.Index(fields=("actor", "created_at")),
+            models.Index(fields=("object_type", "object_id")),
+        ]
 
-    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.event_type}: {self.summary}"

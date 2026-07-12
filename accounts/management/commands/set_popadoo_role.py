@@ -1,5 +1,3 @@
-# This file contains the set popadoo role code used by the commands part of the project.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -21,7 +19,6 @@ class Command(BaseCommand):
             choices=("customer", "worker", "pricing-manager", "owner"),
         )
 
-    # This method runs the command after Django has read and checked the terminal arguments.
     def handle(self, *args, **options):
         User = get_user_model()
         try:

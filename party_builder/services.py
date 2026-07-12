@@ -1,5 +1,3 @@
-# This file performs shared price calculations and safe simulated-payment checks.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 

@@ -1,5 +1,3 @@
-# This file defines packages, guest-price brackets, add-ons, bookings, and saved price snapshots.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -7,10 +5,119 @@ import uuid
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
-from django.db import models
+from django.db import models, router
 from django.db.models import Q
 from django.urls import reverse
+
+from .validators import (
+    addon_image_upload_to,
+    category_image_upload_to,
+    package_image_upload_to,
+    validate_catalogue_image,
+)
+
+
+def _validate_constraints_except(instance, excluded_names: set[str], exclude=None) -> None:
+    """Validate model constraints except defaults switched by a transaction.
+
+    Conditional unique constraints correctly protect the database, but Django's
+    ModelForm validation runs before the service can clear the old default row.
+    Skipping only those two checks here allows an atomic default switch while
+    every other model and database constraint remains active.
+    """
+
+    errors = {}
+    using = router.db_for_write(instance.__class__, instance=instance)
+    for model_class, model_constraints in instance.get_constraints():
+        for constraint in model_constraints:
+            if constraint.name in excluded_names:
+                continue
+            try:
+                constraint.validate(
+                    model_class,
+                    instance,
+                    exclude=exclude,
+                    using=using,
+                )
+            except ValidationError as error:
+                if (
+                    getattr(error, "code", None) == "unique"
+                    and len(constraint.fields) == 1
+                ):
+                    errors.setdefault(constraint.fields[0], []).append(error)
+                else:
+                    errors = error.update_error_dict(errors)
+    if errors:
+        raise ValidationError(errors)
+
+
+class Category(models.Model):
+    """A catalogue category; assigning a parent creates a subcategory."""
+
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=140, unique=True)
+    description = models.TextField(blank=True, max_length=1000)
+    parent = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="children",
+    )
+    image = models.ImageField(
+        upload_to=category_image_upload_to,
+        validators=[validate_catalogue_image],
+        blank=True,
+    )
+    image_alt_text = models.CharField(
+        max_length=180,
+        blank=True,
+        help_text="Describe the image for visitors who cannot see it.",
+    )
+    display_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("display_order", "name")
+        verbose_name_plural = "categories"
+        indexes = [
+            models.Index(fields=("is_active", "display_order", "name")),
+            models.Index(fields=("parent", "is_active")),
+        ]
+
+    def __str__(self) -> str:
+        return self.name if self.parent_id is None else f"{self.parent.name} / {self.name}"
+
+    def clean(self) -> None:
+        """Reject self-parenting and parent choices underneath this category."""
+
+        super().clean()
+        self.name = (self.name or "").strip()
+        self.description = (self.description or "").strip()
+        self.image_alt_text = (self.image_alt_text or "").strip()
+        if not self.name:
+            raise ValidationError({"name": "Enter a category name."})
+        if self.pk and self.parent_id == self.pk:
+            raise ValidationError({"parent": "A category cannot be its own parent."})
+
+        parent = self.parent
+        visited = set()
+        while parent is not None:
+            if parent.pk in visited:
+                raise ValidationError({"parent": "The selected category hierarchy is circular."})
+            visited.add(parent.pk)
+            if self.pk and parent.pk == self.pk:
+                raise ValidationError(
+                    {"parent": "A category cannot be placed underneath one of its subcategories."}
+                )
+            parent = parent.parent
+
+        if self.image and not self.image_alt_text:
+            raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
 
 
 class PartyPackage(models.Model):
@@ -18,6 +125,11 @@ class PartyPackage(models.Model):
 
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="packages",
+    )
     short_description = models.CharField(max_length=240)
     base_price = models.DecimalField(
         max_digits=8,
@@ -42,15 +154,23 @@ class PartyPackage(models.Model):
     )
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
+    image = models.ImageField(
+        upload_to=package_image_upload_to,
+        validators=[validate_catalogue_image],
+        blank=True,
+    )
+    image_alt_text = models.CharField(max_length=180, blank=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "name")
+        indexes = [models.Index(fields=("is_active", "display_order", "name"))]
         constraints = [
             models.CheckConstraint(
                 condition=Q(base_price__gte=0),
                 name="party_package_base_price_non_negative",
             ),
+            # The database also enforces the single-default rule so imports,
+            # scripts, and future code cannot accidentally create two defaults.
             models.UniqueConstraint(
                 fields=("is_default",),
                 condition=Q(is_default=True),
@@ -58,7 +178,26 @@ class PartyPackage(models.Model):
             ),
         ]
 
-    # This method returns a clear human-readable name for this database record.
+    def clean(self) -> None:
+        """Keep text tidy and ensure default records remain selectable."""
+
+        super().clean()
+        self.name = (self.name or "").strip()
+        self.short_description = (self.short_description or "").strip()
+        self.included_experiences = (self.included_experiences or "").strip()
+        self.image_alt_text = (self.image_alt_text or "").strip()
+        if self.is_default and not self.is_active:
+            raise ValidationError({"is_active": "The default package must remain active."})
+        if self.image and not self.image_alt_text:
+            raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
+
+    def validate_constraints(self, exclude=None) -> None:
+        _validate_constraints_except(
+            self,
+            {"party_builder_single_default_package"},
+            exclude=exclude,
+        )
+
     def __str__(self) -> str:
         return self.name
 
@@ -72,7 +211,6 @@ class PartyPackage(models.Model):
             if item.strip()
         ]
 
-    # This method finds or prepares the absolute url needed by the rest of the code.
     def get_absolute_url(self) -> str:
         return reverse("party_builder:party_builder_package_options")
 
@@ -101,7 +239,6 @@ class GuestPriceTier(models.Model):
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "min_guests")
         constraints = [
@@ -124,7 +261,36 @@ class GuestPriceTier(models.Model):
             ),
         ]
 
-    # This method returns a clear human-readable name for this database record.
+    def clean(self) -> None:
+        """Validate active ranges before they reach checkout pricing."""
+
+        super().clean()
+        self.label = (self.label or "").strip()
+        if self.min_guests and self.max_guests and self.max_guests < self.min_guests:
+            raise ValidationError({"max_guests": "Maximum guests must be at least the minimum."})
+        if self.is_default and not self.is_active:
+            raise ValidationError({"is_active": "The default price tier must remain active."})
+        if self.package_id and self.is_active and self.min_guests and self.max_guests:
+            overlapping = GuestPriceTier.objects.filter(
+                package_id=self.package_id,
+                is_active=True,
+                min_guests__lte=self.max_guests,
+                max_guests__gte=self.min_guests,
+            )
+            if self.pk:
+                overlapping = overlapping.exclude(pk=self.pk)
+            if overlapping.exists():
+                raise ValidationError(
+                    "This active guest range overlaps another active tier for the package."
+                )
+
+    def validate_constraints(self, exclude=None) -> None:
+        _validate_constraints_except(
+            self,
+            {"guest_tier_single_default_per_package"},
+            exclude=exclude,
+        )
+
     def __str__(self) -> str:
         return f"{self.package.name}: {self.label}"
 
@@ -138,7 +304,6 @@ class GuestPriceTier(models.Model):
             Decimal("0.01")
         )
 
-    # This method returns whether a number of children belongs inside this price bracket.
     def contains_guest_count(self, guest_count: int) -> bool:
         return self.min_guests <= guest_count <= self.max_guests
 
@@ -148,6 +313,11 @@ class AddonExperience(models.Model):
 
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="addons",
+    )
     short_description = models.CharField(max_length=260)
     price = models.DecimalField(
         max_digits=8,
@@ -167,10 +337,16 @@ class AddonExperience(models.Model):
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
+    image = models.ImageField(
+        upload_to=addon_image_upload_to,
+        validators=[validate_catalogue_image],
+        blank=True,
+    )
+    image_alt_text = models.CharField(max_length=180, blank=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("display_order", "name")
+        indexes = [models.Index(fields=("is_active", "is_featured", "display_order"))]
         constraints = [
             models.CheckConstraint(
                 condition=Q(price__gte=0),
@@ -178,7 +354,14 @@ class AddonExperience(models.Model):
             )
         ]
 
-    # This method returns a clear human-readable name for this database record.
+    def clean(self) -> None:
+        super().clean()
+        self.name = (self.name or "").strip()
+        self.short_description = (self.short_description or "").strip()
+        self.image_alt_text = (self.image_alt_text or "").strip()
+        if self.image and not self.image_alt_text:
+            raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
+
     def __str__(self) -> str:
         return self.name
 
@@ -301,15 +484,17 @@ class PartyBuild(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=("event_date", "status")),
+            models.Index(fields=("assignment_state", "event_date")),
+            models.Index(fields=("contact_email",)),
+        ]
 
-    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.contact_name} — {self.package.name} ({self.event_date})"
 
-    # This method finds or prepares the absolute url needed by the rest of the code.
     def get_absolute_url(self) -> str:
         return reverse(
             "party_builder:party_builder_order_success",
@@ -336,7 +521,6 @@ class PartyBuildAddon(models.Model):
         validators=[MinValueValidator(Decimal("0.00"))],
     )
 
-    # This database model stores meta information.
     class Meta:
         ordering = ("addon__display_order", "addon__name")
         constraints = [
@@ -346,6 +530,5 @@ class PartyBuildAddon(models.Model):
             )
         ]
 
-    # This method returns a clear human-readable name for this database record.
     def __str__(self) -> str:
         return f"{self.build.public_id}: {self.addon.name}"

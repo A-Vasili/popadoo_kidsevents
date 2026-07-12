@@ -1,5 +1,3 @@
-# This file collects the main Django settings that control installed apps, templates, the database, security, and static files.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 """
 Django settings for config project.
@@ -53,7 +51,6 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -91,7 +88,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "accounts.context_processors.role_context",
+                "accounts.permissions.role_context",
             ],
         },
     },
@@ -207,23 +204,6 @@ CONTENT_SECURITY_POLICY = "; ".join(
         "default-src 'self'",
         "script-src 'self'",
         "style-src 'self'",
-        "img-src 'self' data:",
-        "font-src 'self' data:",
-        "connect-src 'self'",
-        "object-src 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-    )
-)
-
-# Django admin uses a limited amount of framework-owned inline code. The
-# exception is restricted to /admin/ by PopadooSecurityHeadersMiddleware.
-ADMIN_CONTENT_SECURITY_POLICY = "; ".join(
-    (
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-inline'",
-        "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "font-src 'self' data:",
         "connect-src 'self'",

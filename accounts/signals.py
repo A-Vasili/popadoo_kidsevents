@@ -1,5 +1,3 @@
-# This file runs small automatic setup tasks when users or database migrations are created.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -28,15 +26,22 @@ ROLE_PERMISSION_CODENAMES = {
         "view_all_schedules",
         "manually_assign_party",
         "manage_all_availability",
+        "add_category",
+        "change_category",
+        "view_category",
+        "delete_category",
         "add_partypackage",
         "change_partypackage",
         "view_partypackage",
+        "delete_partypackage",
         "add_guestpricetier",
         "change_guestpricetier",
         "view_guestpricetier",
+        "delete_guestpricetier",
         "add_addonexperience",
         "change_addonexperience",
         "view_addonexperience",
+        "delete_addonexperience",
         "view_partybuild",
         "change_partybuild",
         "view_partyassignment",
@@ -57,15 +62,22 @@ ROLE_PERMISSION_CODENAMES = {
         "delete_workeravailability",
     },
     PRICING_GROUP: {
+        "add_category",
+        "change_category",
+        "view_category",
+        "delete_category",
         "add_partypackage",
         "change_partypackage",
         "view_partypackage",
+        "delete_partypackage",
         "add_guestpricetier",
         "change_guestpricetier",
         "view_guestpricetier",
+        "delete_guestpricetier",
         "add_addonexperience",
         "change_addonexperience",
         "view_addonexperience",
+        "delete_addonexperience",
     },
 }
 

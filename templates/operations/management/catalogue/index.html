@@ -1,0 +1,15 @@
+{% extends "operations/management/base.html" %}
+
+{% block management_content %}
+<section class="management-page-section">
+    <div class="management-page-header">
+        <div><p class="management-eyebrow">Catalogue</p><h2>Products, pricing, and experiences</h2><p>Each area has focused list and edit screens instead of one long pricing form.</p></div>
+    </div>
+    <div class="management-module-grid">
+        <a href="{% url 'management:management_package_list' %}"><span>Packages</span><strong>{{ package_count }}</strong><small>Descriptions, prices, duration, images, and availability.</small></a>
+        <a href="{% url 'management:management_tier_list' %}"><span>Guest-price tiers</span><strong>{{ tier_count }}</strong><small>Guest ranges and package-specific totals.</small></a>
+        <a href="{% url 'management:management_addon_list' %}"><span>Add-ons</span><strong>{{ addon_count }}</strong><small>Optional experiences, prices, timing, and images.</small></a>
+        <a href="{% url 'management:management_category_list' %}"><span>Categories</span><strong>{{ category_count }}</strong><small>Main categories and subcategories used by the catalogue.</small></a>
+    </div>
+</section>
+{% endblock %}

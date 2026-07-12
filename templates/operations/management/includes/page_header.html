@@ -1,0 +1,10 @@
+<div class="management-page-header">
+    <div>
+        {% if eyebrow %}<p class="management-eyebrow">{{ eyebrow }}</p>{% endif %}
+        <h2>{{ title }}</h2>
+        {% if description %}<p>{{ description }}</p>{% endif %}
+    </div>
+    {% if action_url and action_label %}
+        <a class="management-button" href="{{ action_url }}">{{ action_label }}</a>
+    {% endif %}
+</div>

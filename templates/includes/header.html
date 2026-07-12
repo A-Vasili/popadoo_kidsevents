@@ -29,8 +29,12 @@ Keeping these areas separate makes the header easier to understand and update.
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_gallery' %} active{% endif %}" href="{% url 'core:core_gallery' %}" {% if request.resolver_match.url_name == 'core_gallery' %}aria-current="page"{% endif %} data-i18n="nav.gallery">Gallery</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_about' %} active{% endif %}" href="{% url 'core:core_about' %}" {% if request.resolver_match.url_name == 'core_about' %}aria-current="page"{% endif %} data-i18n="nav.about">About Us</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_testimonials' %} active{% endif %}" href="{% url 'core:core_testimonials' %}" {% if request.resolver_match.url_name == 'core_testimonials' %}aria-current="page"{% endif %} data-i18n="nav.testimonials">Testimonials</a></li>
-                        {% if nav_can_access_operations %}
-                            <li><a class="site-navigation-link{% if request.resolver_match.app_name == 'operations' %} active{% endif %}" href="{% url 'operations:operations_dashboard' %}" {% if request.resolver_match.app_name == 'operations' %}aria-current="page"{% endif %} data-i18n="account.operations">Operations</a></li>
+                        {% if nav_is_owner %}
+                            <li><a class="site-navigation-link" href="{% url 'management:management_dashboard' %}">Management</a></li>
+                        {% elif nav_can_manage_pricing %}
+                            <li><a class="site-navigation-link" href="{% url 'management:management_catalogue' %}">Catalogue management</a></li>
+                        {% elif nav_can_access_operations %}
+                            <li><a class="site-navigation-link{% if request.resolver_match.app_name == 'operations' %} active{% endif %}" href="{% url 'operations:operations_dashboard' %}" {% if request.resolver_match.app_name == 'operations' %}aria-current="page"{% endif %} data-i18n="account.operations">Staff portal</a></li>
                         {% endif %}
                     </ul>
 

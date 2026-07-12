@@ -1,5 +1,3 @@
-# This file contains the main worker-assignment workflow, kept outside views so it can be reused safely.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -211,7 +209,11 @@ def assign_manually(
             "Explain why an unavailable or conflicting worker is being assigned."
         )
 
-    locked_build.assignments.filter(status=PartyAssignment.Status.PENDING).update(
+    # Reassignment preserves the previous records for history but removes them
+    # from confirmed schedules before the new offer is created.
+    locked_build.assignments.filter(
+        status__in=(PartyAssignment.Status.PENDING, PartyAssignment.Status.ACCEPTED)
+    ).update(
         status=PartyAssignment.Status.SUPERSEDED,
         responded_at=timezone.now(),
     )

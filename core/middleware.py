@@ -20,16 +20,10 @@ class PopadooSecurityHeadersMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        # The public site contains no inline scripts or styles, so it can use a
-        # strict policy. Django admin still needs a small inline exception for
-        # its own trusted interface components.
-        policy = (
-            settings.ADMIN_CONTENT_SECURITY_POLICY
-            if request.path.startswith("/admin/")
-            else settings.CONTENT_SECURITY_POLICY
-        )
-
-        response.setdefault("Content-Security-Policy", policy)
+        # Every page, including the custom management panel, loads scripts and
+        # styles from local static files, so one strict policy can protect the
+        # entire application.
+        response.setdefault("Content-Security-Policy", settings.CONTENT_SECURITY_POLICY)
         response.setdefault(
             "Permissions-Policy",
             "camera=(), microphone=(), geolocation=(), payment=(), usb=()",

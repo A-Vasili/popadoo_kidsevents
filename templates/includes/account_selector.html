@@ -42,12 +42,12 @@ POST form with Django's CSRF token because it changes the user's session.
             <a href="{% url 'accounts:accounts_customer_dashboard' %}" role="menuitem" data-account-menu-item data-i18n="account.myBookings">My bookings</a>
             <a href="{% url 'accounts:accounts_profile' %}" role="menuitem" data-account-menu-item data-i18n="account.myProfile">My profile</a>
 
-            {% if nav_can_access_operations %}
-                <a href="{% url 'operations:operations_dashboard' %}" role="menuitem" data-account-menu-item data-i18n="account.operations">Operations</a>
-            {% endif %}
-
-            {% if request.user.is_superuser %}
-                <a href="{% url 'admin:index' %}" role="menuitem" data-account-menu-item data-i18n="account.siteAdmin">Site administration</a>
+            {% if nav_is_owner %}
+                <a href="{% url 'management:management_dashboard' %}" role="menuitem" data-account-menu-item>Management panel</a>
+            {% elif nav_can_manage_pricing %}
+                <a href="{% url 'management:management_catalogue' %}" role="menuitem" data-account-menu-item>Catalogue management</a>
+            {% elif nav_can_access_operations %}
+                <a href="{% url 'operations:operations_dashboard' %}" role="menuitem" data-account-menu-item data-i18n="account.operations">Staff portal</a>
             {% endif %}
 
             <form method="post" action="{% url 'accounts:accounts_sign_out' %}" class="header-account-signout-form">

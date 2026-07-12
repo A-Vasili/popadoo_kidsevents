@@ -16,7 +16,6 @@ Including another URLconf
 """
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
 from django.urls import include, path
 
 # These URL patterns connect web addresses to the views that handle them.
@@ -24,8 +23,8 @@ urlpatterns = [
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),
     path("operations/", include("operations.urls")),
+    path("management/", include(("operations.management_urls", "management"), namespace="management")),
     path("party-builder/", include("party_builder.urls")),
-    path("admin/", admin.site.urls),
 ]
 
 if settings.DEBUG:

@@ -1,10 +1,12 @@
-# This file provides small reusable checks for the project roles and permissions.
-# Comments in this file explain the purpose of each section without changing how the program works.
+"""Role checks used by views, services, and navigation.
+
+This module identifies Popadoo business roles. Navigation flags are convenient
+for presentation only; private views still enforce permissions server-side.
+"""
 
 from __future__ import annotations
 
 from django.contrib.auth.models import AbstractBaseUser
-
 
 OWNER_GROUP = "Owners"
 WORKER_GROUP = "Workers"
@@ -12,7 +14,7 @@ PRICING_GROUP = "Pricing Managers"
 
 
 def user_in_group(user: AbstractBaseUser, group_name: str) -> bool:
-    """Return group membership without assuming an authenticated user."""
+    """Return group membership without assuming the user is authenticated."""
 
     return bool(
         getattr(user, "is_authenticated", False)
@@ -20,12 +22,10 @@ def user_in_group(user: AbstractBaseUser, group_name: str) -> bool:
     )
 
 
-# This helper returns whether is owner.
 def is_owner(user: AbstractBaseUser) -> bool:
     return bool(getattr(user, "is_superuser", False) or user_in_group(user, OWNER_GROUP))
 
 
-# This helper returns whether is worker.
 def is_worker(user: AbstractBaseUser) -> bool:
     if not getattr(user, "is_authenticated", False):
         return False
@@ -38,7 +38,7 @@ def is_worker(user: AbstractBaseUser) -> bool:
 
 
 def can_manage_pricing(user: AbstractBaseUser) -> bool:
-    """Owners and specifically delegated pricing managers can edit catalogue prices."""
+    """Allow owners and explicitly delegated worker pricing managers."""
 
     return bool(
         is_owner(user)
@@ -50,11 +50,24 @@ def can_manage_pricing(user: AbstractBaseUser) -> bool:
     )
 
 
-# This helper returns whether can access operations.
 def can_access_operations(user: AbstractBaseUser) -> bool:
     return bool(is_owner(user) or is_worker(user))
 
 
-# This helper returns whether can manage workers.
 def can_manage_workers(user: AbstractBaseUser) -> bool:
     return bool(is_owner(user) and user.has_perm("accounts.manage_worker_roles"))
+
+
+def role_context(request):
+    """Expose stable role flags used by shared navigation templates."""
+
+    user = request.user
+    owner = is_owner(user)
+    pricing = can_manage_pricing(user)
+    return {
+        "nav_is_owner": owner,
+        "nav_is_worker": is_worker(user),
+        "nav_can_access_operations": can_access_operations(user),
+        "nav_can_manage_pricing": pricing,
+        "nav_can_access_management": owner or pricing,
+    }

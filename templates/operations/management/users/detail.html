@@ -1,0 +1,38 @@
+{% extends "operations/management/base.html" %}
+{% load management_tags %}
+
+{% block management_content %}
+<section class="management-page-section">
+    <div class="management-page-header">
+        <div><p class="management-eyebrow">User account</p><h2>{{ managed_user.get_full_name|default:managed_user.username }}</h2><p>{{ managed_user.email|default:"No email address" }} · {{ managed_user|management_role }}</p></div>
+        <div class="management-quick-actions"><a class="management-button" href="{% url 'management:management_user_update' managed_user.pk %}">Edit profile</a><a class="management-button secondary" href="{% url 'management:management_user_list' %}">Back to users</a></div>
+    </div>
+
+    <div class="management-detail-grid">
+        <section class="management-panel">
+            <h3>Account details</h3>
+            <dl class="management-definition-grid"><div><dt>Username</dt><dd>{{ managed_user.username }}</dd></div><div><dt>Role</dt><dd>{{ managed_user|management_role }}</dd></div><div><dt>Status</dt><dd>{{ managed_user.is_active|yesno:"Active,Inactive" }}</dd></div><div><dt>Pricing access</dt><dd>{{ managed_user|has_pricing_access|yesno:"Granted,Not granted" }}</dd></div><div><dt>Date joined</dt><dd>{{ managed_user.date_joined|date:"d M Y H:i" }}</dd></div><div><dt>Last sign in</dt><dd>{{ managed_user.last_login|date:"d M Y H:i"|default:"Never" }}</dd></div></dl>
+            {% if managed_user.customer_profile %}<h3>Saved booking details</h3><dl class="management-definition-grid"><div><dt>Phone</dt><dd>{{ managed_user.customer_profile.phone|default:"Not provided" }}</dd></div><div><dt>Address</dt><dd>{{ managed_user.customer_profile.default_address|default:"Not provided" }}</dd></div><div><dt>Postal code</dt><dd>{{ managed_user.customer_profile.default_postal_code|default:"Not provided" }}</dd></div></dl>{% endif %}
+        </section>
+
+        {% if managed_user.pk != request.user.pk and not managed_user|in_group:"Owners" %}
+        <section class="management-panel">
+            <h3>Available account actions</h3>
+            <div class="management-action-list">
+                {% if managed_user.is_active %}<a class="management-button danger" href="{% url 'management:management_user_action' managed_user.pk 'deactivate' %}">Deactivate account</a>{% else %}<a class="management-button" href="{% url 'management:management_user_action' managed_user.pk 'activate' %}">Activate account</a>{% endif %}
+                {% if managed_user|in_group:"Workers" %}
+                    <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'demote' %}">Demote to customer</a>
+                    {% if managed_user|has_pricing_access %}<a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'revoke_pricing' %}">Revoke pricing access</a>{% else %}<a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'grant_pricing' %}">Grant pricing access</a>{% endif %}
+                {% else %}
+                    <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'promote' %}">Promote to worker</a>
+                {% endif %}
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="management-panel"><h3>Recent bookings</h3>{% if customer_bookings %}<ul class="management-link-list">{% for booking in customer_bookings %}<li><a href="{% url 'management:management_booking_detail' booking.public_id %}">{{ booking.event_date }} · {{ booking.package.name }} · {{ booking.get_status_display }}</a></li>{% endfor %}</ul>{% else %}<p>No customer bookings found.</p>{% endif %}</section>
+        <section class="management-panel"><h3>Recent worker assignments</h3>{% if worker_assignments %}<ul class="management-link-list">{% for assignment in worker_assignments %}<li><a href="{% url 'management:management_booking_detail' assignment.party_build.public_id %}">{{ assignment.party_build.event_date }} · {{ assignment.get_status_display }}</a></li>{% endfor %}</ul>{% else %}<p>No worker assignments found.</p>{% endif %}</section>
+        <section class="management-panel"><h3>Recent audit activity</h3>{% if recent_events %}<ul class="management-timeline">{% for event in recent_events %}<li><strong>{{ event.summary }}</strong><span>{{ event.created_at|date:"d M Y H:i" }}</span></li>{% endfor %}</ul>{% else %}<p>No recent role changes.</p>{% endif %}</section>
+    </div>
+</section>
+{% endblock %}

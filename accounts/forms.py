@@ -1,5 +1,3 @@
-# This file defines the forms used for registration, sign-in, and profile editing.
-# Comments in this file explain the purpose of each section without changing how the program works.
 
 from __future__ import annotations
 
@@ -11,7 +9,6 @@ from django.db import transaction
 from .models import CustomerProfile
 
 
-# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
@@ -42,7 +39,6 @@ class SignUpForm(UserCreationForm):
         label="I agree that Popadoo may store these details for account and booking use.",
     )
 
-    # This inner Meta class tells Django which database model and fields this form or admin section uses.
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
@@ -56,7 +52,6 @@ class SignUpForm(UserCreationForm):
             "privacy_consent",
         )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].help_text = "Used to sign in. It must be unique."
@@ -71,7 +66,6 @@ class SignUpForm(UserCreationForm):
             raise forms.ValidationError("An account already uses this email address.")
         return email
 
-    # This method saves the validated information and any related records together.
     @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -103,7 +97,6 @@ class ProfileForm(forms.ModelForm):
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
 
-    # This inner Meta class tells Django which database model and fields this form or admin section uses.
     class Meta:
         model = CustomerProfile
         fields = (
@@ -120,7 +113,6 @@ class ProfileForm(forms.ModelForm):
             "default_postal_code": forms.TextInput(attrs={"autocomplete": "postal-code"}),
         }
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, user, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
@@ -137,7 +129,6 @@ class ProfileForm(forms.ModelForm):
             raise forms.ValidationError("Another account already uses this email address.")
         return email
 
-    # This method saves the validated information and any related records together.
     @transaction.atomic
     def save(self, commit=True):
         profile = super().save(commit=False)

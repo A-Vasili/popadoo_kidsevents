@@ -1,0 +1,686 @@
+"""Integration tests for the custom management panel."""
+
+from __future__ import annotations
+
+from datetime import timedelta
+from io import BytesIO
+from tempfile import TemporaryDirectory
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
+from django.utils import timezone
+from PIL import Image
+
+from accounts.models import WorkerProfile
+from party_builder.models import (
+    AddonExperience,
+    Category,
+    GuestPriceTier,
+    PartyBuild,
+    PartyBuildAddon,
+    PartyPackage,
+)
+
+from .models import AuditEvent, PartyAssignment
+
+User = get_user_model()
+
+
+class ManagementPanelTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("management-owner", password="Owner-pass-123!")
+        Group.objects.get(name="Owners").user_set.add(cls.owner)
+        cls.customer = User.objects.create_user("management-customer", password="Customer-pass-123!")
+        cls.worker_user = User.objects.create_user("management-worker", password="Worker-pass-123!")
+        Group.objects.get(name="Workers").user_set.add(cls.worker_user)
+        cls.worker = WorkerProfile.objects.create(user=cls.worker_user, display_name="Management Worker")
+        cls.pricing_user = User.objects.create_user("pricing-worker", password="Pricing-pass-123!")
+        Group.objects.get(name="Workers").user_set.add(cls.pricing_user)
+        Group.objects.get(name="Pricing Managers").user_set.add(cls.pricing_user)
+        cls.pricing_profile = WorkerProfile.objects.create(user=cls.pricing_user, display_name="Pricing Worker")
+        cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
+        cls.tier = GuestPriceTier.objects.filter(package=cls.package).order_by("min_guests").first()
+
+    def setUp(self):
+        self.client.force_login(self.owner)
+
+    def make_booking(self, *, package=None, tier=None, name="Parent One"):
+        package = package or self.package
+        tier = tier or GuestPriceTier.objects.filter(package=package).first()
+        return PartyBuild.objects.create(
+            package=package,
+            guest_tier=tier,
+            contact_name=name,
+            contact_email="parent@example.test",
+            contact_phone="+306900000000",
+            event_date=timezone.localdate() + timedelta(days=7),
+            event_time=timezone.datetime.strptime("16:00", "%H:%M").time(),
+            event_address="Athens",
+            postal_code="10558",
+            guest_count=8,
+            guest_tier_label=tier.label if tier else "Custom",
+            package_price=Decimal("180.00"),
+            addon_price=Decimal("0.00"),
+            total_price=Decimal("180.00"),
+        )
+
+    def test_admin_route_is_unavailable(self):
+        response = self.client.get("/admin/")
+        self.assertEqual(response.status_code, 404)
+
+    def test_management_access_is_role_protected(self):
+        self.client.logout()
+        response = self.client.get(reverse("management:management_dashboard"))
+        self.assertEqual(response.status_code, 302)
+
+        self.client.force_login(self.customer)
+        self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 403)
+
+        self.client.force_login(self.worker_user)
+        self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 403)
+        self.assertEqual(self.client.get(reverse("management:management_package_list")).status_code, 403)
+
+        self.client.force_login(self.pricing_user)
+        self.assertEqual(self.client.get(reverse("management:management_catalogue")).status_code, 200)
+        self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 403)
+
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 200)
+
+    def test_owner_can_create_category_and_subcategory(self):
+        response = self.client.post(
+            reverse("management:management_category_create"),
+            {
+                "name": "Creative Activities",
+                "slug": "creative-activities",
+                "description": "Hands-on activities.",
+                "display_order": 30,
+                "is_active": "on",
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_category_list"))
+        parent = Category.objects.get(slug="creative-activities")
+
+        response = self.client.post(
+            reverse("management:management_category_create"),
+            {
+                "name": "Craft Workshops",
+                "slug": "craft-workshops",
+                "description": "Craft subcategory.",
+                "parent": parent.pk,
+                "display_order": 10,
+                "is_active": "on",
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_category_list"))
+        self.assertEqual(Category.objects.get(slug="craft-workshops").parent, parent)
+        self.assertTrue(AuditEvent.objects.filter(event_type="category_created").exists())
+
+    def test_category_circular_parent_is_rejected(self):
+        parent = Category.objects.create(name="Parent", slug="parent")
+        child = Category.objects.create(name="Child", slug="child", parent=parent)
+        response = self.client.post(
+            reverse("management:management_category_update", args=[parent.pk]),
+            {
+                "name": "Parent",
+                "slug": "parent",
+                "parent": child.pk,
+                "display_order": 0,
+                "is_active": "on",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "cannot be placed underneath", status_code=200)
+        parent.refresh_from_db()
+        self.assertIsNone(parent.parent)
+
+    def test_unused_category_is_deleted_and_used_category_is_archived(self):
+        unused = Category.objects.create(name="Unused", slug="unused")
+        response = self.client.post(
+            reverse("management:management_category_remove", args=[unused.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_category_list"))
+        self.assertFalse(Category.objects.filter(pk=unused.pk).exists())
+
+        used = self.package.category
+        self.assertIsNotNone(used)
+        response = self.client.post(
+            reverse("management:management_category_remove", args=[used.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_category_list"))
+        used.refresh_from_db()
+        self.assertFalse(used.is_active)
+
+    def test_package_crud_and_default_switch(self):
+        response = self.client.post(
+            reverse("management:management_package_create"),
+            {
+                "name": "Premium Party",
+                "slug": "premium-party",
+                "category": self.package.category_id,
+                "short_description": "A premium package.",
+                "base_price": "260.00",
+                "duration_minutes": 150,
+                "included_guest_count": 10,
+                "included_experiences": "Host\nGames",
+                "is_default": "on",
+                "is_active": "on",
+                "display_order": 20,
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_package_list"))
+        premium = PartyPackage.objects.get(slug="premium-party")
+        self.package.refresh_from_db()
+        self.assertTrue(premium.is_default)
+        self.assertFalse(self.package.is_default)
+
+        response = self.client.post(
+            reverse("management:management_package_update", args=[premium.pk]),
+            {
+                "name": "Premium Party Plus",
+                "slug": "premium-party",
+                "category": self.package.category_id,
+                "short_description": "Updated package.",
+                "base_price": "280.00",
+                "duration_minutes": 165,
+                "included_guest_count": 12,
+                "included_experiences": "Host\nGames\nCraft",
+                "is_default": "on",
+                "is_active": "on",
+                "display_order": 20,
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_package_list"))
+        premium.refresh_from_db()
+        self.assertEqual(premium.name, "Premium Party Plus")
+        self.assertEqual(premium.base_price, Decimal("280.00"))
+
+    def test_referenced_package_is_archived(self):
+        replacement = PartyPackage.objects.create(
+            name="Replacement",
+            slug="replacement",
+            category=self.package.category,
+            short_description="Replacement",
+            base_price=Decimal("200.00"),
+            duration_minutes=120,
+            included_guest_count=10,
+            included_experiences="Host",
+            is_active=True,
+            is_default=False,
+        )
+        GuestPriceTier.objects.create(
+            package=replacement,
+            label="1-10",
+            min_guests=1,
+            max_guests=10,
+            total_price=Decimal("200.00"),
+            is_active=True,
+            is_default=True,
+        )
+        self.make_booking()
+        response = self.client.post(
+            reverse("management:management_package_remove", args=[self.package.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_package_list"))
+        self.package.refresh_from_db()
+        replacement.refresh_from_db()
+        self.assertFalse(self.package.is_active)
+        self.assertTrue(replacement.is_default)
+
+    def test_overlapping_tier_is_rejected_and_default_switches(self):
+        response = self.client.post(
+            reverse("management:management_tier_create"),
+            {
+                "package": self.package.pk,
+                "label": "Overlap",
+                "min_guests": 8,
+                "max_guests": 12,
+                "total_price": "220.00",
+                "is_active": "on",
+                "display_order": 99,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "overlaps another active tier")
+
+        response = self.client.post(
+            reverse("management:management_tier_create"),
+            {
+                "package": self.package.pk,
+                "label": "41–45 children",
+                "min_guests": 41,
+                "max_guests": 45,
+                "total_price": "630.00",
+                "is_default": "on",
+                "is_active": "on",
+                "display_order": 90,
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_tier_list"))
+        new_default = GuestPriceTier.objects.get(label="41–45 children")
+        self.assertTrue(new_default.is_default)
+        self.assertEqual(
+            GuestPriceTier.objects.filter(package=self.package, is_default=True).count(),
+            1,
+        )
+
+    def test_referenced_addon_is_archived(self):
+        addon = AddonExperience.objects.first()
+        build = self.make_booking()
+        PartyBuildAddon.objects.create(build=build, addon=addon, unit_price=addon.price)
+        response = self.client.post(
+            reverse("management:management_addon_remove", args=[addon.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_addon_list"))
+        addon.refresh_from_db()
+        self.assertFalse(addon.is_active)
+        self.assertTrue(build.addon_items.filter(addon=addon).exists())
+
+    def test_fake_image_upload_is_rejected(self):
+        fake = SimpleUploadedFile("fake.png", b"not a real image", content_type="image/png")
+        response = self.client.post(
+            reverse("management:management_category_create"),
+            {
+                "name": "Image Category",
+                "slug": "image-category",
+                "description": "Image test",
+                "display_order": 1,
+                "is_active": "on",
+                "image": fake,
+                "image_alt_text": "Decorative party table",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Upload a valid image")
+        self.assertFalse(Category.objects.filter(slug="image-category").exists())
+
+    def test_owner_can_manage_eligible_user_but_not_other_owner_or_superuser(self):
+        other_owner = User.objects.create_user("other-management-owner", password="Owner-pass-456!")
+        Group.objects.get(name="Owners").user_set.add(other_owner)
+        superuser = User.objects.create_superuser("protected-admin", "admin@example.test", "Admin-pass-123!")
+
+        self.assertEqual(
+            self.client.get(reverse("management:management_user_detail", args=[other_owner.pk])).status_code,
+            404,
+        )
+        self.assertEqual(
+            self.client.get(reverse("management:management_user_detail", args=[superuser.pk])).status_code,
+            404,
+        )
+
+        response = self.client.post(
+            reverse("management:management_user_action", args=[self.customer.pk, "promote"]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_user_detail", args=[self.customer.pk]))
+        self.assertTrue(self.customer.groups.filter(name="Workers").exists())
+        self.assertTrue(AuditEvent.objects.filter(event_type="worker_promoted", object_id=str(self.customer.pk)).exists())
+
+    def test_booking_filter_detail_and_status_update(self):
+        booking = self.make_booking(name="Searchable Parent")
+        response = self.client.get(reverse("management:management_booking_list"), {"q": "Searchable"})
+        self.assertContains(response, "Searchable Parent")
+        self.assertEqual(
+            self.client.get(reverse("management:management_booking_detail", args=[booking.public_id])).status_code,
+            200,
+        )
+        response = self.client.post(
+            reverse("management:management_booking_status", args=[booking.public_id]),
+            {"status": PartyBuild.Status.CONTACTED, "note": "Client called."},
+        )
+        self.assertRedirects(response, reverse("management:management_booking_detail", args=[booking.public_id]))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONTACTED)
+        self.assertTrue(AuditEvent.objects.filter(event_type="booking_status_changed", object_id=str(booking.pk)).exists())
+
+    def test_mutation_endpoints_reject_get(self):
+        booking = self.make_booking()
+        self.assertEqual(
+            self.client.get(reverse("management:management_booking_status", args=[booking.public_id])).status_code,
+            405,
+        )
+        self.assertEqual(
+            self.client.get(reverse("management:management_booking_manual_review", args=[booking.public_id])).status_code,
+            405,
+        )
+
+    def test_dashboard_totals_can_exceed_recent_list_limit(self):
+        category = self.package.category
+        for index in range(12):
+            PartyPackage.objects.create(
+                name=f"Count Package {index}",
+                slug=f"count-package-{index}",
+                category=category,
+                short_description="Count test",
+                base_price=Decimal("180.00"),
+                duration_minutes=120,
+                included_guest_count=10,
+                included_experiences="Host",
+                is_active=True,
+            )
+        response = self.client.get(reverse("management:management_dashboard"))
+        self.assertGreaterEqual(response.context["stats"]["active_packages"], 13)
+        self.assertLessEqual(len(response.context["attention_bookings"]), 8)
+
+    def test_audit_page_is_owner_only_and_paginated(self):
+        for index in range(55):
+            AuditEvent.objects.create(
+                actor=self.owner,
+                event_type="test_event",
+                object_type="Test",
+                object_id=str(index),
+                summary=f"Event {index}",
+            )
+        response = self.client.get(reverse("management:management_audit"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["events"]), 50)
+        self.client.force_login(self.worker_user)
+        self.assertEqual(self.client.get(reverse("management:management_audit")).status_code, 403)
+
+
+    def test_valid_image_upload_uses_generated_catalogue_path(self):
+        image_bytes = BytesIO()
+        Image.new("RGB", (12, 12), color=(240, 80, 140)).save(image_bytes, format="PNG")
+        image_bytes.seek(0)
+        upload = SimpleUploadedFile(
+            "parent-controlled-name.png",
+            image_bytes.read(),
+            content_type="image/png",
+        )
+
+        with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
+            response = self.client.post(
+                reverse("management:management_category_create"),
+                {
+                    "name": "Photo Category",
+                    "slug": "photo-category",
+                    "description": "A category with a validated image.",
+                    "display_order": 4,
+                    "is_active": "on",
+                    "image": upload,
+                    "image_alt_text": "Pink party decoration",
+                },
+            )
+            self.assertRedirects(response, reverse("management:management_category_list"))
+            category = Category.objects.get(slug="photo-category")
+            self.assertTrue(category.image.name.startswith("catalogue/categories/"))
+            self.assertNotIn("parent-controlled-name", category.image.name)
+            self.assertTrue(category.image.storage.exists(category.image.name))
+
+    def test_unused_catalogue_records_are_permanently_deleted(self):
+        package = PartyPackage.objects.create(
+            name="Temporary Package",
+            slug="temporary-package",
+            category=self.package.category,
+            short_description="Not used by any booking.",
+            base_price=Decimal("150.00"),
+            duration_minutes=90,
+            included_guest_count=8,
+            included_experiences="Host",
+            is_active=True,
+            is_default=False,
+        )
+        tier = GuestPriceTier.objects.create(
+            package=package,
+            label="1–8 children",
+            min_guests=1,
+            max_guests=8,
+            total_price=Decimal("150.00"),
+            is_active=True,
+            is_default=True,
+        )
+        extra_tier = GuestPriceTier.objects.create(
+            package=self.package,
+            label="201–210 test tier",
+            min_guests=191,
+            max_guests=200,
+            total_price=Decimal("900.00"),
+            is_active=False,
+            is_default=False,
+        )
+        addon = AddonExperience.objects.create(
+            name="Temporary Add-on",
+            slug="temporary-addon",
+            category=AddonExperience.objects.first().category,
+            short_description="Not used by any booking.",
+            price=Decimal("20.00"),
+            duration_minutes=0,
+            is_active=True,
+        )
+
+        self.client.post(
+            reverse("management:management_tier_remove", args=[extra_tier.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertFalse(GuestPriceTier.objects.filter(pk=extra_tier.pk).exists())
+
+        self.client.post(
+            reverse("management:management_addon_remove", args=[addon.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertFalse(AddonExperience.objects.filter(pk=addon.pk).exists())
+
+        self.client.post(
+            reverse("management:management_package_remove", args=[package.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertFalse(PartyPackage.objects.filter(pk=package.pk).exists())
+        self.assertFalse(GuestPriceTier.objects.filter(pk=tier.pk).exists())
+
+    def test_referenced_tier_is_archived_without_losing_booking(self):
+        tier = GuestPriceTier.objects.create(
+            package=self.package,
+            label="Archive test 41–45",
+            min_guests=41,
+            max_guests=45,
+            total_price=Decimal("630.00"),
+            is_active=True,
+            is_default=False,
+        )
+        booking = self.make_booking(tier=tier)
+        response = self.client.post(
+            reverse("management:management_tier_remove", args=[tier.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_tier_list"))
+        tier.refresh_from_db()
+        booking.refresh_from_db()
+        self.assertFalse(tier.is_active)
+        self.assertEqual(booking.guest_tier_id, tier.pk)
+
+    def test_last_default_package_cannot_be_removed(self):
+        response = self.client.post(
+            reverse("management:management_package_remove", args=[self.package.pk]),
+            {"confirmation": "on"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create or activate another package")
+        self.assertTrue(PartyPackage.objects.filter(pk=self.package.pk).exists())
+        self.package.refresh_from_db()
+        self.assertTrue(self.package.is_default)
+
+    def test_invalid_catalogue_form_preserves_values_and_field_errors(self):
+        response = self.client.post(
+            reverse("management:management_package_create"),
+            {
+                "name": "Preserved Invalid Package",
+                "slug": "preserved-invalid-package",
+                "category": self.package.category_id,
+                "short_description": "This value should remain visible.",
+                "base_price": "-1.00",
+                "duration_minutes": 120,
+                "included_guest_count": 10,
+                "included_experiences": "Host",
+                "is_active": "on",
+                "display_order": 1,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Preserved Invalid Package")
+        self.assertContains(response, 'aria-invalid="true"')
+        self.assertContains(response, "greater than or equal to")
+        self.assertFalse(PartyPackage.objects.filter(slug="preserved-invalid-package").exists())
+
+    def test_owner_can_create_worker_through_management_namespace(self):
+        response = self.client.post(
+            reverse("management:management_user_create_worker"),
+            {
+                "username": "new-management-worker",
+                "first_name": "New",
+                "last_name": "Worker",
+                "email": "new-management-worker@example.test",
+                "phone": "+306900001111",
+                "password1": "Strong-worker-pass-2026!",
+                "password2": "Strong-worker-pass-2026!",
+            },
+        )
+        worker_user = User.objects.get(username="new-management-worker")
+        self.assertRedirects(
+            response,
+            reverse("management:management_user_detail", args=[worker_user.pk]),
+        )
+        self.assertTrue(worker_user.groups.filter(name="Workers").exists())
+        self.assertTrue(worker_user.worker_profile.is_active_worker)
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="worker_promoted",
+                object_id=str(worker_user.pk),
+            ).exists()
+        )
+
+    def test_crafted_user_action_must_match_current_role_state(self):
+        response = self.client.post(
+            reverse(
+                "management:management_user_action",
+                args=[self.customer.pk, "demote"],
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "not currently a worker")
+        self.assertFalse(self.customer.groups.filter(name="Workers").exists())
+
+    def test_state_changing_management_actions_require_csrf(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+        response = csrf_client.post(
+            reverse(
+                "management:management_user_action",
+                args=[self.customer.pk, "promote"],
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(self.customer.groups.filter(name="Workers").exists())
+
+    def test_price_and_default_changes_have_filterable_audit_events(self):
+        response = self.client.post(
+            reverse("management:management_package_update", args=[self.package.pk]),
+            {
+                "name": self.package.name,
+                "slug": self.package.slug,
+                "category": self.package.category_id,
+                "short_description": self.package.short_description,
+                "base_price": "195.00",
+                "duration_minutes": self.package.duration_minutes,
+                "included_guest_count": self.package.included_guest_count,
+                "included_experiences": self.package.included_experiences,
+                "is_default": "on",
+                "is_active": "on",
+                "display_order": self.package.display_order,
+            },
+        )
+        self.assertRedirects(response, reverse("management:management_package_list"))
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="catalogue_price_changed",
+                object_id=str(self.package.pk),
+            ).exists()
+        )
+
+
+    def test_manual_reassignment_replaces_confirmed_schedule_entry(self):
+        second_user = User.objects.create_user(
+            "second-management-worker",
+            password="Second-worker-pass-123!",
+        )
+        Group.objects.get(name="Workers").user_set.add(second_user)
+        second_worker = WorkerProfile.objects.create(
+            user=second_user,
+            display_name="Second Management Worker",
+        )
+        booking = self.make_booking()
+        previous = PartyAssignment.objects.create(
+            party_build=booking,
+            worker=self.worker,
+            status=PartyAssignment.Status.ACCEPTED,
+            assignment_source=PartyAssignment.Source.OWNER_MANUAL,
+            assigned_by=self.owner,
+        )
+        booking.assignment_state = PartyBuild.AssignmentState.ASSIGNED
+        booking.save(update_fields=["assignment_state"])
+
+        response = self.client.post(
+            reverse("management:management_booking_assign", args=[booking.public_id]),
+            {
+                "worker": second_worker.pk,
+                "already_agreed": "on",
+                "override_reason": "The worker confirmed availability by phone.",
+            },
+        )
+        self.assertRedirects(
+            response,
+            reverse("management:management_booking_detail", args=[booking.public_id]),
+        )
+        previous.refresh_from_db()
+        booking.refresh_from_db()
+        current = booking.assignments.get(status=PartyAssignment.Status.ACCEPTED)
+        self.assertEqual(previous.status, PartyAssignment.Status.SUPERSEDED)
+        self.assertEqual(current.worker, second_worker)
+        self.assertEqual(booking.assignment_state, PartyBuild.AssignmentState.ASSIGNED)
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="manual_assignment",
+                object_id=str(current.pk),
+            ).exists()
+        )
+
+    def test_manual_review_removes_confirmed_schedule_entry(self):
+        booking = self.make_booking()
+        assignment = PartyAssignment.objects.create(
+            party_build=booking,
+            worker=self.worker,
+            status=PartyAssignment.Status.ACCEPTED,
+            assignment_source=PartyAssignment.Source.OWNER_MANUAL,
+            assigned_by=self.owner,
+        )
+        booking.assignment_state = PartyBuild.AssignmentState.ASSIGNED
+        booking.save(update_fields=["assignment_state"])
+
+        response = self.client.post(
+            reverse(
+                "management:management_booking_manual_review",
+                args=[booking.public_id],
+            ),
+            {"reason": "Client requested a different entertainer."},
+        )
+        self.assertRedirects(
+            response,
+            reverse("management:management_booking_detail", args=[booking.public_id]),
+        )
+        assignment.refresh_from_db()
+        booking.refresh_from_db()
+        self.assertEqual(assignment.status, PartyAssignment.Status.SUPERSEDED)
+        self.assertEqual(
+            booking.assignment_state,
+            PartyBuild.AssignmentState.MANUAL_REVIEW,
+        )

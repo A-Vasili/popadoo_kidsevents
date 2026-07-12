@@ -1,143 +1,145 @@
-# This file defines the forms used by workers and owners in the operations area.
-# Comments in this file explain the purpose of each section without changing how the program works.
+"""Forms for the worker portal and custom management panel.
+
+Field-level validation and accessible widget configuration live here. Business
+transactions such as role changes, archiving, and assignments stay in services.
+"""
 
 from __future__ import annotations
 
 from django import forms
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
+from django.db.models import Q
 
 from accounts.models import CustomerProfile, WorkerProfile, phone_validator
-from party_builder.models import AddonExperience, GuestPriceTier, PartyPackage
+from party_builder.models import (
+    AddonExperience,
+    Category,
+    GuestPriceTier,
+    PartyBuild,
+    PartyPackage,
+)
 
 from .models import WorkerAvailability
 
-
-# This variable stores the active Django user model so the project remains compatible with Django settings.
 User = get_user_model()
 
 
-# This helper adds labels and error links that make the form easier to understand with assistive technology.
-def apply_accessibility(form: forms.BaseForm) -> None:
+def apply_form_accessibility(form: forms.BaseForm) -> None:
+    """Apply consistent classes and ARIA relationships to every form control."""
+
     for name, field in form.fields.items():
-        if isinstance(field.widget, forms.CheckboxInput):
-            field.widget.attrs.setdefault("class", "form-check-input")
-        elif not field.widget.is_hidden:
-            field.widget.attrs.setdefault("class", "form-control")
-        element_id = field.widget.attrs.get("id", f"id_{name}")
-        field.widget.attrs.setdefault("id", element_id)
-        if not field.widget.is_hidden:
-            field.widget.attrs["aria-describedby"] = f"{element_id}_help {element_id}_error"
-        if form.is_bound and name in form.errors:
-            field.widget.attrs["aria-invalid"] = "true"
+        widget = field.widget
+        if isinstance(widget, forms.CheckboxInput):
+            widget.attrs.setdefault("class", "form-check-input")
+        elif isinstance(widget, forms.FileInput):
+            widget.attrs.setdefault("class", "form-control")
+            widget.attrs.setdefault("accept", "image/jpeg,image/png,image/webp")
+        elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
+            widget.attrs.setdefault("class", "form-select")
+        elif not widget.is_hidden:
+            widget.attrs.setdefault("class", "form-control")
+
+        element_id = widget.attrs.setdefault("id", f"id_{name}")
+        if not widget.is_hidden:
+            described_by = []
+            if field.help_text:
+                described_by.append(f"{element_id}_help")
+            described_by.append(f"{element_id}_error")
+            widget.attrs["aria-describedby"] = " ".join(described_by)
 
 
-class OwnerWorkerCreationForm(UserCreationForm):
-    """Create a worker account from the protected owner operations panel.
+class AccessibleFieldsMixin:
+    """Add ARIA error state after Django has validated the bound form."""
 
-    Public visitors can create customer accounts only. This separate owner-only
-    form keeps staff creation inside the authorised workflow and still uses
-    Django's built-in password validation.
-    """
+    def full_clean(self):
+        super().full_clean()
+        for name in self.errors:
+            if name in self.fields and not self.fields[name].widget.is_hidden:
+                self.fields[name].widget.attrs["aria-invalid"] = "true"
+
+
+class AccessibleModelForm(AccessibleFieldsMixin, forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_form_accessibility(self)
+
+
+class AccessibleForm(AccessibleFieldsMixin, forms.Form):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        apply_form_accessibility(self)
+
+
+# Worker portal forms -------------------------------------------------------
+
+class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
+    """Create a worker through the protected owner workflow."""
 
     first_name = forms.CharField(max_length=150, required=True)
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
-    phone = forms.CharField(
-        max_length=30,
-        required=False,
-        validators=[phone_validator],
-    )
+    phone = forms.CharField(max_length=30, required=False, validators=[phone_validator])
 
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
-            "username",
-            "first_name",
-            "last_name",
-            "email",
-            "phone",
-            "password1",
-            "password2",
+            "username", "first_name", "last_name", "email", "phone",
+            "password1", "password2",
         )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["username"].help_text = (
-            "This is the name the worker will use to sign in."
+        self.fields["username"].help_text = "This is the name the worker will use to sign in."
+        self.fields["password1"].help_text = " ".join(
+            password_validation.password_validators_help_texts()
         )
         self.fields["email"].widget.attrs["autocomplete"] = "email"
         self.fields["phone"].widget.attrs["autocomplete"] = "tel"
         self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
         self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
-        apply_accessibility(self)
+        apply_form_accessibility(self)
 
     def clean_email(self) -> str:
-        """Prevent duplicate email addresses regardless of letter case."""
-
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
-            raise forms.ValidationError(
-                "An account already uses this email address."
-            )
+            raise forms.ValidationError("An account already uses this email address.")
         return email
 
     @transaction.atomic
     def save(self, *, actor, commit=True):
-        """Save the account and promote it through the audited role service.
-
-        The actor is the signed-in owner. Passing it explicitly makes the audit
-        trail clear and avoids silently changing permissions inside the form.
-        """
-
-        from .services.permissions import promote_to_worker
+        from .services.users import promote_to_worker
 
         user = super().save(commit=False)
         user.first_name = self.cleaned_data["first_name"].strip()
         user.last_name = self.cleaned_data["last_name"].strip()
         user.email = self.cleaned_data["email"]
+        if not commit:
+            return user
 
-        if commit:
-            user.save()
-            profile, _ = CustomerProfile.objects.get_or_create(user=user)
-            profile.phone = self.cleaned_data.get("phone", "").strip()
-            profile.save(update_fields=["phone", "updated_at"])
-
-            worker_profile = promote_to_worker(user, actor)
-            worker_profile.display_name = (
-                user.get_full_name() or user.username
-            )
-            worker_profile.phone = profile.phone
-            worker_profile.save(
-                update_fields=["display_name", "phone", "updated_at"]
-            )
-
+        user.save()
+        profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        profile.phone = self.cleaned_data.get("phone", "").strip()
+        profile.save(update_fields=["phone", "updated_at"])
+        worker_profile = promote_to_worker(user, actor)
+        worker_profile.display_name = user.get_full_name() or user.username
+        worker_profile.phone = profile.phone
+        worker_profile.save(update_fields=["display_name", "phone", "updated_at"])
         return user
 
 
-class WorkerProfileForm(forms.ModelForm):
-    """Allow workers to maintain their own operational contact details."""
-
+class WorkerProfileForm(AccessibleModelForm):
     class Meta:
         model = WorkerProfile
         fields = ("display_name", "phone")
 
-    # This method prepares the object and adjusts its starting values.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        apply_accessibility(self)
 
-
-class WorkerAvailabilityForm(forms.ModelForm):
-    """Create or edit one future worker availability window."""
-
+class WorkerAvailabilityForm(AccessibleModelForm):
     class Meta:
         model = WorkerAvailability
         fields = ("start_at", "end_at", "availability_type", "notes")
         widgets = {
-            # The custom date/time component writes one ISO local datetime into
-            # each hidden field before Django validates and saves the model.
             "start_at": forms.DateTimeInput(
                 format="%Y-%m-%dT%H:%M",
                 attrs={"type": "hidden", "data-datetime-input": ""},
@@ -149,29 +151,19 @@ class WorkerAvailabilityForm(forms.ModelForm):
             "notes": forms.TextInput(attrs={"placeholder": "Optional note"}),
         }
 
-    # This method prepares the object and adjusts its starting values.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        apply_accessibility(self)
 
+# Assignment forms ---------------------------------------------------------
 
-# This form gathers and checks the information needed for decline assignment.
-class DeclineAssignmentForm(forms.Form):
+class DeclineAssignmentForm(AccessibleForm):
     reason = forms.CharField(
         max_length=500,
         label="Reason for declining",
         help_text="This helps the owner understand availability and contact another worker.",
-        widget=forms.Textarea(attrs={"rows": 4, "class": "form-control"}),
+        widget=forms.Textarea(attrs={"rows": 4}),
     )
 
-    # This method prepares the object and adjusts its starting values.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        apply_accessibility(self)
 
-
-# This form gathers and checks the information needed for manual assignment.
-class ManualAssignmentForm(forms.Form):
+class ManualAssignmentForm(AccessibleForm):
     worker = forms.ModelChoiceField(queryset=WorkerProfile.objects.none())
     already_agreed = forms.BooleanField(
         required=False,
@@ -185,7 +177,6 @@ class ManualAssignmentForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 3}),
     )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["worker"].queryset = WorkerProfile.objects.filter(
@@ -193,53 +184,263 @@ class ManualAssignmentForm(forms.Form):
             user__is_active=True,
             user__groups__name="Workers",
         ).select_related("user").distinct()
-        apply_accessibility(self)
 
 
-# This form gathers and checks the information needed for package pricing.
-class PackagePricingForm(forms.ModelForm):
-    # This inner Meta class tells Django which database model and fields this form or admin section uses.
+# Catalogue management forms ---------------------------------------------
+
+class CatalogueImageMixin:
+    remove_image = forms.BooleanField(
+        required=False,
+        label="Remove the current image",
+        help_text="The existing file is removed only after the record saves successfully.",
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        image = cleaned.get("image") or getattr(self.instance, "image", None)
+        alt_text = (cleaned.get("image_alt_text") or "").strip()
+        if cleaned.get("remove_image"):
+            image = None
+            cleaned["image_alt_text"] = ""
+        if image and not alt_text:
+            self.add_error("image_alt_text", "Describe the image for visitors who cannot see it.")
+        return cleaned
+
+
+class CategoryForm(CatalogueImageMixin, AccessibleModelForm):
+    class Meta:
+        model = Category
+        fields = (
+            "name", "slug", "description", "parent", "image",
+            "image_alt_text", "display_order", "is_active",
+        )
+        widgets = {"description": forms.Textarea(attrs={"rows": 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        queryset = Category.objects.order_by("display_order", "name")
+        if self.instance.pk:
+            excluded_ids = {self.instance.pk}
+            queue = list(self.instance.children.values_list("pk", flat=True))
+            while queue:
+                child_id = queue.pop()
+                if child_id in excluded_ids:
+                    continue
+                excluded_ids.add(child_id)
+                queue.extend(
+                    Category.objects.filter(parent_id=child_id).values_list("pk", flat=True)
+                )
+            queryset = queryset.exclude(pk__in=excluded_ids)
+            # When a submitted value is invalid because it creates a cycle, keep
+            # that one choice in the bound queryset so the model can return the
+            # clearer business-rule message instead of a generic invalid-choice error.
+            submitted_parent = self.data.get("parent") if self.is_bound else None
+            if submitted_parent and str(submitted_parent).isdigit():
+                queryset = queryset | Category.objects.filter(pk=submitted_parent)
+        self.fields["parent"].queryset = queryset.distinct()
+        self.fields["parent"].empty_label = "Main category (no parent)"
+
+    def clean_name(self) -> str:
+        name = self.cleaned_data["name"].strip()
+        if not name:
+            raise forms.ValidationError("Enter a category name.")
+        return name
+
+
+class PackageForm(CatalogueImageMixin, AccessibleModelForm):
     class Meta:
         model = PartyPackage
-        fields = ("base_price", "duration_minutes", "is_active")
+        fields = (
+            "name", "slug", "category", "short_description", "base_price",
+            "duration_minutes", "included_guest_count", "included_experiences",
+            "is_default", "is_active", "display_order", "image", "image_alt_text",
+        )
+        widgets = {"included_experiences": forms.Textarea(attrs={"rows": 6})}
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        apply_accessibility(self)
+        category_filter = Q(is_active=True)
+        if self.instance.category_id:
+            category_filter |= Q(pk=self.instance.category_id)
+        self.fields["category"].required = True
+        self.fields["category"].queryset = Category.objects.filter(
+            category_filter
+        ).order_by("display_order", "name")
+        self.fields["category"].help_text = (
+            "Choose the category or subcategory where customers will find this package."
+        )
 
 
-# This form gathers and checks the information needed for guest tier pricing.
-class GuestTierPricingForm(forms.ModelForm):
-    # This inner Meta class tells Django which database model and fields this form or admin section uses.
+class GuestPriceTierForm(AccessibleModelForm):
     class Meta:
         model = GuestPriceTier
-        fields = ("label", "min_guests", "max_guests", "total_price", "is_active")
+        fields = (
+            "package", "label", "min_guests", "max_guests", "total_price",
+            "is_default", "is_active", "display_order",
+        )
 
-    # This method prepares the object and adjusts its starting values.
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, package=None, **kwargs):
         super().__init__(*args, **kwargs)
-        apply_accessibility(self)
+        package_filter = Q(is_active=True)
+        if self.instance.package_id:
+            package_filter |= Q(pk=self.instance.package_id)
+        self.fields["package"].queryset = PartyPackage.objects.filter(
+            package_filter
+        ).order_by("display_order", "name")
+        if package is not None:
+            self.fields["package"].initial = package
+            self.fields["package"].disabled = True
+            self.instance.package = package
+
+    def clean(self):
+        cleaned = super().clean()
+        package = cleaned.get("package") or self.instance.package
+        minimum = cleaned.get("min_guests")
+        maximum = cleaned.get("max_guests")
+        active = cleaned.get("is_active")
+        if minimum is not None and maximum is not None and maximum < minimum:
+            self.add_error("max_guests", "Maximum guests must be at least the minimum.")
+        if cleaned.get("is_default") and not active:
+            self.add_error("is_active", "The default tier must remain active.")
+        if package and active and minimum is not None and maximum is not None:
+            overlaps = GuestPriceTier.objects.filter(
+                package=package,
+                is_active=True,
+                min_guests__lte=maximum,
+                max_guests__gte=minimum,
+            )
+            if self.instance.pk:
+                overlaps = overlaps.exclude(pk=self.instance.pk)
+            if overlaps.exists():
+                raise forms.ValidationError(
+                    "This guest range overlaps another active tier for the selected package."
+                )
+        return cleaned
 
 
-# This form gathers and checks the information needed for addon pricing.
-class AddonPricingForm(forms.ModelForm):
-    # This inner Meta class tells Django which database model and fields this form or admin section uses.
+class AddonForm(CatalogueImageMixin, AccessibleModelForm):
     class Meta:
         model = AddonExperience
         fields = (
-            "name",
-            "slug",
-            "short_description",
-            "price",
-            "duration_minutes",
-            "icon",
-            "is_featured",
-            "is_active",
-            "display_order",
+            "name", "slug", "category", "short_description", "price",
+            "duration_minutes", "icon", "is_featured", "is_active",
+            "display_order", "image", "image_alt_text",
         )
 
-    # This method prepares the object and adjusts its starting values.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        apply_accessibility(self)
+        category_filter = Q(is_active=True)
+        if self.instance.category_id:
+            category_filter |= Q(pk=self.instance.category_id)
+        self.fields["category"].required = True
+        self.fields["category"].queryset = Category.objects.filter(
+            category_filter
+        ).order_by("display_order", "name")
+        self.fields["category"].help_text = (
+            "Choose the category or subcategory where customers will find this add-on."
+        )
+
+
+# User management forms ----------------------------------------------------
+
+class ManagedUserForm(AccessibleModelForm):
+    phone = forms.CharField(max_length=30, required=False, validators=[phone_validator])
+    default_address = forms.CharField(max_length=240, required=False)
+    default_postal_code = forms.CharField(max_length=10, required=False)
+    worker_display_name = forms.CharField(max_length=120, required=False)
+    max_daily_parties = forms.IntegerField(min_value=1, max_value=10, required=False)
+
+    class Meta:
+        model = User
+        fields = ("first_name", "last_name", "email")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        profile = getattr(self.instance, "customer_profile", None)
+        worker = getattr(self.instance, "worker_profile", None)
+        if profile:
+            self.fields["phone"].initial = profile.phone
+            self.fields["default_address"].initial = profile.default_address
+            self.fields["default_postal_code"].initial = profile.default_postal_code
+        if worker:
+            self.fields["worker_display_name"].initial = worker.display_name
+            self.fields["max_daily_parties"].initial = worker.max_daily_parties
+
+    def clean_email(self) -> str:
+        email = self.cleaned_data["email"].strip().lower()
+        if email and User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Another account already uses this email address.")
+        return email
+
+    @transaction.atomic
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.first_name = user.first_name.strip()
+        user.last_name = user.last_name.strip()
+        if not commit:
+            return user
+        user.save()
+        profile, _ = CustomerProfile.objects.get_or_create(user=user)
+        profile.phone = self.cleaned_data.get("phone", "").strip()
+        profile.default_address = self.cleaned_data.get("default_address", "").strip()
+        profile.default_postal_code = self.cleaned_data.get("default_postal_code", "").strip()
+        profile.save()
+        worker = getattr(user, "worker_profile", None)
+        if worker:
+            worker.display_name = self.cleaned_data.get("worker_display_name", "").strip()
+            worker.phone = profile.phone
+            worker.max_daily_parties = (
+                self.cleaned_data.get("max_daily_parties") or worker.max_daily_parties
+            )
+            worker.save()
+        return user
+
+
+# Booking management forms -------------------------------------------------
+
+class BookingStatusForm(AccessibleForm):
+    status = forms.ChoiceField(choices=PartyBuild.Status.choices)
+    note = forms.CharField(
+        required=False,
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Optional internal reason recorded in the audit history.",
+    )
+
+    def __init__(self, *args, booking: PartyBuild, **kwargs):
+        self.booking = booking
+        super().__init__(*args, **kwargs)
+        allowed = {
+            PartyBuild.Status.SUBMITTED: {PartyBuild.Status.CONTACTED, PartyBuild.Status.CANCELLED},
+            PartyBuild.Status.CONTACTED: {PartyBuild.Status.CONFIRMED, PartyBuild.Status.CANCELLED},
+            PartyBuild.Status.CONFIRMED: {PartyBuild.Status.CANCELLED},
+            PartyBuild.Status.CANCELLED: set(),
+        }[booking.status]
+        self.fields["status"].choices = [
+            choice for choice in PartyBuild.Status.choices if choice[0] in allowed
+        ]
+        apply_form_accessibility(self)
+
+    def clean_status(self) -> str:
+        status = self.cleaned_data["status"]
+        valid_values = {value for value, _label in self.fields["status"].choices}
+        if status not in valid_values:
+            raise forms.ValidationError("Choose a valid next booking status.")
+        return status
+
+
+class ManualReviewForm(AccessibleForm):
+    reason = forms.CharField(
+        max_length=500,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Explain why this booking needs owner follow-up.",
+    )
+
+
+# Confirmation forms -------------------------------------------------------
+
+class ActionConfirmationForm(AccessibleForm):
+    confirmation = forms.BooleanField(
+        required=True,
+        label="I understand and want to continue",
+    )
