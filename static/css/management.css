@@ -1023,3 +1023,24 @@ html[data-theme="dark"] .management-button.danger {
         transform: none;
     }
 }
+
+/* Analytics keeps summary cards and tables readable without a charting library. */
+.analytics-stat-grid { grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+.management-stat-card { display: grid; gap: .35rem; padding: 1rem; border: 1px solid var(--management-panel-border); border-radius: 1rem; background: var(--management-panel-bg); box-shadow: var(--management-shadow); }
+.management-stat-card span { color: var(--management-muted); }
+.management-stat-card strong { font-size: 1.6rem; }
+.management-filter-inline { display: flex; flex-wrap: wrap; align-items: end; gap: .6rem; }
+
+.management-timeline-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.management-badge.neutral {
+    background: var(--management-surface-muted, var(--management-panel-bg));
+    color: var(--management-text);
+    border: 1px solid var(--management-panel-border);
+}

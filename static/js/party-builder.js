@@ -152,10 +152,65 @@
         tierRadios.forEach((radio) => {
             radio.addEventListener("change", () => renderCart({ announce: true }));
         });
+        const recommendationSection = document.querySelector("[data-recommendations]");
+        const recommendationList = recommendationSection?.querySelector("[data-recommendation-list]");
+
+        const renderRecommendations = (items) => {
+            if (!recommendationList) return;
+            recommendationList.replaceChildren();
+            if (!items.length) {
+                const empty = document.createElement("p");
+                empty.textContent = "No additional suggestions are available yet.";
+                recommendationList.append(empty);
+                return;
+            }
+            items.forEach((item) => {
+                const card = document.createElement("article");
+                card.className = "recommendation-card";
+                const heading = document.createElement("h3");
+                const description = document.createElement("p");
+                const reason = document.createElement("p");
+                const price = document.createElement("p");
+                const button = document.createElement("button");
+                heading.textContent = item.name;
+                description.textContent = item.short_description;
+                reason.className = "recommendation-reason";
+                reason.textContent = item.reason;
+                price.textContent = currencyFormatter.format(toNumber(item.price));
+                button.type = "button";
+                button.className = "button button-outline";
+                button.textContent = "Select this experience";
+                button.addEventListener("click", () => {
+                    const checkbox = optionsForm.querySelector(`[data-addon-checkbox][value='${CSS.escape(String(item.id))}']`);
+                    if (checkbox && !checkbox.checked) {
+                        checkbox.checked = true;
+                        checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
+                    checkbox?.focus();
+                });
+                card.append(heading, description, reason, price, button);
+                recommendationList.append(card);
+            });
+        };
+
+        const refreshRecommendations = async () => {
+            if (!recommendationSection || !recommendationList) return;
+            const url = new URL(recommendationSection.dataset.endpoint, window.location.origin);
+            url.searchParams.set("package", recommendationSection.dataset.packageId);
+            addonCheckboxes.filter((item) => item.checked).forEach((item) => url.searchParams.append("addons", item.value));
+            try {
+                const response = await fetch(url, { headers: { Accept: "application/json" } });
+                if (response.ok) renderRecommendations((await response.json()).recommendations || []);
+            } catch (_error) {
+                // Server-rendered suggestions remain available when live updates fail.
+            }
+        };
+
         addonCheckboxes.forEach((checkbox) => {
-            checkbox.addEventListener("change", () =>
-                renderCart({ announce: true })
-            );
+            checkbox.addEventListener("change", () => {
+                renderCart({ announce: true });
+                refreshRecommendations();
+            });
         });
         addKeyboardNavigation(tierGrid, tierRadios);
         addKeyboardNavigation(addonGrid, addonCheckboxes);

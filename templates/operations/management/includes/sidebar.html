@@ -30,6 +30,9 @@
             <a class="{% if management_active_section == 'audit' %}active{% endif %}" href="{% url 'management:management_audit' %}" {% if management_active_section == 'audit' %}aria-current="page"{% endif %}>
                 <span aria-hidden="true">◷</span> Audit history
             </a>
+            <a class="{% if management_active_section == 'analytics' %}active{% endif %}" href="{% url 'management:management_analytics' %}" {% if management_active_section == 'analytics' %}aria-current="page"{% endif %}>
+                <span aria-hidden="true">◩</span> Analytics
+            </a>
         {% endif %}
     </nav>
 

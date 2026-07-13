@@ -146,12 +146,42 @@
                             {# This loop creates one visible item for each record supplied by the Django view. #}
                             {% for option in addon_options %}
                                 {# This include reuses a shared template fragment instead of repeating the same markup. #}
-                                {% include "party_builder/includes/addon_card.html" with addon=option.addon selected=option.selected only %}
+                                {% include "party_builder/includes/addon_card.html" with addon=option.addon selected=option.selected analytics=option.analytics only %}
                             {% empty %}
                                 <p>No optional experiences are currently available.</p>
                             {% endfor %}
                         </div>
                     </fieldset>
+                </section>
+
+                <section
+                    class="checkout-panel recommendation-section"
+                    aria-labelledby="recommendation-heading"
+                    data-recommendations
+                    data-endpoint="{% url 'party_builder:party_builder_recommendations' %}"
+                    data-package-id="{{ package.pk }}"
+                >
+                    <div class="panel-heading">
+                        <span class="panel-step" aria-hidden="true">1D</span>
+                        <div>
+                            <p class="section-kicker">Suggestions from completed parties</p>
+                            <h2 id="recommendation-heading">Often booked together</h2>
+                            <p>These suggestions use completed booking patterns. Nothing is added unless you choose it.</p>
+                        </div>
+                    </div>
+                    <div class="recommendation-grid" data-recommendation-list aria-live="polite">
+                        {% for recommendation in recommendations %}
+                            <article class="recommendation-card">
+                                <h3>{{ recommendation.addon.name }}</h3>
+                                <p>{{ recommendation.addon.short_description }}</p>
+                                <p class="recommendation-reason">{{ recommendation.reason }}</p>
+                                <p><strong>+€{{ recommendation.addon.price|floatformat:2 }}</strong></p>
+                                <a class="button button-outline" href="#addon-{{ recommendation.addon.pk }}">Review this option</a>
+                            </article>
+                        {% empty %}
+                            <p>No additional suggestions are available yet.</p>
+                        {% endfor %}
+                    </div>
                 </section>
             </div>
 

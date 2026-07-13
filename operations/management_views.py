@@ -34,6 +34,7 @@ from accounts.permissions import (
     can_manage_pricing,
     is_owner,
 )
+from party_builder.analytics import analytics_report, resolve_period
 from party_builder.models import AddonExperience, Category, GuestPriceTier, PartyBuild, PartyPackage
 
 from .forms import (
@@ -879,6 +880,7 @@ class BookingDetailView(OwnerManagementMixin, ManagementContextMixin, DetailView
         return PartyBuild.objects.select_related("package", "guest_tier", "customer").prefetch_related(
             "addon_items__addon",
             "assignments__worker__user",
+            "review__addon_ratings__build_addon__addon",
         )
 
     def get_context_data(self, **kwargs):
@@ -1045,4 +1047,30 @@ class AuditListView(OwnerManagementMixin, ManagementContextMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["event_type_options"] = AuditEvent.objects.order_by("event_type").values_list("event_type", flat=True).distinct()
         context["actor_options"] = User.objects.filter(popadoo_audit_events__isnull=False).distinct().order_by("username")
+        return context
+
+
+class AnalyticsView(OwnerManagementMixin, ManagementContextMixin, TemplateView):
+    """Show completed-party usage, verified ratings, and common combinations."""
+
+    template_name = "operations/management/analytics.html"
+    page_title = "Analytics"
+    active_section = "analytics"
+    breadcrumbs = (("Analytics", None),)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        period_key, days = resolve_period(self.request.GET.get("period"))
+        context.update(
+            {
+                "period_key": period_key,
+                "period_options": (
+                    ("30", "Last 30 days"),
+                    ("90", "Last 90 days"),
+                    ("365", "Last 365 days"),
+                    ("all", "All time"),
+                ),
+                **analytics_report(days=days),
+            }
+        )
         return context

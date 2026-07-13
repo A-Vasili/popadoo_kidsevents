@@ -40,6 +40,25 @@
                         <div><dt>Total</dt><dd>€{{ booking.total_price|floatformat:2 }}</dd></div>
                         <div><dt>Booking status</dt><dd>{{ booking.get_status_display }}</dd></div>
                     </dl>
+                    <div class="booking-feedback-state">
+                        {% if booking.status == "cancelled" %}
+                            <p>Feedback is not available for a cancelled booking.</p>
+                        {% elif booking.status != "completed" %}
+                            <p>Feedback becomes available after the party is completed.</p>
+                        {% elif booking.review %}
+                            {% if booking.review.visibility == "testimonial" and booking.review.testimonial_consent_at %}
+                                <p><strong>Review submitted — Published testimonial</strong></p>
+                                <p><a href="{% url 'core:core_testimonials' %}">View public testimonials</a></p>
+                            {% else %}
+                                <p><strong>Review submitted — Private feedback</strong></p>
+                            {% endif %}
+                            <p class="review-code-display">Party code: <strong>{{ booking.review_code }}</strong></p>
+                            <a href="{% url 'party_builder:party_builder_review_code' %}">Update review</a>
+                        {% else %}
+                            <p class="review-code-display">Party code: <strong>{{ booking.review_code }}</strong></p>
+                            <a href="{% url 'party_builder:party_builder_review_code' %}">Rate this party</a>
+                        {% endif %}
+                    </div>
                     <a href="{{ booking.get_absolute_url }}">View booking summary</a>
                 </article>
             {% empty %}

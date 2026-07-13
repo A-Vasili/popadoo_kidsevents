@@ -251,3 +251,114 @@ html[data-theme="dark"] .team-card img {
 .testimonial-card p {
     margin-bottom: 0;
 }
+
+/* Public testimonials are verified comments published with explicit consent. */
+.testimonial-public-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-top: 2rem;
+}
+
+.testimonial-public-card {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1.4rem;
+    border: 1px solid var(--color-border);
+    border-top: 0.35rem solid var(--pastel-lavender);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-card);
+}
+
+.testimonial-public-card:nth-child(3n + 2) {
+    border-top-color: var(--pastel-mint);
+}
+
+.testimonial-public-card:nth-child(3n) {
+    border-top-color: var(--pastel-peach);
+}
+
+.testimonial-public-card__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+}
+
+.testimonial-stars {
+    color: #8a5a00;
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+}
+
+.verified-testimonial-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.8rem;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--surface-mint);
+    color: var(--color-text);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.testimonial-public-card blockquote {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.7;
+}
+
+.testimonial-public-card blockquote p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.testimonial-public-card footer {
+    display: grid;
+    gap: 0.2rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.testimonial-public-card footer span,
+.testimonial-public-card footer time {
+    color: var(--color-muted);
+    font-size: 0.88rem;
+}
+
+.testimonial-empty-state {
+    margin-top: 2rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    text-align: center;
+    border: 1px dashed var(--color-border);
+    border-radius: 1.25rem;
+    background: var(--color-surface-raised);
+}
+
+.testimonial-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+@media (max-width: 62rem) {
+    .testimonial-public-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 40rem) {
+    .testimonial-public-grid {
+        grid-template-columns: 1fr;
+    }
+}

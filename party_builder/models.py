@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from decimal import Decimal
 
@@ -366,6 +367,39 @@ class AddonExperience(models.Model):
         return self.name
 
 
+REVIEW_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+
+
+def format_review_code(raw: str) -> str:
+    """Return a normalized human-readable code without ambiguous characters."""
+
+    compact = "".join(character for character in (raw or "").upper() if character.isalnum())
+    if compact.startswith("POP"):
+        compact = compact[3:]
+    if len(compact) != 8 or any(character not in REVIEW_CODE_ALPHABET for character in compact):
+        return ""
+    return f"POP-{compact[:4]}-{compact[4:]}"
+
+
+def generate_review_code_candidate() -> str:
+    """Create one readable candidate; database uniqueness is checked separately."""
+
+    body = "".join(secrets.choice(REVIEW_CODE_ALPHABET) for _ in range(8))
+    return f"POP-{body[:4]}-{body[4:]}"
+
+
+def generate_unique_review_code() -> str:
+    """Return a code not currently stored in the booking table."""
+
+    for _attempt in range(32):
+        candidate = generate_review_code_candidate()
+        # This lookup keeps normal model creation safe. The unique database
+        # constraint remains the final protection if two requests race.
+        if not PartyBuild.objects.filter(review_code=candidate).exists():
+            return candidate
+    raise RuntimeError("Unable to allocate a unique party review code.")
+
+
 class PartyBuild(models.Model):
     """A completed simulated order with trusted server-side price snapshots."""
 
@@ -373,6 +407,7 @@ class PartyBuild(models.Model):
         SUBMITTED = "submitted", "Submitted"
         CONTACTED = "contacted", "Contacted"
         CONFIRMED = "confirmed", "Confirmed"
+        COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
     # This database model stores payment status information.
@@ -388,6 +423,12 @@ class PartyBuild(models.Model):
         MANUAL_REVIEW = "manual_review", "Owner review required"
 
     public_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    review_code = models.CharField(
+        max_length=13,
+        unique=True,
+        editable=False,
+        default=generate_unique_review_code,
+    )
     customer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -469,6 +510,7 @@ class PartyBuild(models.Model):
     card_last_four = models.CharField(max_length=4, blank=True)
     payment_reference = models.CharField(max_length=40, blank=True)
     checkout_completed_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
 
     status = models.CharField(
         max_length=20,
@@ -490,7 +532,16 @@ class PartyBuild(models.Model):
             models.Index(fields=("event_date", "status")),
             models.Index(fields=("assignment_state", "event_date")),
             models.Index(fields=("contact_email",)),
+            models.Index(fields=("status", "completed_at")),
         ]
+
+    def save(self, *args, **kwargs):
+        if self.review_code:
+            normalized = format_review_code(self.review_code)
+            if not normalized:
+                raise ValidationError({"review_code": "The party review code format is invalid."})
+            self.review_code = normalized
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.contact_name} — {self.package.name} ({self.event_date})"
@@ -532,3 +583,173 @@ class PartyBuildAddon(models.Model):
 
     def __str__(self) -> str:
         return f"{self.build.public_id}: {self.addon.name}"
+
+
+class PartyReview(models.Model):
+    """Verified feedback for one completed customer booking.
+
+    The review remains the single source of truth for both private company
+    feedback and public testimonials. Publication is opt-in and can be
+    withdrawn by the booking customer at any time.
+    """
+
+    class Visibility(models.TextChoices):
+        PRIVATE = "private", "Private feedback"
+        TESTIMONIAL = "testimonial", "Public testimonial"
+
+    class TestimonialNameDisplay(models.TextChoices):
+        ANONYMOUS = "anonymous", "Anonymous"
+        FIRST_NAME = "first_name", "First name only"
+
+    booking = models.OneToOneField(
+        PartyBuild,
+        on_delete=models.CASCADE,
+        related_name="review",
+    )
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="party_reviews",
+    )
+    package_score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField(blank=True, max_length=1500)
+    visibility = models.CharField(
+        max_length=20,
+        choices=Visibility.choices,
+        default=Visibility.PRIVATE,
+        db_index=True,
+    )
+    testimonial_name_display = models.CharField(
+        max_length=20,
+        choices=TestimonialNameDisplay.choices,
+        default=TestimonialNameDisplay.ANONYMOUS,
+    )
+    testimonial_consent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-updated_at",)
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(package_score__gte=1, package_score__lte=5),
+                name="party_review_package_score_1_to_5",
+            ),
+            models.CheckConstraint(
+                condition=Q(visibility__in=("private", "testimonial")),
+                name="party_review_supported_visibility",
+            ),
+            models.CheckConstraint(
+                condition=Q(testimonial_name_display__in=("anonymous", "first_name")),
+                name="party_review_supported_name_display",
+            ),
+            # Private comments are never allowed to retain publication consent
+            # or a public-facing name choice.
+            models.CheckConstraint(
+                condition=(
+                    Q(visibility="testimonial")
+                    | Q(
+                        testimonial_name_display="anonymous",
+                        testimonial_consent_at__isnull=True,
+                    )
+                ),
+                name="party_review_private_state_is_not_public",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("reviewer", "updated_at")),
+            models.Index(fields=("package_score", "updated_at")),
+            models.Index(fields=("visibility", "updated_at")),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.comment = (self.comment or "").strip()
+        if self.visibility == self.Visibility.TESTIMONIAL and not self.comment:
+            raise ValidationError(
+                {"comment": "Write a comment before publishing a public testimonial."}
+            )
+        if self.visibility == self.Visibility.PRIVATE:
+            self.testimonial_name_display = self.TestimonialNameDisplay.ANONYMOUS
+            self.testimonial_consent_at = None
+        if self.booking_id and self.reviewer_id:
+            if self.booking.customer_id != self.reviewer_id:
+                raise ValidationError("Only the customer who booked this party can review it.")
+            if self.booking.status != PartyBuild.Status.COMPLETED:
+                raise ValidationError("Only completed parties can be reviewed.")
+
+    @property
+    def is_public_testimonial(self) -> bool:
+        """Return whether this review currently has active publication consent."""
+
+        return (
+            self.visibility == self.Visibility.TESTIMONIAL
+            and self.testimonial_consent_at is not None
+            and bool(self.comment.strip())
+            and self.booking.status == PartyBuild.Status.COMPLETED
+        )
+
+    @property
+    def public_display_name(self) -> str:
+        """Return the only customer identity allowed on the public page."""
+
+        if self.testimonial_name_display == self.TestimonialNameDisplay.FIRST_NAME:
+            first_name = (self.reviewer.first_name or "").strip()
+            if first_name:
+                return first_name
+        return "Verified customer"
+
+    def __str__(self) -> str:
+        return f"Review for {self.booking.public_id} by {self.reviewer}"
+
+
+class AddonRating(models.Model):
+    """A verified score for an add-on that appears in the reviewed booking."""
+
+    review = models.ForeignKey(
+        PartyReview,
+        on_delete=models.CASCADE,
+        related_name="addon_ratings",
+    )
+    build_addon = models.ForeignKey(
+        PartyBuildAddon,
+        on_delete=models.CASCADE,
+        related_name="ratings",
+    )
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.CharField(max_length=500, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("build_addon__addon__display_order", "build_addon__addon__name")
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(score__gte=1, score__lte=5),
+                name="addon_rating_score_1_to_5",
+            ),
+            models.UniqueConstraint(
+                fields=("review", "build_addon"),
+                name="one_rating_per_selected_booking_addon",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=("build_addon", "score")),
+            models.Index(fields=("review", "updated_at")),
+        ]
+
+    def clean(self) -> None:
+        super().clean()
+        self.comment = (self.comment or "").strip()
+        if self.review_id and self.build_addon_id:
+            if self.review.booking_id != self.build_addon.build_id:
+                raise ValidationError(
+                    "The add-on rating must belong to the same booking as the review."
+                )
+
+    def __str__(self) -> str:
+        return f"{self.build_addon.addon.name}: {self.score}/5"

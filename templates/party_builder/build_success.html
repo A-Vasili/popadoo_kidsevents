@@ -64,6 +64,14 @@
                     <div class="saved-price-total"><dt>Simulated total</dt><dd>€{{ party_build.total_price|floatformat:2 }}</dd></div>
                 </dl>
 
+                {% if request.user.is_authenticated and party_build.customer_id == request.user.id %}
+                    <aside class="review-code-panel" role="note" aria-labelledby="review-code-success-heading">
+                        <h3 id="review-code-success-heading">Your private party review code</h3>
+                        <p><strong>{{ party_build.review_code }}</strong></p>
+                        <p>Keep this code with your booking. Feedback becomes available after an owner marks the party completed.</p>
+                    </aside>
+                {% endif %}
+
                 <div class="simulated-payment-result" role="note">
                     <strong>Payment simulation:</strong>
                     {{ party_build.card_brand }} ending {{ party_build.card_last_four }} —

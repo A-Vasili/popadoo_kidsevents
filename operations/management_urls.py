@@ -48,4 +48,5 @@ urlpatterns = [
 
     path("schedules/", views.ScheduleView.as_view(), name="management_schedule"),
     path("audit/", views.AuditListView.as_view(), name="management_audit"),
+    path("analytics/", views.AnalyticsView.as_view(), name="management_analytics"),
 ]

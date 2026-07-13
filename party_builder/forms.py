@@ -8,7 +8,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import AddonExperience, GuestPriceTier, PartyPackage
+from .models import AddonExperience, GuestPriceTier, PartyPackage, PartyReview
 from .services import SafePaymentResult
 
 
@@ -388,3 +388,173 @@ class SimulatedPaymentForm(forms.Form):
             card_brand=self._detect_brand(number),
             card_last_four=number[-4:],
         )
+
+
+class ReviewCodeForm(forms.Form):
+    """Collect a private party code before opening the verified review form."""
+
+    review_code = forms.CharField(
+        max_length=32,
+        label="Party review code",
+        help_text="Enter the code shown in your completed booking details.",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control review-code-input",
+                "autocomplete": "off",
+                "autocapitalize": "characters",
+                "spellcheck": "false",
+                "placeholder": "POP-7K4M-9Q2X",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        _apply_accessible_attributes(self)
+
+
+class PartyReviewForm(forms.Form):
+    """Rate the package and exactly the add-ons recorded in one booking."""
+
+    SCORE_CHOICES = [(number, f"{number} star" if number == 1 else f"{number} stars") for number in range(1, 6)]
+
+    package_score = forms.TypedChoiceField(
+        label="Package rating",
+        choices=SCORE_CHOICES,
+        coerce=int,
+        widget=forms.RadioSelect(attrs={"class": "review-star-input"}),
+    )
+    comment = forms.CharField(
+        required=False,
+        max_length=1500,
+        label="Overall comments",
+        help_text="Optional for private feedback. A written comment is required for a public testimonial.",
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "rows": 6,
+                "placeholder": "Tell Popadoo about the overall party experience.",
+            }
+        ),
+    )
+    visibility = forms.ChoiceField(
+        label="Who may see your written feedback?",
+        choices=PartyReview.Visibility.choices,
+        initial=PartyReview.Visibility.PRIVATE,
+        widget=forms.RadioSelect(attrs={"class": "review-visibility-input"}),
+        help_text=(
+            "Private feedback is visible only to Popadoo. A public testimonial "
+            "is published immediately with your explicit permission."
+        ),
+    )
+    testimonial_name_display = forms.ChoiceField(
+        label="How should your name appear?",
+        choices=PartyReview.TestimonialNameDisplay.choices,
+        initial=PartyReview.TestimonialNameDisplay.ANONYMOUS,
+        widget=forms.RadioSelect(attrs={"class": "review-name-display-input"}),
+        help_text="Only your first name can be shown. Your surname and account details stay private.",
+    )
+
+    def __init__(self, *args, booking, **kwargs):
+        self.booking = booking
+        self.build_addons = list(booking.addon_items.all())
+        if args and args[0] is not None:
+            # Older clients may not submit the new visibility controls. Falling
+            # back to private is safe and prevents an update from publishing by
+            # accident while current browsers still present a required choice.
+            submitted = args[0].copy()
+            submitted.setdefault("visibility", PartyReview.Visibility.PRIVATE)
+            submitted.setdefault(
+                "testimonial_name_display",
+                PartyReview.TestimonialNameDisplay.ANONYMOUS,
+            )
+            args = (submitted, *args[1:])
+        super().__init__(*args, **kwargs)
+
+        review = getattr(booking, "review", None)
+        existing_ratings = (
+            {rating.build_addon_id: rating for rating in review.addon_ratings.all()}
+            if review
+            else {}
+        )
+        if review and not self.is_bound:
+            self.initial.setdefault("package_score", review.package_score)
+            self.initial.setdefault("comment", review.comment)
+            self.initial.setdefault("visibility", review.visibility)
+            self.initial.setdefault(
+                "testimonial_name_display",
+                review.testimonial_name_display,
+            )
+        elif not self.is_bound:
+            self.initial.setdefault("visibility", PartyReview.Visibility.PRIVATE)
+            self.initial.setdefault(
+                "testimonial_name_display",
+                PartyReview.TestimonialNameDisplay.ANONYMOUS,
+            )
+
+        for build_addon in self.build_addons:
+            score_name = f"addon_score_{build_addon.pk}"
+            self.fields[score_name] = forms.TypedChoiceField(
+                label=f"Rate {build_addon.addon.name}",
+                choices=self.SCORE_CHOICES,
+                coerce=int,
+                widget=forms.RadioSelect(attrs={"class": "review-star-input"}),
+            )
+            if not self.is_bound and build_addon.pk in existing_ratings:
+                self.initial[score_name] = existing_ratings[build_addon.pk].score
+
+        _apply_accessible_attributes(self)
+
+    def clean(self):
+        cleaned = super().clean()
+        comment = (cleaned.get("comment") or "").strip()
+        visibility = cleaned.get("visibility")
+        name_display = cleaned.get("testimonial_name_display")
+        cleaned["comment"] = comment
+
+        if visibility == PartyReview.Visibility.TESTIMONIAL and not comment:
+            self.add_error(
+                "comment",
+                "Write a comment before publishing a public testimonial.",
+            )
+        if visibility == PartyReview.Visibility.PRIVATE:
+            # The public-name choice has no meaning for private feedback. Resetting
+            # it here avoids carrying stale publication settings into the service.
+            cleaned["testimonial_name_display"] = (
+                PartyReview.TestimonialNameDisplay.ANONYMOUS
+            )
+        elif visibility == PartyReview.Visibility.TESTIMONIAL and name_display not in {
+            choice[0] for choice in PartyReview.TestimonialNameDisplay.choices
+        }:
+            self.add_error(
+                "testimonial_name_display",
+                "Choose how your name may appear with the testimonial.",
+            )
+
+        allowed_names = {
+            f"addon_score_{build_addon.pk}" for build_addon in self.build_addons
+        }
+        submitted_names = {
+            key for key in self.data.keys() if key.startswith("addon_score_")
+        }
+        if submitted_names - allowed_names:
+            raise forms.ValidationError(
+                "The submitted add-on ratings do not match this booking."
+            )
+        return cleaned
+
+    def addon_rating_rows(self):
+        """Pair each selected add-on with its bound star field for the template."""
+
+        return [
+            (build_addon, self[f"addon_score_{build_addon.pk}"])
+            for build_addon in self.build_addons
+        ]
+
+    def addon_scores(self) -> dict[int, int]:
+        """Return validated scores keyed by the selected booking-add-on row."""
+
+        return {
+            build_addon.pk: self.cleaned_data[f"addon_score_{build_addon.pk}"]
+            for build_addon in self.build_addons
+        }

@@ -4,14 +4,31 @@ from __future__ import annotations
 from datetime import date, time
 from typing import Any
 
-from django.http import Http404, HttpResponseRedirect
-from django.shortcuts import redirect
+from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.http import Http404, HttpResponseRedirect, JsonResponse
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import DetailView, FormView
+from django.views.generic import DetailView, FormView, TemplateView
 
-from .forms import PackageOptionsForm, PartyDetailsForm, SimulatedPaymentForm
+from .forms import (
+    PackageOptionsForm,
+    PartyDetailsForm,
+    PartyReviewForm,
+    ReviewCodeForm,
+    SimulatedPaymentForm,
+)
 from .models import AddonExperience, GuestPriceTier, PartyBuild, PartyPackage
+from .analytics import addon_popularity, recommend_addons, review_score_updates
+from .review_services import (
+    authorize_review_session,
+    get_reviewable_booking,
+    review_session_is_authorized,
+    save_party_review,
+    verify_review_code,
+)
 from .services import calculate_party_quote, create_completed_party_build
 
 
@@ -122,6 +139,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
         selected_addons = [
             addon for addon in addons if str(addon.pk) in selected_addon_ids
         ]
+        popularity = addon_popularity(days=365)
         context.update(
             {
                 "package": self.package,
@@ -130,9 +148,15 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
                     {
                         "addon": addon,
                         "selected": str(addon.pk) in selected_addon_ids,
+                        "analytics": popularity["by_id"].get(addon.pk, {}),
                     }
                     for addon in addons
                 ],
+                "recommendations": recommend_addons(
+                    selected_ids=[addon.pk for addon in selected_addons],
+                    package=self.package,
+                    popularity_by_id=popularity["by_id"],
+                ),
                 "selected_tier_id": selected_tier_id,
                 "initial_quote": (
                     calculate_party_quote(selected_tier, selected_addons)
@@ -343,3 +367,227 @@ class PartyBuildSuccessView(DetailView):
         ):
             raise Http404("This order summary is not available to this account or session.")
         return party_build
+
+
+class PartyReviewCodeView(LoginRequiredMixin, FormView):
+    """Verify a private code before opening a completed booking review."""
+
+    template_name = "party_builder/review_code.html"
+    form_class = ReviewCodeForm
+
+    def form_valid(self, form):
+        try:
+            booking = verify_review_code(
+                user=self.request.user,
+                submitted_code=form.cleaned_data["review_code"],
+            )
+        except ValidationError as error:
+            form.add_error("review_code", error.messages[0])
+            return self.form_invalid(form)
+        authorize_review_session(self.request, booking)
+        return redirect(
+            "party_builder:party_builder_review",
+            public_id=booking.public_id,
+        )
+
+
+class PartyReviewView(LoginRequiredMixin, TemplateView):
+    """Display feedback fields for the package and selected add-ons only."""
+
+    template_name = "party_builder/review.html"
+
+    def get_booking(self):
+        booking = get_reviewable_booking(
+            user=self.request.user,
+            public_id=self.kwargs["public_id"],
+        )
+        if not review_session_is_authorized(self.request, booking):
+            raise PermissionDenied("Verify the party code before opening the review form.")
+        return booking
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        booking = kwargs.get("booking") or self.get_booking()
+        addon_items = list(booking.addon_items.all())
+        review_stats = review_score_updates(
+            package_id=booking.package_id,
+            addon_ids=[item.addon_id for item in addon_items],
+        )
+        for item in addon_items:
+            item.rating_summary = review_stats["addons"].get(str(item.addon_id), {})
+        context.update(
+            {
+                "booking": booking,
+                "review_form": kwargs.get("review_form")
+                or PartyReviewForm(booking=booking),
+                "review_stats": review_stats,
+            }
+        )
+        return context
+
+
+def _review_template_context(booking, form):
+    """Build the same rating summaries for valid and invalid form renders."""
+
+    addon_items = list(booking.addon_items.all())
+    review_stats = review_score_updates(
+        package_id=booking.package_id,
+        addon_ids=[item.addon_id for item in addon_items],
+    )
+    for item in addon_items:
+        item.rating_summary = review_stats["addons"].get(str(item.addon_id), {})
+    return {
+        "booking": booking,
+        "review_form": form,
+        "review_stats": review_stats,
+    }
+
+
+def _json_form_errors(form):
+    return {
+        field: [error["message"] for error in errors.get_json_data()]
+        for field, errors in form.errors.items()
+    }
+
+
+class PartyReviewSubmitView(LoginRequiredMixin, View):
+    """Save review feedback through AJAX or a normal accessible POST fallback."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        try:
+            booking = get_reviewable_booking(
+                user=request.user,
+                public_id=kwargs["public_id"],
+            )
+        except PermissionDenied:
+            if is_ajax:
+                return JsonResponse(
+                    {"ok": False, "message": "This review is not available to your account."},
+                    status=403,
+                )
+            raise
+        if not review_session_is_authorized(request, booking):
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse(
+                    {"ok": False, "message": "Verify the party code before submitting feedback."},
+                    status=403,
+                )
+            raise PermissionDenied("Verify the party code before submitting feedback.")
+
+        form = PartyReviewForm(request.POST, booking=booking)
+        if not form.is_valid():
+            if is_ajax:
+                return JsonResponse(
+                    {
+                        "ok": False,
+                        "message": "Please correct the highlighted review fields.",
+                        "errors": _json_form_errors(form),
+                    },
+                    status=400,
+                )
+            return render(
+                request,
+                "party_builder/review.html",
+                _review_template_context(booking, form),
+            )
+
+        try:
+            review, created, stats, outcome = save_party_review(
+                booking=booking,
+                reviewer=request.user,
+                package_score=form.cleaned_data["package_score"],
+                comment=form.cleaned_data.get("comment", ""),
+                addon_scores=form.addon_scores(),
+                visibility=form.cleaned_data["visibility"],
+                testimonial_name_display=form.cleaned_data[
+                    "testimonial_name_display"
+                ],
+            )
+        except ValidationError as error:
+            if hasattr(error, "message_dict"):
+                for field_name, field_messages in error.message_dict.items():
+                    target = field_name if field_name in form.fields else None
+                    for field_message in field_messages:
+                        form.add_error(target, field_message)
+            else:
+                for field_message in error.messages:
+                    form.add_error(None, field_message)
+            message = "Please correct the highlighted review fields."
+            if is_ajax:
+                return JsonResponse(
+                    {
+                        "ok": False,
+                        "message": message,
+                        "errors": _json_form_errors(form),
+                    },
+                    status=400,
+                )
+            return render(
+                request,
+                "party_builder/review.html",
+                _review_template_context(booking, form),
+            )
+
+        message = outcome["message"]
+        if is_ajax:
+            return JsonResponse(
+                {
+                    "ok": True,
+                    "message": message,
+                    "visibility": outcome["visibility"],
+                    "is_public_testimonial": outcome["is_public_testimonial"],
+                    "stats": stats,
+                }
+            )
+        messages.success(request, message)
+        return redirect(
+            "party_builder:party_builder_review",
+            public_id=booking.public_id,
+        )
+
+
+class PartyRecommendationView(View):
+    """Return minimal public recommendation data for the live party builder."""
+
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        package_value = request.GET.get("package", "")
+        requested_package = (
+            PartyPackage.objects.filter(pk=int(package_value), is_active=True).first()
+            if package_value.isdigit()
+            else None
+        )
+        package = (
+            requested_package
+            or PartyPackage.objects.filter(is_active=True, is_default=True).first()
+            or PartyPackage.objects.filter(is_active=True).first()
+        )
+        if package is None:
+            return JsonResponse({"recommendations": []})
+        raw_addon_values = []
+        for value in request.GET.getlist("addons"):
+            raw_addon_values.extend(part.strip() for part in value.split(","))
+        selected_ids = [int(value) for value in raw_addon_values if value.isdigit()]
+        recommendations = recommend_addons(
+            selected_ids=selected_ids,
+            package=package,
+        )
+        return JsonResponse(
+            {
+                "recommendations": [
+                    {
+                        "id": row["addon"].pk,
+                        "name": row["addon"].name,
+                        "short_description": row["addon"].short_description,
+                        "price": str(row["addon"].price),
+                        "reason": row["reason"],
+                        "pair_count": row["pair_count"],
+                    }
+                    for row in recommendations
+                ]
+            }
+        )

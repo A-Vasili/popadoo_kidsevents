@@ -68,7 +68,7 @@ class CustomerDashboardView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["bookings"] = (
             PartyBuild.objects.filter(customer=self.request.user)
-            .select_related("package", "guest_tier")
+            .select_related("package", "guest_tier", "review")
             .prefetch_related("addon_items__addon")[:20]
         )
         return context

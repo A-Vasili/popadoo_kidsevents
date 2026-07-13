@@ -35,6 +35,7 @@ def status_css(value: str) -> str:
         "accepted": "success",
         "assigned": "success",
         "confirmed": "success",
+        "completed": "success",
         "inactive": "muted",
         "cancelled": "danger",
         "declined": "danger",

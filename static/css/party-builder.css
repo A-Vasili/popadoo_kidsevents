@@ -741,3 +741,18 @@ html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
     }
 
 }
+
+/* Data-driven labels and recommendation cards stay compact beside booking choices. */
+.addon-badge-group { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; }
+.addon-badge-popular { background: #ffe4a8; color: #5b3a00; }
+.addon-rating-summary { display: inline-flex; align-items: center; gap: .3rem; color: var(--color-muted); font-size: .92rem; }
+.addon-rating-summary span { color: #b37800; }
+.recommendation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.recommendation-card { display: grid; align-content: start; gap: .6rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
+.recommendation-card h3, .recommendation-card p { margin: 0; }
+.recommendation-reason { color: var(--color-muted); font-size: .92rem; }
+@media (max-width: 52rem) { .recommendation-grid { grid-template-columns: 1fr; } }
+
+.review-code-panel { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
+.review-code-panel p { margin: .35rem 0 0; }
+.review-code-panel strong { letter-spacing: .08em; }

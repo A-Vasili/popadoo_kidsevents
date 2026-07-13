@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 
 from accounts.models import CustomerProfile, WorkerProfile, phone_validator
 from party_builder.models import (
@@ -413,9 +414,12 @@ class BookingStatusForm(AccessibleForm):
         allowed = {
             PartyBuild.Status.SUBMITTED: {PartyBuild.Status.CONTACTED, PartyBuild.Status.CANCELLED},
             PartyBuild.Status.CONTACTED: {PartyBuild.Status.CONFIRMED, PartyBuild.Status.CANCELLED},
-            PartyBuild.Status.CONFIRMED: {PartyBuild.Status.CANCELLED},
+            PartyBuild.Status.CONFIRMED: {PartyBuild.Status.COMPLETED, PartyBuild.Status.CANCELLED},
+            PartyBuild.Status.COMPLETED: set(),
             PartyBuild.Status.CANCELLED: set(),
         }[booking.status]
+        if booking.event_date > timezone.localdate():
+            allowed.discard(PartyBuild.Status.COMPLETED)
         self.fields["status"].choices = [
             choice for choice in PartyBuild.Status.choices if choice[0] in allowed
         ]
