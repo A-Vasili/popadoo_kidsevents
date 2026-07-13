@@ -756,3 +756,50 @@ html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
 .review-code-panel { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
 .review-code-panel p { margin: .35rem 0 0; }
 .review-code-panel strong { letter-spacing: .08em; }
+
+/* Multiple starting packages use the same accessible card pattern as tiers. */
+.package-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+    gap: 1rem;
+}
+
+.package-option { position: relative; }
+.package-radio { position: absolute; inline-size: 1px; block-size: 1px; opacity: 0; }
+.package-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    overflow: hidden;
+    border: 2px solid var(--color-border, #dfd4d9);
+    border-radius: 1rem;
+    background: var(--color-surface, #fff);
+    cursor: pointer;
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.package-radio:focus-visible + .package-card { outline: 3px solid var(--color-focus, #3157d5); outline-offset: 3px; }
+.package-radio:checked + .package-card { border-color: var(--color-primary, #743d75); box-shadow: 0 0 0 .2rem rgba(116, 61, 117, .16); }
+.package-card-image, .package-card-placeholder { width: 100%; height: 10rem; object-fit: cover; display: grid; place-items: center; font-size: 3rem; background: var(--color-surface-soft, #f9edf4); }
+.package-card-content { display: flex; flex-direction: column; gap: .55rem; padding: 1rem; flex: 1; }
+.package-card-heading { display: flex; justify-content: space-between; gap: .6rem; align-items: start; font-size: 1.1rem; }
+.package-card-includes, .package-card-no-rating, .addon-no-rating, .tier-card-package { color: var(--color-text-muted, #716671); font-size: .88rem; }
+.package-card-price { margin-top: auto; font-size: 1.15rem; font-weight: 800; }
+.package-card-action { font-weight: 800; color: var(--color-primary, #743d75); }
+
+.builder-addon-filters { display: grid; gap: .75rem; margin-bottom: 1rem; }
+.builder-addon-filters > label { font-weight: 800; }
+.builder-addon-filter-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+.builder-addon-filter { border: 1px solid var(--color-border, #d8cbd2); border-radius: 999px; background: var(--color-surface, #fff); color: inherit; padding: .5rem .8rem; font-weight: 700; cursor: pointer; }
+.builder-addon-filter.active { background: var(--color-primary, #743d75); color: #fff; border-color: transparent; }
+.builder-addon-filter:focus-visible { outline: 3px solid var(--color-focus, #3157d5); outline-offset: 2px; }
+.builder-filter-status { margin: 0; color: var(--color-text-muted, #716671); font-size: .9rem; }
+.builder-filter-empty { padding: 1rem; border: 1px dashed var(--color-border, #d8cbd2); border-radius: .8rem; text-align: center; }
+.addon-category-label { font-size: .78rem; font-weight: 800; }
+.summary-package { margin-top: -.4rem; }
+.checkout-secondary-link { display: block; margin-top: .8rem; text-align: center; }
+
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    .package-card { transition: none; }
+}

@@ -4,7 +4,7 @@
 <section class="management-page-section">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Package details</p><h2>{{ package.name }}</h2><p>{{ package.short_description }}</p></div>
-        <div class="management-quick-actions"><a class="management-button" href="{% url 'management:management_package_update' package.pk %}">Edit package</a><a class="management-button secondary" href="{% url 'management:management_package_tier_create' package.pk %}">Add tier</a><a class="management-button danger" href="{% url 'management:management_package_remove' package.pk %}">Delete/Archive</a></div>
+        <div class="management-quick-actions">{% if package.is_active and package.category.is_active %}{% if not package.category.parent or package.category.parent.is_active %}<a class="management-button secondary" href="{% url 'party_ideas:package_detail' package.slug %}">View on website</a>{% endif %}{% endif %}<a class="management-button" href="{% url 'management:management_package_update' package.pk %}">Edit package</a><a class="management-button secondary" href="{% url 'management:management_package_tier_create' package.pk %}">Add tier</a><a class="management-button danger" href="{% url 'management:management_package_remove' package.pk %}">Delete/Archive</a></div>
     </div>
     <div class="management-detail-grid">
         <section class="management-panel">

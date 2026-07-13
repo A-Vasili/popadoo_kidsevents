@@ -31,12 +31,14 @@ class PublicPageTests(TestCase):
                 html = response.content.decode("utf-8")
                 self.assertEqual(html.count('<main id="main-content">'), 1)
 
-    def test_removed_pages_redirect_to_combined_builder(self):
-        target = reverse("party_builder:party_builder_package_options")
-        for route_name in (
-            "core:core_packages_redirect",
-            "core:core_contact_redirect",
-        ):
+    def test_legacy_public_routes_keep_useful_destinations(self):
+        destinations = {
+            "core:core_packages_redirect": reverse("party_ideas:list"),
+            "core:core_contact_redirect": reverse(
+                "party_builder:party_builder_package_options"
+            ),
+        }
+        for route_name, target in destinations.items():
             with self.subTest(route=route_name):
                 response = self.client.get(reverse(route_name))
                 self.assertRedirects(
@@ -50,15 +52,27 @@ class PublicPageTests(TestCase):
 class NavigationAndSecurityTests(TestCase):
     """Check the shared navigation order and browser security boundary."""
 
-    def test_header_uses_only_book_now_for_party_builder(self):
+    def test_header_has_one_builder_cta_and_a_separate_party_ideas_link(self):
         response = self.client.get(reverse("core:core_home"))
         html = response.content.decode("utf-8")
         header = html.split("<header", 1)[1].split("</header>", 1)[0]
-        self.assertNotIn("Build Your Party", header)
+        self.assertIn("Make Your Own Party", header)
+        self.assertIn(reverse("party_ideas:list"), header)
         self.assertEqual(
             header.count(reverse("party_builder:party_builder_package_options")),
             1,
         )
+
+    def test_homepage_offers_discovery_and_direct_builder_paths(self):
+        response = self.client.get(reverse("core:core_home"))
+        html = response.content.decode("utf-8")
+        self.assertIn("Explore Party Ideas", html)
+        self.assertIn("Start building freely", html)
+        self.assertGreaterEqual(
+            html.count(reverse("party_builder:party_builder_package_options")),
+            2,
+        )
+        self.assertGreaterEqual(html.count(reverse("party_ideas:list")), 2)
 
     def test_header_has_separate_language_and_account_stripe(self):
         response = self.client.get(reverse("core:core_home"))

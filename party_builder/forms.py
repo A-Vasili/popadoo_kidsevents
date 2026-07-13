@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import re
 from datetime import date
+from decimal import Decimal
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.utils import timezone
 
-from .models import AddonExperience, GuestPriceTier, PartyPackage, PartyReview
+from .models import AddonExperience, Category, GuestPriceTier, PartyPackage, PartyReview
 from .services import SafePaymentResult
 
 
@@ -29,9 +31,126 @@ def _apply_accessible_attributes(form: forms.BaseForm) -> None:
                 form.fields[field_name].widget.attrs["aria-invalid"] = "true"
 
 
-class PackageOptionsForm(forms.Form):
-    """Step one: validate the guest bracket and optional experiences."""
+class PartyIdeasFilterForm(forms.Form):
+    """Validate public catalogue search and filter values from the URL."""
 
+    TYPE_CHOICES = (
+        ("all", "All ideas"),
+        ("package", "Starting packages"),
+        ("experience", "Experiences"),
+    )
+    DURATION_CHOICES = (
+        ("", "Any duration"),
+        ("short", "Up to 30 minutes"),
+        ("medium", "31–60 minutes"),
+        ("long", "More than 60 minutes"),
+    )
+    RATING_CHOICES = (
+        ("", "Any rating"),
+        ("3", "3+ stars"),
+        ("4", "4+ stars"),
+        ("4.5", "4.5+ stars"),
+    )
+    SORT_CHOICES = (
+        ("recommended", "Recommended"),
+        ("name", "Name A–Z"),
+        ("price_asc", "Price: low to high"),
+        ("price_desc", "Price: high to low"),
+        ("rating", "Highest rated"),
+        ("reviews", "Most reviewed"),
+    )
+
+    q = forms.CharField(
+        required=False,
+        max_length=120,
+        label="Search party ideas",
+        widget=forms.SearchInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Search by name, activity or category",
+                "data-i18n-placeholder": "partyIdeas.search",
+                "autocomplete": "off",
+            }
+        ),
+    )
+    type = forms.ChoiceField(
+        required=False, choices=TYPE_CHOICES, initial="all", label="Idea type"
+    )
+    min_price = forms.DecimalField(
+        required=False,
+        min_value=Decimal("0.00"),
+        max_digits=8,
+        decimal_places=2,
+        label="Minimum price",
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+    )
+    max_price = forms.DecimalField(
+        required=False,
+        min_value=Decimal("0.00"),
+        max_digits=8,
+        decimal_places=2,
+        label="Maximum price",
+        widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+    )
+    category = forms.ModelChoiceField(
+        required=False,
+        queryset=Category.objects.none(),
+        to_field_name="slug",
+        empty_label="All categories",
+        label="Category",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    duration = forms.ChoiceField(
+        required=False,
+        choices=DURATION_CHOICES,
+        label="Duration",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    min_rating = forms.ChoiceField(
+        required=False,
+        choices=RATING_CHOICES,
+        label="Minimum rating",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    featured = forms.BooleanField(
+        required=False, label="Featured experiences only"
+    )
+    sort = forms.ChoiceField(
+        required=False,
+        choices=SORT_CHOICES,
+        initial="recommended",
+        label="Sort results",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Category.objects.filter(
+            is_active=True
+        ).filter(Q(parent__isnull=True) | Q(parent__is_active=True))
+        _apply_accessible_attributes(self)
+
+    def clean_q(self) -> str:
+        return self.cleaned_data["q"].strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        minimum = cleaned.get("min_price")
+        maximum = cleaned.get("max_price")
+        if minimum is not None and maximum is not None and minimum > maximum:
+            self.add_error("max_price", "Maximum price must be at least the minimum price.")
+        return cleaned
+
+
+class PackageOptionsForm(forms.Form):
+    """Validate the starting package, guest bracket and optional experiences."""
+
+    package = forms.ModelChoiceField(
+        queryset=PartyPackage.objects.none(),
+        empty_label=None,
+        widget=forms.RadioSelect,
+        label="Starting package",
+    )
     guest_tier = forms.ModelChoiceField(
         queryset=GuestPriceTier.objects.none(),
         empty_label=None,
@@ -45,23 +164,51 @@ class PackageOptionsForm(forms.Form):
         label="Optional experiences",
     )
 
-    def __init__(self, *args, package: PartyPackage, **kwargs):
-        self.package = package
+    def __init__(self, *args, package: PartyPackage | None = None, **kwargs):
+        self.initial_package = package
+        submitted_data = args[0] if args else kwargs.get("data")
+        if submitted_data is not None and package and "package" not in submitted_data:
+            # Existing clients from the original one-package builder did not
+            # submit this field. Treat that request as the package shown to the
+            # customer, while new pages always send an explicit choice.
+            submitted = submitted_data.copy()
+            submitted["package"] = str(package.pk)
+            if args:
+                args = (submitted, *args[1:])
+            else:
+                kwargs["data"] = submitted
         super().__init__(*args, **kwargs)
-        self.fields["guest_tier"].queryset = package.guest_price_tiers.filter(
-            is_active=True
-        ).order_by("display_order", "min_guests")
-        self.fields["addons"].queryset = AddonExperience.objects.filter(
-            is_active=True
+        self.fields["package"].queryset = PartyPackage.objects.filter(
+            is_active=True, category__is_active=True
+        ).filter(
+            Q(category__parent__isnull=True) | Q(category__parent__is_active=True)
         ).order_by("display_order", "name")
+        self.fields["guest_tier"].queryset = GuestPriceTier.objects.filter(
+            is_active=True, package__is_active=True
+        ).select_related("package").order_by(
+            "package__display_order", "package__name", "display_order", "min_guests"
+        )
+        self.fields["addons"].queryset = AddonExperience.objects.filter(
+            is_active=True, category__is_active=True
+        ).filter(
+            Q(category__parent__isnull=True) | Q(category__parent__is_active=True)
+        ).select_related("category", "category__parent").order_by(
+            "display_order", "name"
+        )
+        if package and not self.is_bound:
+            self.initial.setdefault("package", package.pk)
         _apply_accessible_attributes(self)
 
-    # This validation step checks and prepares the guest tier value before it is used.
-    def clean_guest_tier(self) -> GuestPriceTier:
-        tier = self.cleaned_data["guest_tier"]
-        if tier.package_id != self.package.pk or not tier.is_active:
-            raise forms.ValidationError("Choose an available guest option.")
-        return tier
+    def clean(self):
+        cleaned = super().clean()
+        package = cleaned.get("package")
+        tier = cleaned.get("guest_tier")
+        if package and tier and tier.package_id != package.pk:
+            self.add_error(
+                "guest_tier",
+                "Choose a group-size option that belongs to the selected package.",
+            )
+        return cleaned
 
 
 class PartyDetailsForm(forms.Form):

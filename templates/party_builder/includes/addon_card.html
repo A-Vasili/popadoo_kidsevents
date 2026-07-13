@@ -1,4 +1,9 @@
-<article class="addon-option{% if addon.is_featured %} addon-option-featured{% endif %}">
+<article
+    class="addon-option{% if addon.is_featured %} addon-option-featured{% endif %}"
+    data-addon-option
+    data-addon-search="{{ addon.name|lower }} {{ addon.short_description|lower }} {{ addon.category.name|lower }} {% if addon.category.parent %}{{ addon.category.parent.name|lower }}{% endif %}"
+    data-addon-category="{{ addon.category.slug }}"
+>
     <input
         class="addon-checkbox"
         type="checkbox"
@@ -11,35 +16,24 @@
         {% if selected %}checked{% endif %}
         aria-describedby="addon-{{ addon.pk }}-description addon-{{ addon.pk }}-price"
     >
-
     <label class="addon-card" for="addon-{{ addon.pk }}">
         <span class="addon-card-topline">
             <span class="addon-icon" aria-hidden="true">{{ addon.icon }}</span>
             <span class="addon-badge-group">
+                <span class="addon-category-label">{{ addon.category.name }}</span>
                 {% if addon.is_featured %}<span class="addon-badge">Featured</span>{% endif %}
                 {% if analytics.is_most_popular %}<span class="addon-badge addon-badge-popular">Most popular</span>{% endif %}
             </span>
         </span>
-
         <span class="addon-name">{{ addon.name }}</span>
         <span class="addon-description" id="addon-{{ addon.pk }}-description">{{ addon.short_description }}</span>
-
         {% if analytics.rating_count %}
-            <span class="addon-rating-summary" aria-label="Average rating {{ analytics.average_rating|floatformat:1 }} out of 5 from {{ analytics.rating_count }} reviews">
-                <span aria-hidden="true">★</span>
-                {{ analytics.average_rating|floatformat:1 }} ({{ analytics.rating_count }})
-            </span>
-        {% endif %}
-
+            <span class="addon-rating-summary" aria-label="Average rating {{ analytics.average_rating|floatformat:1 }} out of 5 from {{ analytics.rating_count }} verified parties"><span aria-hidden="true">★</span> {{ analytics.average_rating|floatformat:1 }} ({{ analytics.rating_count }})</span>
+        {% else %}<span class="addon-no-rating">No ratings yet</span>{% endif %}
         <span class="addon-meta">
             <span class="addon-price" id="addon-{{ addon.pk }}-price">+€{{ addon.price|floatformat:2 }}</span>
-            {% if addon.duration_minutes %}
-                <span class="addon-duration">+{{ addon.duration_minutes }} minutes</span>
-            {% else %}
-                <span class="addon-duration">Runs within party time</span>
-            {% endif %}
+            {% if addon.duration_minutes %}<span class="addon-duration">+{{ addon.duration_minutes }} minutes</span>{% else %}<span class="addon-duration">Runs within party time</span>{% endif %}
         </span>
-
         <span class="addon-action" data-addon-action>{% if selected %}Added — remove{% else %}Add experience{% endif %}</span>
     </label>
 </article>

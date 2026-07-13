@@ -1,7 +1,4 @@
-
-{# This template displays the tier card page or reusable section for the includes area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
-<article class="tier-option">
+<article class="tier-option" data-tier-option data-package-id="{{ tier.package_id }}">
     <input
         class="tier-radio"
         type="radio"
@@ -9,26 +6,24 @@
         value="{{ tier.pk }}"
         id="tier-{{ tier.pk }}"
         data-tier-radio
+        data-package-id="{{ tier.package_id }}"
         data-tier-label="{{ tier.label }}"
         data-tier-price="{{ tier.total_price }}"
         data-tier-min="{{ tier.min_guests }}"
         data-tier-max="{{ tier.max_guests }}"
+        data-tier-default="{% if tier.is_default %}true{% else %}false{% endif %}"
         {% if tier.pk|stringformat:'s' == selected_tier_id %}checked{% endif %}
-        aria-describedby="tier-{{ tier.pk }}-price tier-{{ tier.pk }}-rate"
+        aria-describedby="tier-{{ tier.pk }}-package tier-{{ tier.pk }}-price tier-{{ tier.pk }}-rate"
     >
     <label class="tier-card" for="tier-{{ tier.pk }}">
+        <span class="visually-hidden" id="tier-{{ tier.pk }}-package">For {{ tier.package.name }}. </span>
         <span class="tier-card-heading">
             <strong>{{ tier.label }}</strong>
-            {% if tier.is_default %}<span class="tier-badge">Default</span>{% endif %}
+            {% if tier.is_default %}<span class="tier-badge">Recommended</span>{% endif %}
         </span>
-        <span class="tier-card-price" id="tier-{{ tier.pk }}-price">
-            €{{ tier.total_price|floatformat:2 }} total
-        </span>
-        <span class="tier-card-rate" id="tier-{{ tier.pk }}-rate">
-            €{{ tier.price_per_child_at_capacity|floatformat:2 }} per child at full capacity
-        </span>
-        <span class="tier-card-action" data-tier-action>
-            {% if tier.pk|stringformat:'s' == selected_tier_id %}Selected{% else %}Choose this group size{% endif %}
-        </span>
+        <span class="tier-card-package">{{ tier.package.name }}</span>
+        <span class="tier-card-price" id="tier-{{ tier.pk }}-price">€{{ tier.total_price|floatformat:2 }} total</span>
+        <span class="tier-card-rate" id="tier-{{ tier.pk }}-rate">€{{ tier.price_per_child_at_capacity|floatformat:2 }} per child at full capacity</span>
+        <span class="tier-card-action" data-tier-action>{% if tier.pk|stringformat:'s' == selected_tier_id %}Selected{% else %}Choose this group size{% endif %}</span>
     </label>
 </article>

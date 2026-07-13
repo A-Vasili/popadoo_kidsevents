@@ -24,6 +24,7 @@ urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("operations/", include("operations.urls")),
     path("management/", include(("operations.management_urls", "management"), namespace="management")),
+    path("party-ideas/", include(("party_builder.party_ideas_urls", "party_ideas"), namespace="party_ideas")),
     path("party-builder/", include("party_builder.urls")),
 ]
 

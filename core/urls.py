@@ -15,7 +15,7 @@ urlpatterns = [
     path(
         "packages/",
         RedirectView.as_view(
-            pattern_name="party_builder:party_builder_package_options",
+            pattern_name="party_ideas:list",
             permanent=True,
         ),
         name="core_packages_redirect",

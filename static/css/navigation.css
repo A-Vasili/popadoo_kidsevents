@@ -114,7 +114,7 @@
 
 }
 
-/* Keep guest account links grouped and keep the signed-in bubble after Book Now. */
+/* Keep guest account links grouped and keep the signed-in bubble after the party-builder action. */
 .account-actions {
     display: inline-flex;
     align-items: center;

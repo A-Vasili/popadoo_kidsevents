@@ -92,6 +92,36 @@ class ManagementPanelTests(TestCase):
         self.client.force_login(self.owner)
         self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 200)
 
+    def test_active_catalogue_details_link_to_public_party_ideas(self):
+        package_response = self.client.get(
+            reverse("management:management_package_detail", args=[self.package.pk])
+        )
+        category_response = self.client.get(
+            reverse(
+                "management:management_category_detail",
+                args=[self.package.category_id],
+            )
+        )
+        addon = AddonExperience.objects.filter(is_active=True).first()
+        addon_response = self.client.get(
+            reverse("management:management_addon_detail", args=[addon.pk])
+        )
+
+        self.assertContains(
+            package_response,
+            reverse("party_ideas:package_detail", args=[self.package.slug]),
+        )
+        self.assertContains(
+            category_response,
+            reverse(
+                "party_ideas:category_detail", args=[self.package.category.slug]
+            ),
+        )
+        self.assertContains(
+            addon_response,
+            reverse("party_ideas:addon_detail", args=[addon.slug]),
+        )
+
     def test_owner_can_create_category_and_subcategory(self):
         response = self.client.post(
             reverse("management:management_category_create"),

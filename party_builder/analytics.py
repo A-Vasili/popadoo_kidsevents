@@ -12,7 +12,7 @@ from decimal import Decimal
 from itertools import combinations
 from typing import Iterable
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, F, Q
 from django.utils import timezone
 
 from .models import (
@@ -25,6 +25,13 @@ from .models import (
 
 REPORTING_PERIODS = {"30": 30, "90": 90, "365": 365, "all": None}
 DEFAULT_REPORTING_PERIOD = "365"
+
+# An experience is publicly available only when both its own category and any
+# parent category are active. This shared filter prevents archived catalogue
+# sections from returning through recommendations or popularity badges.
+PUBLIC_ADDON_CATEGORY_FILTER = Q(category__is_active=True) & (
+    Q(category__parent__isnull=True) | Q(category__parent__is_active=True)
+)
 
 
 def resolve_period(value: str | None) -> tuple[str, int | None]:
@@ -54,9 +61,17 @@ def addon_popularity(*, days: int | None = 365) -> dict:
     """
 
     build_filter = _completed_filter("build_items__build__", days)
-    rating_filter = _completed_filter("build_items__ratings__review__booking__", days)
+    rating_filter = _completed_filter(
+        "build_items__ratings__review__booking__", days
+    ) & Q(
+        build_items__build_id=F("build_items__ratings__review__booking_id"),
+        build_items__ratings__review__reviewer_id=F(
+            "build_items__ratings__review__booking__customer_id"
+        ),
+    )
     addons = list(
         AddonExperience.objects.filter(is_active=True)
+        .filter(PUBLIC_ADDON_CATEGORY_FILTER)
         .select_related("category")
         .annotate(
             completed_booking_count=Count(
@@ -126,6 +141,10 @@ def _completed_addon_sets(*, days: int | None, package_id: int | None = None):
     queryset = PartyBuildAddon.objects.filter(
         build__status=PartyBuild.Status.COMPLETED,
         addon__is_active=True,
+        addon__category__is_active=True,
+    ).filter(
+        Q(addon__category__parent__isnull=True)
+        | Q(addon__category__parent__is_active=True)
     )
     start = _period_start(days)
     if start is not None:
@@ -164,7 +183,7 @@ def common_addon_pairs(
         for addon in AddonExperience.objects.filter(
             is_active=True,
             pk__in={item for pair in pair_counts for item in pair},
-        ).select_related("category")
+        ).filter(PUBLIC_ADDON_CATEGORY_FILTER).select_related("category")
     }
     popularity = popularity_by_id or addon_popularity(days=days)["by_id"]
     rows = []
@@ -214,6 +233,7 @@ def _fallback_recommendations(
     selected_categories = {addon.category_id for addon in selected}
     candidates = list(
         AddonExperience.objects.filter(is_active=True)
+        .filter(PUBLIC_ADDON_CATEGORY_FILTER)
         .exclude(pk__in=excluded_ids)
         .select_related("category")
     )
@@ -250,6 +270,7 @@ def recommend_addons(
 
     selected = list(
         AddonExperience.objects.filter(pk__in=set(selected_ids), is_active=True)
+        .filter(PUBLIC_ADDON_CATEGORY_FILTER)
         .select_related("category")
     )
     selected_ids_set = {addon.pk for addon in selected}
@@ -271,7 +292,7 @@ def recommend_addons(
         candidates = AddonExperience.objects.filter(
             is_active=True,
             pk__in=candidate_ids,
-        ).select_related("category")
+        ).filter(PUBLIC_ADDON_CATEGORY_FILTER).select_related("category")
         recommendations = []
         for candidate in candidates:
             strongest = None
@@ -326,7 +347,7 @@ def recommend_addons(
         AddonExperience.objects.filter(
             is_active=True,
             pk__in=package_counts,
-        ).select_related("category")
+        ).filter(PUBLIC_ADDON_CATEGORY_FILTER).select_related("category")
     )
     candidates.sort(
         key=lambda addon: (

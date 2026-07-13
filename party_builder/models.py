@@ -213,7 +213,7 @@ class PartyPackage(models.Model):
         ]
 
     def get_absolute_url(self) -> str:
-        return reverse("party_builder:party_builder_package_options")
+        return reverse("party_ideas:package_detail", kwargs={"slug": self.slug})
 
 
 class GuestPriceTier(models.Model):
@@ -365,6 +365,9 @@ class AddonExperience(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def get_absolute_url(self) -> str:
+        return reverse("party_ideas:addon_detail", kwargs={"slug": self.slug})
 
 
 REVIEW_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"

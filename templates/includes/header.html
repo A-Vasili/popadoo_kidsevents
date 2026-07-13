@@ -3,7 +3,7 @@
 {% comment %}
 The shared header has two clear levels:
 1. A slim utility stripe for language and account actions.
-2. The main navigation for page links, Book Now, and the theme switch.
+2. The main navigation for public pages, Party Ideas, the builder, and the theme switch.
 Keeping these areas separate makes the header easier to understand and update.
 {% endcomment %}
 <header class="site-header">
@@ -26,6 +26,7 @@ Keeping these areas separate makes the header easier to understand and update.
                 <div class="site-navigation-menu" id="primary-navigation">
                     <ul class="site-navigation-links">
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_home' %} active{% endif %}" href="{% url 'core:core_home' %}" {% if request.resolver_match.url_name == 'core_home' %}aria-current="page"{% endif %} data-i18n="nav.home">Home</a></li>
+                        <li><a class="site-navigation-link{% if request.resolver_match.namespace == 'party_ideas' %} active{% endif %}" href="{% url 'party_ideas:list' %}" {% if request.resolver_match.namespace == 'party_ideas' %}aria-current="page"{% endif %} data-i18n="nav.partyIdeas">Party Ideas</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_gallery' %} active{% endif %}" href="{% url 'core:core_gallery' %}" {% if request.resolver_match.url_name == 'core_gallery' %}aria-current="page"{% endif %} data-i18n="nav.gallery">Gallery</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_about' %} active{% endif %}" href="{% url 'core:core_about' %}" {% if request.resolver_match.url_name == 'core_about' %}aria-current="page"{% endif %} data-i18n="nav.about">About Us</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_testimonials' %} active{% endif %}" href="{% url 'core:core_testimonials' %}" {% if request.resolver_match.url_name == 'core_testimonials' %}aria-current="page"{% endif %} data-i18n="nav.testimonials">Testimonials</a></li>
@@ -39,11 +40,14 @@ Keeping these areas separate makes the header easier to understand and update.
                     </ul>
 
                     <div class="site-controls">
-                        {% comment %}
-                        Book Now remains the only header link to the party builder.
-                        The theme switch stays beside it as a primary site control.
-                        {% endcomment %}
-                        <a class="book-now-button{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}" href="{% url 'party_builder:party_builder_package_options' %}" data-i18n="nav.bookNow">Book Now</a>
+                        <a
+                            class="book-now-button{% if request.resolver_match.app_name == 'party_builder' %} active{% endif %}"
+                            href="{% url 'party_builder:party_builder_package_options' %}"
+                            {% if request.resolver_match.app_name == 'party_builder' %}aria-current="page"{% endif %}
+                            data-i18n="nav.bookNow"
+                        >
+                            Make Your Own Party
+                        </a>
 
                         <button class="theme-toggle" id="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="Switch to dark mode">
                             <span class="theme-toggle-track" aria-hidden="true">

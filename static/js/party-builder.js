@@ -1,16 +1,8 @@
 "use strict";
 
 /*
- * This script improves the multi-step party builder with live prices, keyboard support, safe formatting, and submit protection.
- * These comments explain the browser-side steps without changing the JavaScript behaviour.
- */
-
-/*
- * Multi-step Popadoo checkout enhancements.
- *
- * All essential validation remains server-side through Django forms. This file
- * adds live cart pricing, keyboard navigation, card-number formatting, and
- * double-submit protection without making JavaScript mandatory.
+ * The server remains responsible for validation and pricing. This file only
+ * makes the builder faster to explore by updating visible choices and totals.
  */
 (() => {
     const currencyFormatter = new Intl.NumberFormat("en-IE", {
@@ -18,58 +10,72 @@
         currency: "EUR",
         minimumFractionDigits: 2,
     });
-
-    // This function converts a price stored in HTML into a safe number for the live total.
     const toNumber = (value) => Number.parseFloat(value || "0") || 0;
+    const translate = (key) => {
+        const language = document.documentElement.lang || "en";
+        return window.popadooTranslations?.[language]?.[key]
+            ?? window.popadooTranslations?.en?.[key]
+            ?? key;
+    };
 
     const optionsForm = document.querySelector("[data-party-options-form]");
     if (optionsForm) {
-        const tierRadios = Array.from(
-            optionsForm.querySelectorAll("[data-tier-radio]")
-        );
-        const addonCheckboxes = Array.from(
-            optionsForm.querySelectorAll("[data-addon-checkbox]")
-        );
-        const tierGrid = optionsForm.querySelector("[data-tier-grid]");
-        const addonGrid = optionsForm.querySelector("[data-addon-grid]");
+        const packageRadios = Array.from(optionsForm.querySelectorAll("[data-package-radio]"));
+        const tierRadios = Array.from(optionsForm.querySelectorAll("[data-tier-radio]"));
+        const tierOptions = Array.from(optionsForm.querySelectorAll("[data-tier-option]"));
+        const addonCheckboxes = Array.from(optionsForm.querySelectorAll("[data-addon-checkbox]"));
+        const addonOptions = Array.from(optionsForm.querySelectorAll("[data-addon-option]"));
+        const recommendationSection = document.querySelector("[data-recommendations]");
+        const recommendationList = recommendationSection?.querySelector("[data-recommendation-list]");
         const selectedTierLabel = document.querySelector("#selected-tier-label");
         const selectedTierPrice = document.querySelector("#selected-tier-price");
+        const selectedPackageName = document.querySelector("[data-selected-package-name]");
         const addonSummary = document.querySelector("#selected-addon-summary");
         const emptySummary = document.querySelector("#summary-empty");
         const totalOutput = document.querySelector("#party-total");
         const liveStatus = document.querySelector("#builder-live-status");
 
-        // This function refreshes choice labels so the page matches the latest user choice.
-        const updateChoiceLabels = () => {
-            tierRadios.forEach((radio) => {
-                const action = radio
-                    .closest(".tier-option")
-                    ?.querySelector("[data-tier-action]");
-                if (action) {
-                    action.textContent = radio.checked
-                        ? "Selected"
-                        : "Choose this group size";
-                }
-            });
+        const selectedPackage = () => packageRadios.find((radio) => radio.checked);
+        const selectedPackageId = () => selectedPackage()?.value || "";
+        const tiersForPackage = (packageId) => tierRadios.filter(
+            (radio) => radio.dataset.packageId === packageId
+        );
 
+        const updateChoiceLabels = () => {
+            packageRadios.forEach((radio) => {
+                const action = radio.closest(".package-option")?.querySelector("[data-package-action]");
+                if (action) action.textContent = radio.checked ? "Selected starting point" : "Choose this starting point";
+            });
+            tierRadios.forEach((radio) => {
+                const action = radio.closest(".tier-option")?.querySelector("[data-tier-action]");
+                if (action) action.textContent = radio.checked ? "Selected" : "Choose this group size";
+            });
             addonCheckboxes.forEach((checkbox) => {
-                const action = checkbox
-                    .closest(".addon-option")
-                    ?.querySelector("[data-addon-action]");
-                if (action) {
-                    action.textContent = checkbox.checked
-                        ? "Added — remove"
-                        : "Add experience";
-                }
+                const action = checkbox.closest(".addon-option")?.querySelector("[data-addon-action]");
+                if (action) action.textContent = checkbox.checked ? "Added — remove" : "Add experience";
             });
         };
 
-        // This function rebuilds the visible cart from the current data.
+        const showRelevantTiers = ({ chooseDefault = false } = {}) => {
+            const packageId = selectedPackageId();
+            const relevant = tiersForPackage(packageId);
+            tierOptions.forEach((option) => {
+                option.hidden = option.dataset.packageId !== packageId;
+            });
+            let selectedTier = relevant.find((radio) => radio.checked);
+            if (!selectedTier && relevant.length) {
+                selectedTier = relevant.find((radio) => radio.dataset.tierDefault === "true") || relevant[0];
+                if (chooseDefault || !tierRadios.some((radio) => radio.checked)) selectedTier.checked = true;
+            }
+            if (recommendationSection) recommendationSection.dataset.packageId = packageId;
+            const packageLabel = selectedPackage()?.closest(".package-option")?.querySelector(".package-card-heading strong")?.textContent;
+            if (selectedPackageName && packageLabel) selectedPackageName.textContent = packageLabel;
+        };
+
         const renderCart = ({ announce = false } = {}) => {
-            const selectedTier = tierRadios.find((radio) => radio.checked);
-            const selectedAddons = addonCheckboxes.filter(
-                (checkbox) => checkbox.checked
-            );
+            const packageId = selectedPackageId();
+            const selectedTier = tiersForPackage(packageId).find((radio) => radio.checked);
+            const selectedAddons = addonCheckboxes.filter((checkbox) => checkbox.checked);
             const tierPrice = toNumber(selectedTier?.dataset.tierPrice);
             const addonTotal = selectedAddons.reduce(
                 (total, checkbox) => total + toNumber(checkbox.dataset.addonPrice),
@@ -77,20 +83,9 @@
             );
             const total = tierPrice + addonTotal;
 
-            if (selectedTierLabel) {
-                selectedTierLabel.textContent =
-                    selectedTier?.dataset.tierLabel || "Select a group size";
-            }
-            if (selectedTierPrice) {
-                selectedTierPrice.textContent = selectedTier
-                    ? currencyFormatter.format(tierPrice)
-                    : "—";
-            }
-            if (totalOutput) {
-                totalOutput.textContent = selectedTier
-                    ? currencyFormatter.format(total)
-                    : "—";
-            }
+            if (selectedTierLabel) selectedTierLabel.textContent = selectedTier?.dataset.tierLabel || "Select a group size";
+            if (selectedTierPrice) selectedTierPrice.textContent = selectedTier ? currencyFormatter.format(tierPrice) : "—";
+            if (totalOutput) totalOutput.textContent = selectedTier ? currencyFormatter.format(total) : "—";
 
             if (addonSummary) {
                 addonSummary.replaceChildren();
@@ -100,67 +95,49 @@
                     const price = document.createElement("strong");
                     item.className = "summary-addon-item";
                     name.textContent = checkbox.dataset.addonName;
-                    price.textContent = currencyFormatter.format(
-                        toNumber(checkbox.dataset.addonPrice)
-                    );
+                    price.textContent = currencyFormatter.format(toNumber(checkbox.dataset.addonPrice));
                     item.append(name, price);
                     addonSummary.append(item);
                 });
             }
-
-            if (emptySummary) {
-                emptySummary.hidden = selectedAddons.length > 0;
-            }
-
+            if (emptySummary) emptySummary.hidden = selectedAddons.length > 0;
             updateChoiceLabels();
-
             if (announce && liveStatus) {
                 liveStatus.textContent = selectedTier
-                    ? `Cart updated. ${selectedAddons.length} optional experiences. Total ${currencyFormatter.format(total)}.`
-                    : "Choose a guest bracket to continue.";
+                    ? translate("builder.partyUpdated")
+                        .replace("{count}", String(selectedAddons.length))
+                        .replace("{total}", currencyFormatter.format(total))
+                    : translate("builder.chooseGroupToContinue");
             }
         };
 
-        // This function lets arrow, Home, and End keys move between related option controls.
         const addKeyboardNavigation = (container, controls) => {
             container?.addEventListener("keydown", (event) => {
-                const currentIndex = controls.indexOf(event.target);
-                if (currentIndex === -1) {
-                    return;
-                }
-
+                const visibleControls = controls.filter((control) => !control.closest("[hidden]"));
+                const currentIndex = visibleControls.indexOf(event.target);
+                if (currentIndex === -1) return;
                 const destinations = {
                     ArrowRight: currentIndex + 1,
                     ArrowDown: currentIndex + 1,
                     ArrowLeft: currentIndex - 1,
                     ArrowUp: currentIndex - 1,
                     Home: 0,
-                    End: controls.length - 1,
+                    End: visibleControls.length - 1,
                 };
-
-                if (!(event.key in destinations)) {
-                    return;
-                }
-
+                if (!(event.key in destinations)) return;
                 event.preventDefault();
-                const destination =
-                    (destinations[event.key] + controls.length) % controls.length;
-                controls[destination]?.focus();
+                const destination = (destinations[event.key] + visibleControls.length) % visibleControls.length;
+                visibleControls[destination]?.focus();
             });
         };
-
-        tierRadios.forEach((radio) => {
-            radio.addEventListener("change", () => renderCart({ announce: true }));
-        });
-        const recommendationSection = document.querySelector("[data-recommendations]");
-        const recommendationList = recommendationSection?.querySelector("[data-recommendation-list]");
 
         const renderRecommendations = (items) => {
             if (!recommendationList) return;
             recommendationList.replaceChildren();
             if (!items.length) {
                 const empty = document.createElement("p");
-                empty.textContent = "No additional suggestions are available yet.";
+                empty.dataset.i18n = "builder.noAdditionalSuggestions";
+                empty.textContent = translate("builder.noAdditionalSuggestions");
                 recommendationList.append(empty);
                 return;
             }
@@ -179,7 +156,8 @@
                 price.textContent = currencyFormatter.format(toNumber(item.price));
                 button.type = "button";
                 button.className = "button button-outline";
-                button.textContent = "Select this experience";
+                button.dataset.i18n = "builder.selectExperience";
+                button.textContent = translate("builder.selectExperience");
                 button.addEventListener("click", () => {
                     const checkbox = optionsForm.querySelector(`[data-addon-checkbox][value='${CSS.escape(String(item.id))}']`);
                     if (checkbox && !checkbox.checked) {
@@ -196,24 +174,69 @@
         const refreshRecommendations = async () => {
             if (!recommendationSection || !recommendationList) return;
             const url = new URL(recommendationSection.dataset.endpoint, window.location.origin);
-            url.searchParams.set("package", recommendationSection.dataset.packageId);
+            url.searchParams.set("package", selectedPackageId());
             addonCheckboxes.filter((item) => item.checked).forEach((item) => url.searchParams.append("addons", item.value));
             try {
                 const response = await fetch(url, { headers: { Accept: "application/json" } });
                 if (response.ok) renderRecommendations((await response.json()).recommendations || []);
             } catch (_error) {
-                // Server-rendered suggestions remain available when live updates fail.
+                // The server-rendered suggestions remain usable when the network is unavailable.
             }
         };
 
-        addonCheckboxes.forEach((checkbox) => {
-            checkbox.addEventListener("change", () => {
-                renderCart({ announce: true });
-                refreshRecommendations();
+        packageRadios.forEach((radio) => radio.addEventListener("change", () => {
+            showRelevantTiers({ chooseDefault: true });
+            renderCart({ announce: true });
+            refreshRecommendations();
+        }));
+        tierRadios.forEach((radio) => radio.addEventListener("change", () => renderCart({ announce: true })));
+        addonCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", () => {
+            renderCart({ announce: true });
+            refreshRecommendations();
+        }));
+
+        const searchInput = optionsForm.querySelector("[data-addon-search]");
+        const filterButtons = Array.from(optionsForm.querySelectorAll("[data-addon-filter]"));
+        const filterStatus = optionsForm.querySelector("[data-addon-filter-status]");
+        const filterEmpty = optionsForm.querySelector("[data-addon-filter-empty]");
+        let activeCategory = "all";
+        const applyAddonFilter = () => {
+            const term = (searchInput?.value || "").trim().toLocaleLowerCase();
+            let visibleCount = 0;
+            addonOptions.forEach((option) => {
+                const matchesText = !term || option.dataset.addonSearch.includes(term);
+                const matchesCategory = activeCategory === "all" || option.dataset.addonCategory === activeCategory;
+                option.hidden = !(matchesText && matchesCategory);
+                if (!option.hidden) visibleCount += 1;
             });
+            if (filterStatus) {
+                const key = visibleCount === 1
+                    ? "builder.experienceShown"
+                    : "builder.experiencesShown";
+                filterStatus.textContent = translate(key).replace("{count}", String(visibleCount));
+            }
+            if (filterEmpty) filterEmpty.hidden = visibleCount > 0;
+        };
+        searchInput?.addEventListener("input", applyAddonFilter);
+        filterButtons.forEach((button) => button.addEventListener("click", () => {
+            activeCategory = button.dataset.addonFilter;
+            filterButtons.forEach((item) => {
+                const active = item === button;
+                item.classList.toggle("active", active);
+                item.setAttribute("aria-pressed", String(active));
+            });
+            applyAddonFilter();
+        }));
+
+        addKeyboardNavigation(optionsForm.querySelector("[data-package-grid]"), packageRadios);
+        addKeyboardNavigation(optionsForm.querySelector("[data-tier-grid]"), tierRadios);
+        addKeyboardNavigation(optionsForm.querySelector("[data-addon-grid]"), addonCheckboxes);
+        document.addEventListener("popadoo:language-applied", () => {
+            applyAddonFilter();
+            renderCart();
         });
-        addKeyboardNavigation(tierGrid, tierRadios);
-        addKeyboardNavigation(addonGrid, addonCheckboxes);
+        showRelevantTiers();
+        applyAddonFilter();
         renderCart();
     }
 
@@ -228,7 +251,7 @@
         const submitButton = paymentForm.querySelector("[data-checkout-submit]");
         if (submitButton) {
             submitButton.disabled = true;
-            submitButton.textContent = "Completing simulation…";
+            submitButton.textContent = translate("builder.completingSimulation");
         }
     });
 })();

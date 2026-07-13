@@ -4,7 +4,7 @@
 <section class="management-page-section">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Add-on details</p><h2>{{ addon.name }}</h2><p>{{ addon.short_description }}</p></div>
-        <div class="management-quick-actions"><a class="management-button" href="{% url 'management:management_addon_update' addon.pk %}">Edit add-on</a><a class="management-button danger" href="{% url 'management:management_addon_remove' addon.pk %}">Delete/Archive</a></div>
+        <div class="management-quick-actions">{% if addon.is_active and addon.category.is_active %}{% if not addon.category.parent or addon.category.parent.is_active %}<a class="management-button secondary" href="{% url 'party_ideas:addon_detail' addon.slug %}">View on website</a>{% endif %}{% endif %}<a class="management-button" href="{% url 'management:management_addon_update' addon.pk %}">Edit add-on</a><a class="management-button danger" href="{% url 'management:management_addon_remove' addon.pk %}">Delete/Archive</a></div>
     </div>
     <section class="management-panel">
         {% if addon.image %}<img class="management-detail-image" src="{{ addon.image.url }}" alt="{{ addon.image_alt_text }}">{% endif %}

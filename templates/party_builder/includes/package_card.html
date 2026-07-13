@@ -1,0 +1,35 @@
+<article class="package-option" data-package-option>
+    <input
+        class="package-radio"
+        type="radio"
+        name="package"
+        value="{{ package.pk }}"
+        id="package-{{ package.pk }}"
+        data-package-radio
+        data-package-id="{{ package.pk }}"
+        {% if package.pk|stringformat:'s' == selected_package_id %}checked{% endif %}
+        aria-describedby="package-{{ package.pk }}-description package-{{ package.pk }}-price"
+    >
+    <label class="package-card" for="package-{{ package.pk }}">
+        {% if package.image %}
+            <img class="package-card-image" src="{{ package.image.url }}" alt="{{ package.image_alt_text }}">
+        {% else %}
+            <span class="package-card-placeholder" aria-hidden="true">✦</span>
+        {% endif %}
+        <span class="package-card-content">
+            <span class="package-card-heading">
+                <strong>{{ package.name }}</strong>
+                {% if package.is_default %}<span class="tier-badge">Popular start</span>{% endif %}
+            </span>
+            <span id="package-{{ package.pk }}-description">{{ package.short_description }}</span>
+            <span class="package-card-includes">{{ package.included_guest_count }} children included · {{ package.duration_minutes }} minutes</span>
+            {% if package.rating_count %}
+                <span class="addon-rating-summary" aria-label="Average rating {{ package.average_rating|floatformat:1 }} out of 5 from {{ package.rating_count }} verified parties"><span aria-hidden="true">★</span> {{ package.average_rating|floatformat:1 }} ({{ package.rating_count }})</span>
+            {% else %}
+                <span class="package-card-no-rating">No ratings yet</span>
+            {% endif %}
+            <span class="package-card-price" id="package-{{ package.pk }}-price">From €{{ package.catalogue_price|floatformat:2 }}</span>
+            <span class="package-card-action" data-package-action>{% if package.pk|stringformat:'s' == selected_package_id %}Selected starting point{% else %}Choose this starting point{% endif %}</span>
+        </span>
+    </label>
+</article>
