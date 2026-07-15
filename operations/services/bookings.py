@@ -6,7 +6,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.permissions import is_owner
+from accounts.permissions import can_access_full_management
 from party_builder.models import PartyBuild
 
 from ..models import PartyAssignment
@@ -24,8 +24,8 @@ ALLOWED_STATUS_TRANSITIONS = {
 
 @transaction.atomic
 def change_booking_status(*, booking: PartyBuild, status: str, actor, note: str = "") -> PartyBuild:
-    if not is_owner(actor):
-        raise PermissionDenied("Only an owner can change booking status.")
+    if not can_access_full_management(actor):
+        raise PermissionDenied("Only an Administrator or Owner can change booking status.")
     locked = PartyBuild.objects.select_for_update().get(pk=booking.pk)
     if status not in ALLOWED_STATUS_TRANSITIONS.get(locked.status, set()):
         raise ValidationError("That booking status change is not allowed.")
@@ -69,8 +69,8 @@ def send_to_manual_review(*, booking: PartyBuild, actor, reason: str) -> PartyBu
     returned to an operational assignment state.
     """
 
-    if not is_owner(actor):
-        raise PermissionDenied("Only an owner can send bookings to manual review.")
+    if not can_access_full_management(actor):
+        raise PermissionDenied("Only an Administrator or Owner can send bookings to manual review.")
     locked = PartyBuild.objects.select_for_update().get(pk=booking.pk)
     if locked.status in {PartyBuild.Status.COMPLETED, PartyBuild.Status.CANCELLED}:
         raise ValidationError(

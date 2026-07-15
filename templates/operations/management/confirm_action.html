@@ -21,7 +21,7 @@
             {% include "operations/management/includes/form_field.html" with field=field %}
         {% endfor %}
         <div class="management-form-actions">
-            <button class="management-button danger" type="submit">{{ action_label }}</button>
+            <button class="management-button {{ confirmation_button_class|default:'danger' }}" type="submit">{{ action_label }}</button>
             <a class="management-button secondary" href="{{ cancel_url }}">Cancel</a>
         </div>
     </form>

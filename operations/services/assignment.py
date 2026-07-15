@@ -14,7 +14,7 @@ from django.db.models import Max
 from django.utils import timezone
 
 from accounts.models import WorkerProfile
-from accounts.permissions import WORKER_GROUP, is_owner
+from accounts.permissions import WORKER_GROUP, can_access_full_management
 from party_builder.models import PartyBuild
 
 from ..models import AuditEvent, PartyAssignment
@@ -202,8 +202,8 @@ def assign_manually(
 ):
     """Create an owner assignment, requiring a reason whenever a conflict is overridden."""
 
-    if not is_owner(owner) or not owner.has_perm("operations.manually_assign_party"):
-        raise PermissionDenied("Owner assignment permission is required.")
+    if not can_access_full_management(owner) or not owner.has_perm("operations.manually_assign_party"):
+        raise PermissionDenied("Administrator or Owner assignment permission is required.")
     if (
         not worker.is_active_worker
         or not worker.user.is_active

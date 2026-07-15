@@ -16,7 +16,7 @@ from django.views import View
 from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from accounts.models import WorkerProfile
-from accounts.permissions import can_access_operations, is_owner, is_worker
+from accounts.permissions import can_access_full_management, can_access_operations, is_worker
 from party_builder.models import PartyBuild
 
 from .forms import (
@@ -40,7 +40,7 @@ class WorkerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
 
     def test_func(self):
         user = self.request.user
-        return bool(is_worker(user) and not is_owner(user))
+        return is_worker(user)
 
     def get_worker_profile(self):
         return get_object_or_404(
@@ -54,7 +54,7 @@ class OperationsDashboardView(OperationsAccessMixin, TemplateView):
     template_name = "operations/dashboard.html"
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and is_owner(request.user):
+        if request.user.is_authenticated and can_access_full_management(request.user):
             return redirect("management:management_dashboard")
         return super().dispatch(request, *args, **kwargs)
 
@@ -232,7 +232,7 @@ class LegacyOwnerBookingAssignmentRedirectView(LoginRequiredMixin, UserPassesTes
     raise_exception = True
 
     def test_func(self):
-        return is_owner(self.request.user)
+        return can_access_full_management(self.request.user)
 
     def get(self, request, booking_id):
         booking = get_object_or_404(PartyBuild, pk=booking_id)

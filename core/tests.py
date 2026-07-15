@@ -123,3 +123,14 @@ class ConsolidatedStaticAssetTests(TestCase):
         self.assertNotContains(response, "/static/css/header-utility.css")
         self.assertNotContains(response, "/static/js/account-menu.js")
         self.assertContains(response, "/static/js/main.js")
+
+    def test_generic_custom_controls_load_before_header_navigation_overrides(self):
+        response = self.client.get(reverse("core:core_home"))
+        html = response.content.decode("utf-8")
+        self.assertLess(
+            html.index("/static/css/custom-controls.css"),
+            html.index("/static/css/navigation.css"),
+        )
+        self.assertIn('role="combobox"', html)
+        self.assertIn('aria-controls="language-selector-options"', html)
+

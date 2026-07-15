@@ -1044,3 +1044,231 @@ html[data-theme="dark"] .management-button.danger {
     color: var(--management-text);
     border: 1px solid var(--management-panel-border);
 }
+
+/* Shared management layout and control tokens --------------------------------
+ * One content frame keeps the sticky header, messages, headings, filters, and
+ * tables on the same vertical grid. Button tokens make every state readable
+ * instead of relying on inherited colours that vary between themes.
+ */
+:root,
+html[data-theme="light"] {
+    --management-content-max: 95rem;
+    --management-content-padding: clamp(1rem, 3vw, 2rem);
+    --management-button-primary-bg: #6f4a8e;
+    --management-button-primary-text: #ffffff;
+    --management-button-primary-hover-bg: #58366f;
+    --management-button-primary-active-bg: #482b5c;
+    --management-button-secondary-bg: #ffffff;
+    --management-button-secondary-text: #2d2438;
+    --management-button-secondary-border: #b9aabd;
+    --management-button-secondary-hover-bg: #eee6f2;
+    --management-button-danger-bg: #a22945;
+    --management-button-danger-text: #ffffff;
+    --management-button-danger-hover-bg: #861d37;
+    --management-button-disabled-bg: #e7e0eb;
+    --management-button-disabled-text: #62586c;
+    --management-button-disabled-border: #c8bdce;
+    --management-focus-ring: #3157d5;
+}
+
+html[data-theme="dark"] {
+    --management-button-primary-bg: #c9a7e4;
+    --management-button-primary-text: #1b1221;
+    --management-button-primary-hover-bg: #ddc4ef;
+    --management-button-primary-active-bg: #b892d5;
+    --management-button-secondary-bg: #2a2134;
+    --management-button-secondary-text: #faf7fc;
+    --management-button-secondary-border: #766482;
+    --management-button-secondary-hover-bg: #3a2f46;
+    --management-button-danger-bg: #ff91ae;
+    --management-button-danger-text: #2b1019;
+    --management-button-danger-hover-bg: #ffb1c5;
+    --management-button-disabled-bg: #352d3d;
+    --management-button-disabled-text: #c9bdcf;
+    --management-button-disabled-border: #5f5069;
+    --management-focus-ring: #91b5ff;
+}
+
+html[data-theme="light"] .management-body { color-scheme: light; }
+html[data-theme="dark"] .management-body { color-scheme: dark; }
+
+.management-content-frame {
+    width: min(100%, var(--management-content-max));
+    margin-inline: auto;
+    padding-inline: var(--management-content-padding);
+}
+
+.management-topbar {
+    display: block;
+    min-height: 0;
+    padding: 0;
+}
+
+.management-topbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 5rem;
+    padding-block: 0.75rem;
+}
+
+/* The title keeps the available space while the account actions stay at the far right. */
+.management-topbar-heading {
+    min-width: 0;
+}
+
+.management-topbar-actions {
+    flex-shrink: 0;
+    margin-inline-start: auto;
+}
+
+.management-main {
+    width: min(100%, var(--management-content-max));
+    margin-inline: auto;
+    padding-block: clamp(1rem, 3vw, 2rem);
+}
+
+.management-messages {
+    padding: 0;
+}
+
+.management-messages > .management-content-frame {
+    padding-top: 1rem;
+}
+
+.management-alert {
+    max-width: none;
+}
+
+.management-page-header {
+    min-width: 0;
+}
+
+.management-page-header > :first-child {
+    min-width: 0;
+}
+
+.management-quick-actions {
+    flex: 0 0 auto;
+    justify-content: flex-end;
+}
+
+.management-button,
+.management-link-button,
+.management-icon-button {
+    color: var(--management-button-primary-text);
+    background: var(--management-button-primary-bg);
+    border-color: var(--management-button-primary-bg);
+}
+
+.management-button:hover,
+.management-link-button:hover,
+.management-icon-button:hover {
+    color: var(--management-button-primary-text);
+    background: var(--management-button-primary-hover-bg);
+    border-color: var(--management-button-primary-hover-bg);
+}
+
+.management-button:active,
+.management-link-button:active,
+.management-icon-button:active {
+    color: var(--management-button-primary-text);
+    background: var(--management-button-primary-active-bg);
+    border-color: var(--management-button-primary-active-bg);
+}
+
+.management-button.secondary,
+.management-link-button,
+.management-icon-button {
+    color: var(--management-button-secondary-text);
+    background: var(--management-button-secondary-bg);
+    border-color: var(--management-button-secondary-border);
+}
+
+.management-button.secondary:hover,
+.management-link-button:hover,
+.management-icon-button:hover {
+    color: var(--management-button-secondary-text);
+    background: var(--management-button-secondary-hover-bg);
+    border-color: var(--management-button-secondary-border);
+}
+
+.management-button.danger {
+    color: var(--management-button-danger-text);
+    background: var(--management-button-danger-bg);
+    border-color: var(--management-button-danger-bg);
+}
+
+.management-button.danger:hover,
+.management-button.danger:active {
+    color: var(--management-button-danger-text);
+    background: var(--management-button-danger-hover-bg);
+    border-color: var(--management-button-danger-hover-bg);
+}
+
+.management-button:focus-visible,
+.management-link-button:focus-visible,
+.management-icon-button:focus-visible,
+.management-navigation a:focus-visible,
+.management-row-actions a:focus-visible {
+    outline: 3px solid var(--management-focus-ring);
+    outline-offset: 3px;
+    box-shadow: none;
+}
+
+.management-button:disabled,
+.management-button[disabled],
+.management-button[aria-disabled="true"],
+.management-button.is-submitting,
+.management-link-button:disabled,
+.management-icon-button:disabled {
+    color: var(--management-button-disabled-text);
+    background: var(--management-button-disabled-bg);
+    border-color: var(--management-button-disabled-border);
+    opacity: 1;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.management-body .form-select option {
+    color: var(--management-text);
+    background: var(--management-panel-bg);
+}
+
+.management-help-text {
+    margin: 0.9rem 0 0;
+    color: var(--management-muted) !important;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 76rem) {
+    .management-topbar-inner {
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 46rem) {
+    :root,
+    html[data-theme="light"],
+    html[data-theme="dark"] {
+        --management-content-padding: 0.75rem;
+    }
+
+    .management-topbar-inner {
+        min-height: 4rem;
+        padding-block: 0.55rem;
+    }
+
+    .management-main {
+        padding-block: 1rem 2rem;
+    }
+
+    .management-messages > .management-content-frame {
+        padding-top: 0.75rem;
+    }
+
+    .management-quick-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}

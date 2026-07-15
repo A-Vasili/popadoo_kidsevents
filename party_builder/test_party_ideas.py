@@ -672,3 +672,31 @@ class PartyIdeasTests(TestCase):
         response = self.client.get(reverse("party_ideas:addon_detail", args=[self.addon.slug]))
         self.assertContains(response, "5.0")
         self.assertNotContains(response, "Private add-on note")
+
+    def test_recommendation_cards_use_aligned_content_and_footer_structure(self):
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+        self.assertContains(response, 'class="recommendation-card-content"')
+        self.assertContains(response, 'class="recommendation-card-footer"')
+        self.assertContains(response, 'class="recommendation-price"')
+        self.assertContains(response, "recommendation-action")
+
+    def test_recommendation_css_uses_one_canonical_card_layout(self):
+        from django.conf import settings
+
+        css = (settings.BASE_DIR / "static/css/party-builder.css").read_text()
+        self.assertEqual(css.count(".recommendation-card {"), 1)
+        self.assertEqual(css.count(".recommendation-card-footer {"), 1)
+        self.assertIn("grid-template-rows: minmax(0, 1fr) auto", css)
+        self.assertIn("grid-template-rows: auto minmax(3rem, auto)", css)
+
+    def test_javascript_recommendations_use_the_same_alignment_classes(self):
+        from django.conf import settings
+
+        script = (settings.BASE_DIR / "static/js/party-builder.js").read_text()
+        self.assertIn('content.className = "recommendation-card-content"', script)
+        self.assertIn('footer.className = "recommendation-card-footer"', script)
+        self.assertIn('price.className = "recommendation-price"', script)
+        self.assertIn('button.className = "button button-outline recommendation-action"', script)
+

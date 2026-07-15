@@ -7,6 +7,7 @@ from io import BytesIO
 from tempfile import TemporaryDirectory
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
@@ -36,6 +37,9 @@ User = get_user_model()
 class ManagementPanelTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.administrator = User.objects.create_superuser(
+            "management-admin", "admin@popadoo.test", "Admin-pass-123!"
+        )
         cls.owner = User.objects.create_user("management-owner", password="Owner-pass-123!")
         Group.objects.get(name="Owners").user_set.add(cls.owner)
         cls.customer = User.objects.create_user("management-customer", password="Customer-pass-123!")
@@ -93,6 +97,9 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 403)
 
         self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 200)
+
+        self.client.force_login(self.administrator)
         self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 200)
 
     def test_active_catalogue_details_link_to_public_party_ideas(self):
@@ -336,27 +343,27 @@ class ManagementPanelTests(TestCase):
         self.assertContains(response, "Upload a valid image")
         self.assertFalse(Category.objects.filter(slug="image-category").exists())
 
-    def test_owner_can_manage_eligible_user_but_not_other_owner_or_superuser(self):
+    def test_owner_can_ban_customer_but_not_view_other_owner_or_administrator(self):
         other_owner = User.objects.create_user("other-management-owner", password="Owner-pass-456!")
         Group.objects.get(name="Owners").user_set.add(other_owner)
-        superuser = User.objects.create_superuser("protected-admin", "admin@example.test", "Admin-pass-123!")
 
         self.assertEqual(
             self.client.get(reverse("management:management_user_detail", args=[other_owner.pk])).status_code,
             404,
         )
         self.assertEqual(
-            self.client.get(reverse("management:management_user_detail", args=[superuser.pk])).status_code,
+            self.client.get(reverse("management:management_user_detail", args=[self.administrator.pk])).status_code,
             404,
         )
 
         response = self.client.post(
-            reverse("management:management_user_action", args=[self.customer.pk, "promote"]),
+            reverse("management:management_user_action", args=[self.customer.pk, "ban"]),
             {"confirmation": "on"},
         )
         self.assertRedirects(response, reverse("management:management_user_detail", args=[self.customer.pk]))
-        self.assertTrue(self.customer.groups.filter(name="Workers").exists())
-        self.assertTrue(AuditEvent.objects.filter(event_type="worker_promoted", object_id=str(self.customer.pk)).exists())
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_active)
+        self.assertTrue(AuditEvent.objects.filter(event_type="user_banned", object_id=str(self.customer.pk)).exists())
 
     def test_booking_filter_detail_and_status_update(self):
         booking = self.make_booking(name="Searchable Parent")
@@ -598,8 +605,7 @@ class ManagementPanelTests(TestCase):
             ),
             {"confirmation": "on"},
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "not currently a worker")
+        self.assertEqual(response.status_code, 404)
         self.assertFalse(self.customer.groups.filter(name="Workers").exists())
 
     def test_state_changing_management_actions_require_csrf(self):
@@ -608,12 +614,13 @@ class ManagementPanelTests(TestCase):
         response = csrf_client.post(
             reverse(
                 "management:management_user_action",
-                args=[self.customer.pk, "promote"],
+                args=[self.customer.pk, "ban"],
             ),
             {"confirmation": "on"},
         )
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(self.customer.groups.filter(name="Workers").exists())
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.is_active)
 
     def test_price_and_default_changes_have_filterable_audit_events(self):
         response = self.client.post(
@@ -771,3 +778,249 @@ class ManagementPanelTests(TestCase):
             booking.assignment_state,
             PartyBuild.AssignmentState.UNASSIGNED,
         )
+
+    def test_administrator_can_create_owner_without_system_privileges(self):
+        self.client.force_login(self.administrator)
+        response = self.client.post(
+            reverse("management:management_user_create_owner"),
+            {
+                "username": "new-business-owner",
+                "first_name": "New",
+                "last_name": "Owner",
+                "email": "new-owner@popadoo.test",
+                "password1": "Strong-owner-pass-2026!",
+                "password2": "Strong-owner-pass-2026!",
+            },
+        )
+        owner = User.objects.get(username="new-business-owner")
+        self.assertRedirects(
+            response,
+            reverse("management:management_user_detail", args=[owner.pk]),
+        )
+        self.assertFalse(owner.is_superuser)
+        self.assertFalse(owner.is_staff)
+        self.assertTrue(owner.groups.filter(name="Owners").exists())
+        self.assertFalse(owner.groups.filter(name="Workers").exists())
+        self.assertFalse(owner.groups.filter(name="Pricing Managers").exists())
+        self.assertFalse(hasattr(owner, "worker_profile"))
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="owner_created", object_id=str(owner.pk)
+            ).exists()
+        )
+
+    def test_only_administrator_can_open_owner_creation(self):
+        url = reverse("management:management_user_create_owner")
+
+        self.client.logout()
+        self.assertEqual(self.client.get(url).status_code, 302)
+
+        for user in (self.owner, self.worker_user, self.customer):
+            self.client.force_login(user)
+            self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.administrator)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_customer_information_is_read_only_in_management(self):
+        detail_url = reverse(
+            "management:management_user_detail", args=[self.customer.pk]
+        )
+        update_url = reverse(
+            "management:management_user_update", args=[self.customer.pk]
+        )
+        response = self.client.get(detail_url)
+        self.assertContains(response, "Customer information is read-only")
+        self.assertNotContains(response, "Edit profile")
+        self.assertNotContains(response, "Edit worker settings")
+        self.assertEqual(self.client.get(update_url).status_code, 403)
+        self.assertEqual(
+            self.client.post(
+                update_url,
+                {
+                    "display_name": "Not allowed",
+                    "phone": "+306900009999",
+                    "max_daily_parties": 3,
+                    "notes_for_owner": "Not allowed",
+                },
+            ).status_code,
+            403,
+        )
+
+    def test_worker_settings_do_not_change_customer_profile_defaults(self):
+        profile = self.worker_user.customer_profile
+        profile.phone = "+306911111111"
+        profile.default_address = "Customer-controlled address"
+        profile.default_postal_code = "10558"
+        profile.save()
+
+        response = self.client.post(
+            reverse(
+                "management:management_user_update", args=[self.worker_user.pk]
+            ),
+            {
+                "display_name": "Updated Worker",
+                "phone": "+306922222222",
+                "max_daily_parties": 4,
+                "notes_for_owner": "Available for large venues.",
+            },
+        )
+        self.assertRedirects(
+            response,
+            reverse(
+                "management:management_user_detail", args=[self.worker_user.pk]
+            ),
+        )
+        self.worker.refresh_from_db()
+        profile.refresh_from_db()
+        self.assertEqual(self.worker.display_name, "Updated Worker")
+        self.assertEqual(self.worker.phone, "+306922222222")
+        self.assertEqual(profile.phone, "+306911111111")
+        self.assertEqual(profile.default_address, "Customer-controlled address")
+        self.assertEqual(profile.default_postal_code, "10558")
+
+    def test_customer_can_be_banned_and_unbanned_with_audit_history(self):
+        ban_url = reverse(
+            "management:management_user_action", args=[self.customer.pk, "ban"]
+        )
+        unban_url = reverse(
+            "management:management_user_action", args=[self.customer.pk, "unban"]
+        )
+        self.assertRedirects(
+            self.client.post(ban_url, {"confirmation": "on"}),
+            reverse("management:management_user_detail", args=[self.customer.pk]),
+        )
+        self.customer.refresh_from_db()
+        self.assertFalse(self.customer.is_active)
+        self.assertFalse(
+            self.client.login(
+                username=self.customer.username, password="Customer-pass-123!"
+            )
+        )
+
+        self.client.force_login(self.owner)
+        self.assertRedirects(
+            self.client.post(unban_url, {"confirmation": "on"}),
+            reverse("management:management_user_detail", args=[self.customer.pk]),
+        )
+        self.customer.refresh_from_db()
+        self.assertTrue(self.customer.is_active)
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="user_banned", object_id=str(self.customer.pk)
+            ).exists()
+        )
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="user_unbanned", object_id=str(self.customer.pk)
+            ).exists()
+        )
+
+    def test_unused_customer_can_be_deleted(self):
+        unused = User.objects.create_user(
+            "unused-customer",
+            email="unused@example.test",
+            password="Unused-customer-pass-2026!",
+        )
+        response = self.client.post(
+            reverse(
+                "management:management_user_action", args=[unused.pk, "delete"]
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(response, reverse("management:management_user_list"))
+        self.assertFalse(User.objects.filter(pk=unused.pk).exists())
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                event_type="unused_customer_deleted", object_id=str(unused.pk)
+            ).exists()
+        )
+
+    def test_customer_with_booking_history_cannot_be_deleted(self):
+        booking = self.make_booking()
+        booking.customer = self.customer
+        booking.save(update_fields=["customer"])
+        response = self.client.post(
+            reverse(
+                "management:management_user_action",
+                args=[self.customer.pk, "delete"],
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ban the account instead")
+        self.assertTrue(User.objects.filter(pk=self.customer.pk).exists())
+        self.assertTrue(PartyBuild.objects.filter(pk=booking.pk).exists())
+
+    def test_administrator_can_manage_owner_status_when_another_owner_remains(self):
+        other_owner = User.objects.create_user(
+            "remaining-owner", password="Remaining-owner-pass-2026!"
+        )
+        Group.objects.get(name="Owners").user_set.add(other_owner)
+        self.client.force_login(self.administrator)
+
+        detail = self.client.get(
+            reverse("management:management_user_detail", args=[self.owner.pk])
+        )
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, "Ban account")
+
+        response = self.client.post(
+            reverse(
+                "management:management_user_action", args=[self.owner.pk, "ban"]
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertRedirects(
+            response,
+            reverse("management:management_user_detail", args=[self.owner.pk]),
+        )
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_active)
+
+    def test_final_active_owner_cannot_be_banned(self):
+        self.client.force_login(self.administrator)
+        response = self.client.post(
+            reverse(
+                "management:management_user_action", args=[self.owner.pk, "ban"]
+            ),
+            {"confirmation": "on"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "At least one other active Owner must remain")
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_active)
+
+    def test_management_pages_share_one_content_frame(self):
+        response = self.client.get(reverse("management:management_user_list"))
+        self.assertContains(
+            response,
+            'class="management-content-frame management-topbar-inner"',
+        )
+        self.assertContains(
+            response,
+            'class="management-main management-content-frame"',
+        )
+
+    def test_user_list_shows_role_appropriate_actions(self):
+        response = self.client.get(reverse("management:management_user_list"))
+        html = response.content.decode("utf-8")
+        customer_row = html.split(self.customer.username, 1)[1].split("</tr>", 1)[0]
+        worker_row = html.split(self.worker_user.username, 1)[1].split("</tr>", 1)[0]
+        self.assertNotIn("Edit worker settings", customer_row)
+        self.assertIn("Edit worker settings", worker_row)
+
+    def test_management_css_defines_readable_theme_button_states(self):
+        css = (settings.BASE_DIR / "static/css/management.css").read_text()
+        for token in (
+            "--management-button-primary-text",
+            "--management-button-secondary-text",
+            "--management-button-danger-text",
+            "--management-button-disabled-text",
+            "--management-content-max",
+            "--management-content-padding",
+        ):
+            self.assertIn(token, css)
+        self.assertIn('.management-button[aria-disabled="true"]', css)
+        self.assertIn(".management-topbar-inner", css)
+

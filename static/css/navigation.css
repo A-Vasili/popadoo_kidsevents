@@ -440,3 +440,51 @@ html[data-theme="dark"] .header-account-signout-form button {
         transition: none;
     }
 }
+
+/* Header-specific language colours load after the generic custom-control CSS.
+ * This avoids the light theme combining a pale trigger with pale text. */
+html[data-theme="light"] .header-utility-language .custom-control-trigger,
+html[data-theme="dark"] .header-utility-language .custom-control-trigger {
+    color: #ffffff;
+    background: #56306d;
+    border-color: rgba(255, 255, 255, 0.62);
+}
+
+html[data-theme="light"] .header-utility-language .custom-control-trigger:hover,
+html[data-theme="light"] .header-utility-language .custom-control-trigger[aria-expanded="true"],
+html[data-theme="dark"] .header-utility-language .custom-control-trigger:hover,
+html[data-theme="dark"] .header-utility-language .custom-control-trigger[aria-expanded="true"] {
+    color: #ffffff;
+    background: #6d3b89;
+    border-color: #ffffff;
+}
+
+.header-utility-language .custom-control-chevron {
+    color: currentColor;
+}
+
+html[data-theme="light"] .header-utility-language .custom-control-popover {
+    color: #2d1838;
+    background: #ffffff;
+    border-color: #bba9c3;
+}
+
+html[data-theme="dark"] .header-utility-language .custom-control-popover {
+    color: #fffaff;
+    background: #24182c;
+    border-color: #6f5b79;
+}
+
+html[data-theme="light"] .header-utility-language .custom-select-option:hover,
+html[data-theme="light"] .header-utility-language .custom-select-option:focus-visible,
+html[data-theme="light"] .header-utility-language .custom-select-option[aria-selected="true"] {
+    color: #351744;
+    background: #ead9f2;
+}
+
+html[data-theme="dark"] .header-utility-language .custom-select-option:hover,
+html[data-theme="dark"] .header-utility-language .custom-select-option:focus-visible,
+html[data-theme="dark"] .header-utility-language .custom-select-option[aria-selected="true"] {
+    color: #1b1021;
+    background: #d6b4eb;
+}

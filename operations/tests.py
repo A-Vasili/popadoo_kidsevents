@@ -94,35 +94,38 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.MANUAL_REVIEW)
 
 
-    def test_owner_role_actions_use_canonical_management_endpoint(self):
+    def test_worker_accounts_use_dedicated_creation_workflow(self):
         self.client.force_login(self.owner)
-        response = self.client.post(
-            reverse(
-                "management:management_user_action",
-                args=[self.customer.pk, "promote"],
-            ),
-            {"confirmation": "on"},
+        self.assertEqual(
+            self.client.post(
+                reverse(
+                    "management:management_user_action",
+                    args=[self.customer.pk, "promote"],
+                ),
+                {"confirmation": "on"},
+            ).status_code,
+            404,
         )
-        self.assertRedirects(
-            response,
-            reverse("management:management_user_detail", args=[self.customer.pk]),
-        )
-        self.customer.refresh_from_db()
-        self.assertTrue(self.customer.groups.filter(name="Workers").exists())
-        self.assertTrue(self.customer.worker_profile.is_active_worker)
 
         response = self.client.post(
-            reverse(
-                "management:management_user_action",
-                args=[self.customer.pk, "grant_pricing"],
-            ),
-            {"confirmation": "on"},
+            reverse("management:management_user_create_worker"),
+            {
+                "username": "dedicated-worker",
+                "first_name": "Dedicated",
+                "last_name": "Worker",
+                "email": "dedicated-worker@example.test",
+                "phone": "+306900001234",
+                "password1": "A9!Quartz-Celebration-582",
+                "password2": "A9!Quartz-Celebration-582",
+            },
         )
+        worker = User.objects.get(username="dedicated-worker")
         self.assertRedirects(
             response,
-            reverse("management:management_user_detail", args=[self.customer.pk]),
+            reverse("management:management_user_detail", args=[worker.pk]),
         )
-        self.assertTrue(self.customer.groups.filter(name="Pricing Managers").exists())
+        self.assertTrue(worker.groups.filter(name="Workers").exists())
+        self.assertTrue(worker.worker_profile.is_active_worker)
 
     def test_pricing_manager_can_access_catalogue_only(self):
         Group.objects.get(name="Pricing Managers").user_set.add(self.worker_user)

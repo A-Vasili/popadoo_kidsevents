@@ -42,7 +42,7 @@ POST form with Django's CSRF token because it changes the user's session.
             <a href="{% url 'accounts:accounts_customer_dashboard' %}" role="menuitem" data-account-menu-item data-i18n="account.myBookings">My bookings</a>
             <a href="{% url 'accounts:accounts_profile' %}" role="menuitem" data-account-menu-item data-i18n="account.myProfile">My profile</a>
 
-            {% if nav_is_owner %}
+            {% if nav_can_access_full_management %}
                 <a href="{% url 'management:management_dashboard' %}" role="menuitem" data-account-menu-item>Management panel</a>
             {% elif nav_can_manage_pricing %}
                 <a href="{% url 'management:management_catalogue' %}" role="menuitem" data-account-menu-item>Catalogue management</a>

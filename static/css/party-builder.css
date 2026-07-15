@@ -747,11 +747,70 @@ html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
 .addon-badge-popular { background: #ffe4a8; color: #5b3a00; }
 .addon-rating-summary { display: inline-flex; align-items: center; gap: .3rem; color: var(--color-muted); font-size: .92rem; }
 .addon-rating-summary span { color: #b37800; }
-.recommendation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.recommendation-card { display: grid; align-content: start; gap: .6rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
-.recommendation-card h3, .recommendation-card p { margin: 0; }
-.recommendation-reason { color: var(--color-muted); font-size: .92rem; }
-@media (max-width: 52rem) { .recommendation-grid { grid-template-columns: 1fr; } }
+/* Every card uses the same two-row layout: flexible content above and a
+ * footer below. This keeps prices and actions aligned without clipping longer
+ * English, Greek, or zoomed text. */
+.recommendation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.recommendation-card {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    height: 100%;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 1rem;
+    background: var(--color-surface-raised);
+}
+
+.recommendation-card h3,
+.recommendation-card p {
+    margin: 0;
+}
+
+.recommendation-card-content {
+    display: grid;
+    align-content: start;
+    gap: 0.6rem;
+}
+
+.recommendation-card-footer {
+    display: grid;
+    grid-template-rows: auto minmax(3rem, auto);
+    align-content: end;
+    gap: 0.75rem;
+}
+
+.recommendation-reason {
+    color: var(--color-muted);
+    font-size: 0.92rem;
+}
+
+.recommendation-price {
+    align-self: end;
+    font-size: 1.05rem;
+}
+
+.recommendation-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    text-align: center;
+    white-space: normal;
+}
+
+@media (max-width: 52rem) {
+    .recommendation-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
 .review-code-panel { margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
 .review-code-panel p { margin: .35rem 0 0; }
@@ -803,3 +862,4 @@ html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
 @media (prefers-reduced-motion: reduce) {
     .package-card { transition: none; }
 }
+

@@ -6,7 +6,7 @@
     </div>
 
     <nav class="management-navigation" aria-label="Management navigation">
-        {% if nav_is_owner %}
+        {% if nav_can_access_full_management %}
             <a class="{% if management_active_section == 'dashboard' %}active{% endif %}" href="{% url 'management:management_dashboard' %}" {% if management_active_section == 'dashboard' %}aria-current="page"{% endif %}>
                 <span aria-hidden="true">▦</span> Dashboard
             </a>
@@ -17,7 +17,7 @@
         <a class="{% if management_active_section == 'categories' %}active{% endif %}" href="{% url 'management:management_category_list' %}" {% if management_active_section == 'categories' %}aria-current="page"{% endif %}>
             <span aria-hidden="true">⌘</span> Categories
         </a>
-        {% if nav_is_owner %}
+        {% if nav_can_access_full_management %}
             <a class="{% if management_active_section == 'bookings' %}active{% endif %}" href="{% url 'management:management_booking_list' %}" {% if management_active_section == 'bookings' %}aria-current="page"{% endif %}>
                 <span aria-hidden="true">▣</span> Bookings
             </a>
@@ -36,7 +36,7 @@
         {% endif %}
     </nav>
 
-    {% if not nav_is_owner %}
+    {% if not nav_can_access_full_management %}
         <p class="management-sidebar-note">Your delegated access is limited to catalogue and pricing management.</p>
     {% endif %}
 </aside>

@@ -65,7 +65,23 @@
 
             <section class="checkout-panel recommendation-section" aria-labelledby="recommendation-heading" data-recommendations data-endpoint="{% url 'party_builder:party_builder_recommendations' %}" data-package-id="{{ package.pk }}">
                 <div class="panel-heading"><span class="panel-step" aria-hidden="true">1D</span><div><p class="section-kicker">Helpful suggestions</p><h2 id="recommendation-heading" data-i18n="builder.recommendations">Popular additions for your party</h2><p>Suggestions respond to your package and experiences. Nothing is added unless you choose it.</p></div></div>
-                <div class="recommendation-grid" data-recommendation-list aria-live="polite">{% for recommendation in recommendations %}<article class="recommendation-card"><h3>{{ recommendation.addon.name }}</h3><p>{{ recommendation.addon.short_description }}</p><p class="recommendation-reason">{{ recommendation.reason }}</p><p><strong>+€{{ recommendation.addon.price|floatformat:2 }}</strong></p><a class="button button-outline" href="#addon-{{ recommendation.addon.pk }}">Review this option</a></article>{% empty %}<p>No additional suggestions are available yet.</p>{% endfor %}</div>
+                <div class="recommendation-grid" data-recommendation-list aria-live="polite">
+                    {% for recommendation in recommendations %}
+                        <article class="recommendation-card">
+                            <div class="recommendation-card-content">
+                                <h3>{{ recommendation.addon.name }}</h3>
+                                <p class="recommendation-description">{{ recommendation.addon.short_description }}</p>
+                                <p class="recommendation-reason">{{ recommendation.reason }}</p>
+                            </div>
+                            <div class="recommendation-card-footer">
+                                <strong class="recommendation-price">+€{{ recommendation.addon.price|floatformat:2 }}</strong>
+                                <a class="button button-outline recommendation-action" href="#addon-{{ recommendation.addon.pk }}">Review this option</a>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <p>No additional suggestions are available yet.</p>
+                    {% endfor %}
+                </div>
             </section>
         </div>
 

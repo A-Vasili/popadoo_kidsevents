@@ -22,6 +22,7 @@
 
         <div class="management-workspace">
             <header class="management-topbar">
+                <div class="management-content-frame management-topbar-inner">
                 <button
                     class="management-sidebar-toggle"
                     type="button"
@@ -70,17 +71,20 @@
                         <button class="management-link-button" type="submit">Sign out</button>
                     </form>
                 </div>
+                </div>
             </header>
 
             {% if messages %}
             <div class="management-messages" aria-live="polite" aria-atomic="true">
+                <div class="management-content-frame">
                 {% for message in messages %}
                     <div class="management-alert {{ message.tags|default:'info' }}" role="status">{{ message }}</div>
                 {% endfor %}
+                </div>
             </div>
             {% endif %}
 
-            <main id="management-main" class="management-main" tabindex="-1">
+            <main id="management-main" class="management-main management-content-frame" tabindex="-1">
                 {% block management_content %}{% endblock %}
             </main>
         </div>

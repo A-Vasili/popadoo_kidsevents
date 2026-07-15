@@ -1,4 +1,4 @@
-"""Named routes for the custom owner and catalogue management panel."""
+"""Named routes for the custom business management panel."""
 
 from django.urls import path
 
@@ -36,6 +36,7 @@ urlpatterns = [
 
     path("users/", views.UserListView.as_view(), name="management_user_list"),
     path("users/create-worker/", views.UserCreateWorkerView.as_view(), name="management_user_create_worker"),
+    path("users/create-owner/", views.UserCreateOwnerView.as_view(), name="management_user_create_owner"),
     path("users/<int:pk>/", views.UserDetailView.as_view(), name="management_user_detail"),
     path("users/<int:pk>/edit/", views.UserUpdateView.as_view(), name="management_user_update"),
     path("users/<int:pk>/<str:action>/", views.UserActionView.as_view(), name="management_user_action"),

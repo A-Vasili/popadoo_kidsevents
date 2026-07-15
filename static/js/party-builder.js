@@ -159,18 +159,24 @@
             items.forEach((item) => {
                 const card = document.createElement("article");
                 card.className = "recommendation-card";
+                const content = document.createElement("div");
+                const footer = document.createElement("div");
                 const heading = document.createElement("h3");
                 const description = document.createElement("p");
                 const reason = document.createElement("p");
-                const price = document.createElement("p");
+                const price = document.createElement("strong");
                 const button = document.createElement("button");
+                content.className = "recommendation-card-content";
+                footer.className = "recommendation-card-footer";
                 heading.textContent = item.name;
+                description.className = "recommendation-description";
                 description.textContent = item.short_description;
                 reason.className = "recommendation-reason";
                 reason.textContent = item.reason;
+                price.className = "recommendation-price";
                 price.textContent = currencyFormatter.format(toNumber(item.price));
                 button.type = "button";
-                button.className = "button button-outline";
+                button.className = "button button-outline recommendation-action";
                 button.dataset.i18n = "builder.selectExperience";
                 button.textContent = translate("builder.selectExperience");
                 button.addEventListener("click", () => {
@@ -181,7 +187,9 @@
                     }
                     checkbox?.focus();
                 });
-                card.append(heading, description, reason, price, button);
+                content.append(heading, description, reason);
+                footer.append(price, button);
+                card.append(content, footer);
                 recommendationList.append(card);
             });
         };

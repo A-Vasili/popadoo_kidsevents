@@ -28,8 +28,10 @@ from accounts.models import WorkerProfile
 from accounts.permissions import (
     OWNER_GROUP,
     WORKER_GROUP,
+    can_access_full_management,
+    can_create_owner,
     can_manage_pricing,
-    is_owner,
+    is_administrator,
 )
 from party_builder.analytics import analytics_report, resolve_period
 from party_builder.models import AddonExperience, Category, GuestPriceTier, PartyBuild, PartyPackage
@@ -41,7 +43,8 @@ from .forms import (
     BookingStatusForm,
     CategoryForm,
     GuestPriceTierForm,
-    ManagedUserForm,
+    ManagedWorkerForm,
+    OwnerCreationForm,
     OwnerWorkerCreationForm,
     ManualReviewForm,
     PackageForm,
@@ -59,12 +62,16 @@ from .services.catalogue import (
 )
 from .services.scheduling import find_schedule_conflicts, get_event_window, worker_is_available
 from .services.users import (
+    customer_delete_blockers,
+    delete_unused_customer,
     demote_worker,
-    ensure_owner_can_manage,
+    ensure_manager_can_view,
     grant_pricing_management,
-    promote_to_worker,
+    is_customer_account,
+    is_owner_account,
+    is_worker_account,
     revoke_pricing_management,
-    set_account_active,
+    set_account_banned,
 )
 
 User = get_user_model()
@@ -97,8 +104,8 @@ class ManagementContextMixin:
         return context
 
 
-class OwnerManagementMixin(LoginRequiredMixin, UserPassesTestMixin):
-    """Permit owners and superusers; authenticated failures receive HTTP 403."""
+class FullManagementAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
+    """Permit Administrators and Owners; authenticated failures receive HTTP 403."""
 
     raise_exception = True
 
@@ -112,7 +119,7 @@ class OwnerManagementMixin(LoginRequiredMixin, UserPassesTestMixin):
         raise PermissionDenied
 
     def test_func(self):
-        return is_owner(self.request.user)
+        return can_access_full_management(self.request.user)
 
 
 class CatalogueManagementMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -133,7 +140,7 @@ class CatalogueManagementMixin(LoginRequiredMixin, UserPassesTestMixin):
         return can_manage_pricing(self.request.user)
 
 
-class ManagementDashboardView(OwnerManagementMixin, ManagementContextMixin, TemplateView):
+class ManagementDashboardView(FullManagementAccessMixin, ManagementContextMixin, TemplateView):
     template_name = "operations/management/dashboard.html"
     page_title = "Management dashboard"
     active_section = "dashboard"
@@ -606,7 +613,7 @@ class AddonRemoveView(CatalogueRemoveView):
         return f"{count} historical booking add-on selection(s)" if count else ""
 
 
-class UserListView(OwnerManagementMixin, ManagementContextMixin, ListView):
+class UserListView(FullManagementAccessMixin, ManagementContextMixin, ListView):
     template_name = "operations/management/users/list.html"
     context_object_name = "managed_users"
     paginate_by = 25
@@ -614,13 +621,19 @@ class UserListView(OwnerManagementMixin, ManagementContextMixin, ListView):
     active_section = "users"
 
     def get_queryset(self):
-        # Superusers are never exposed to owner-level account management.
+        # Administrator accounts are system identities and never enter custom
+        # account-mutation workflows. Administrators may inspect Owners, while
+        # an Owner sees only their own Owner record.
         base = User.objects.filter(is_superuser=False)
-        # An owner may see their own record but not another owner's account.
-        queryset = (
-            base.exclude(groups__name=OWNER_GROUP)
-            | base.filter(pk=self.request.user.pk)
-        ).prefetch_related("groups").select_related("customer_profile", "worker_profile")
+        if is_administrator(self.request.user):
+            queryset = base
+        else:
+            queryset = base.exclude(groups__name=OWNER_GROUP) | base.filter(
+                pk=self.request.user.pk
+            )
+        queryset = queryset.prefetch_related("groups").select_related(
+            "customer_profile", "worker_profile"
+        )
         query = self.request.GET.get("q", "").strip()
         role = self.request.GET.get("role", "")
         status = self.request.GET.get("status", "")
@@ -647,15 +660,26 @@ class ProtectedUserObjectMixin:
 
     def dispatch(self, request, *args, **kwargs):
         self.user_object = get_object_or_404(
-            User.objects.filter(is_superuser=False).select_related("customer_profile", "worker_profile").prefetch_related("groups"),
+            User.objects.select_related(
+                "customer_profile", "worker_profile"
+            ).prefetch_related("groups"),
             pk=kwargs["pk"],
         )
-        if self.user_object.groups.filter(name=OWNER_GROUP).exists() and self.user_object.pk != request.user.pk:
-            raise Http404
+        try:
+            ensure_manager_can_view(request.user, self.user_object)
+        except PermissionDenied as error:
+            # Protected accounts use 404 so their identifiers are not exposed to
+            # users who are not allowed to inspect them.
+            raise Http404 from error
+        self.validate_user_object(request)
         return super().dispatch(request, *args, **kwargs)
 
+    def validate_user_object(self, request):
+        """Allow individual views to add role-specific object restrictions."""
 
-class UserDetailView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementContextMixin, TemplateView):
+
+
+class UserDetailView(FullManagementAccessMixin, ProtectedUserObjectMixin, ManagementContextMixin, TemplateView):
     template_name = "operations/management/users/detail.html"
     page_title = "User details"
     active_section = "users"
@@ -663,27 +687,52 @@ class UserDetailView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementC
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.user_object
+        worker_profile = getattr(user, "worker_profile", None)
+        customer = is_customer_account(user)
+        delete_blockers = customer_delete_blockers(user) if customer else []
+        worker = is_worker_account(user)
+        owner = is_owner_account(user)
+        administrator_actor = is_administrator(self.request.user)
         context.update(
             {
                 "managed_user": user,
+                "managed_user_is_customer": customer,
+                "managed_user_is_worker": worker,
+                "managed_user_is_owner": owner,
+                "can_edit_worker": worker and not owner,
+                "can_change_account_status": (
+                    user.pk != self.request.user.pk
+                    and not user.is_superuser
+                    and (not owner or administrator_actor)
+                ),
+                "can_delete_customer": customer and not delete_blockers,
+                "customer_delete_blockers": delete_blockers,
                 "customer_bookings": user.party_bookings.select_related("package")[:10],
-                "worker_assignments": getattr(user, "worker_profile", None).assignments.select_related("party_build")[:10] if hasattr(user, "worker_profile") else [],
-                "worker_availability": getattr(user, "worker_profile", None).availability_periods.all()[:10] if hasattr(user, "worker_profile") else [],
-                "recent_events": AuditEvent.objects.filter(object_type="User", object_id=str(user.pk)).select_related("actor")[:10],
+                "worker_assignments": worker_profile.assignments.select_related("party_build")[:10] if worker_profile else [],
+                "worker_availability": worker_profile.availability_periods.all()[:10] if worker_profile else [],
+                "recent_events": AuditEvent.objects.filter(
+                    object_type="User", object_id=str(user.pk)
+                ).select_related("actor")[:10],
             }
         )
         return context
 
 
-class UserUpdateView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementContextMixin, FormView):
+class UserUpdateView(FullManagementAccessMixin, ProtectedUserObjectMixin, ManagementContextMixin, FormView):
     template_name = "operations/management/users/form.html"
-    form_class = ManagedUserForm
-    page_title = "Edit user profile"
+    form_class = ManagedWorkerForm
+    page_title = "Edit worker settings"
     active_section = "users"
+
+    def validate_user_object(self, request):
+        if not is_worker_account(self.user_object) or is_owner_account(self.user_object):
+            raise PermissionDenied(
+                "Customer and Owner profile information is read-only in management."
+            )
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["instance"] = self.user_object
+        kwargs["instance"] = self.user_object.worker_profile
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -691,33 +740,42 @@ class UserUpdateView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementC
         context.update(
             {
                 "managed_user": self.user_object,
-                "form_eyebrow": "Account details",
+                "form_eyebrow": "Worker operations",
                 "form_title": f"Edit {self.user_object.get_full_name() or self.user_object.username}",
-                "form_description": "Passwords and role permissions are managed separately and are never displayed here.",
-                "submit_label": "Save user",
-                "cancel_url": reverse("management:management_user_detail", args=[self.user_object.pk]),
+                "form_description": (
+                    "Only staff scheduling and contact settings can be changed here. "
+                    "Customer-supplied profile details remain under the account holder's control."
+                ),
+                "submit_label": "Save worker settings",
+                "cancel_url": reverse(
+                    "management:management_user_detail", args=[self.user_object.pk]
+                ),
             }
         )
         return context
 
     def form_valid(self, form):
-        ensure_owner_can_manage(self.request.user, self.user_object)
-        fields = ("first_name", "last_name", "email", "is_active")
-        before = model_snapshot(self.user_object, fields)
-        user = form.save()
+        before = model_snapshot(
+            self.user_object.worker_profile,
+            ("display_name", "phone", "max_daily_parties", "notes_for_owner"),
+        )
+        worker = form.save()
         record_audit(
             actor=self.request.user,
-            event_type="user_profile_updated",
-            target=user,
-            summary=f"{self.request.user} updated profile details for {user}.",
+            event_type="worker_settings_updated",
+            target=self.user_object,
+            summary=f"{self.request.user} updated worker settings for {self.user_object}.",
             before=before,
-            after=model_snapshot(user, fields),
+            after=model_snapshot(
+                worker,
+                ("display_name", "phone", "max_daily_parties", "notes_for_owner"),
+            ),
         )
-        messages.success(self.request, "The user profile was updated.")
-        return redirect("management:management_user_detail", pk=user.pk)
+        messages.success(self.request, "The worker settings were updated.")
+        return redirect("management:management_user_detail", pk=self.user_object.pk)
 
 
-class UserCreateWorkerView(OwnerManagementMixin, ManagementContextMixin, FormView):
+class UserCreateWorkerView(FullManagementAccessMixin, ManagementContextMixin, FormView):
     template_name = "operations/management/users/form.html"
     form_class = OwnerWorkerCreationForm
     page_title = "Create worker account"
@@ -729,7 +787,7 @@ class UserCreateWorkerView(OwnerManagementMixin, ManagementContextMixin, FormVie
             {
                 "form_eyebrow": "Staff account",
                 "form_title": "Create worker",
-                "form_description": "The worker receives staff portal access but no owner or administrator privileges.",
+                "form_description": "The worker receives staff portal access but no Owner or Administrator privileges.",
                 "submit_label": "Create worker",
                 "cancel_url": reverse("management:management_user_list"),
             }
@@ -742,19 +800,77 @@ class UserCreateWorkerView(OwnerManagementMixin, ManagementContextMixin, FormVie
         return redirect("management:management_user_detail", pk=user.pk)
 
 
-class UserActionView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementContextMixin, FormView):
+class UserCreateOwnerView(LoginRequiredMixin, UserPassesTestMixin, ManagementContextMixin, FormView):
+    """Create a protected Owner without granting system-administrator rights."""
+
+    template_name = "operations/management/users/form.html"
+    form_class = OwnerCreationForm
+    page_title = "Create Owner account"
+    active_section = "users"
+    raise_exception = True
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(
+                self.request.get_full_path(),
+                self.get_login_url(),
+                self.get_redirect_field_name(),
+            )
+        raise PermissionDenied
+
+    def test_func(self):
+        return can_create_owner(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "form_eyebrow": "Protected business account",
+                "form_title": "Create Owner",
+                "form_description": (
+                    "Owners can run the business management panel but do not receive "
+                    "Django staff or Administrator privileges."
+                ),
+                "submit_label": "Create Owner",
+                "cancel_url": reverse("management:management_user_list"),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        user = form.save(actor=self.request.user)
+        messages.success(self.request, f"Owner account {user.username} was created.")
+        return redirect("management:management_user_detail", pk=user.pk)
+
+
+class UserActionView(FullManagementAccessMixin, ProtectedUserObjectMixin, ManagementContextMixin, FormView):
     template_name = "operations/management/confirm_action.html"
     form_class = ActionConfirmationForm
     page_title = "Confirm user action"
     active_section = "users"
     ACTION_LABELS = {
-        "activate": "Activate account",
-        "deactivate": "Deactivate account",
-        "promote": "Promote to worker",
-        "demote": "Demote to customer",
+        "ban": "Ban account",
+        "unban": "Unban account",
+        "delete": "Delete unused account",
+        "demote": "Remove worker access",
         "grant_pricing": "Grant pricing access",
         "revoke_pricing": "Revoke pricing access",
     }
+
+    def validate_user_object(self, request):
+        target = self.user_object
+        if is_owner_account(target):
+            if not is_administrator(request.user):
+                raise PermissionDenied("Only an Administrator can change an Owner account.")
+            if self.action not in {"ban", "unban"}:
+                raise Http404
+            return
+        if is_customer_account(target) and self.action not in {"ban", "unban", "delete"}:
+            raise Http404
+        if is_worker_account(target) and self.action not in {
+            "ban", "unban", "demote", "grant_pricing", "revoke_pricing"
+        }:
+            raise Http404
 
     def dispatch(self, request, *args, **kwargs):
         self.action = kwargs["action"]
@@ -772,30 +888,40 @@ class UserActionView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementC
                 "action_label": self.ACTION_LABELS[self.action],
                 "title": f"{self.ACTION_LABELS[self.action]} for {self.user_object.get_full_name() or self.user_object.username}?",
                 "consequence": self._consequence(),
-                "cancel_url": reverse("management:management_user_detail", args=[self.user_object.pk]),
+                "confirmation_button_class": (
+                    "danger" if self.action in {"ban", "delete"} else "safe"
+                ),
+                "cancel_url": reverse(
+                    "management:management_user_detail", args=[self.user_object.pk]
+                ),
             }
         )
         return context
 
     def _consequence(self):
         return {
-            "activate": "The user will be able to sign in again.",
-            "deactivate": "The user will be signed out and unable to sign in until reactivated.",
-            "promote": "The customer will gain access to the worker portal.",
+            "ban": "The account will be unable to sign in. Existing business history is preserved.",
+            "unban": "The account will be able to sign in again.",
+            "delete": (
+                "The account is permanently removed only when it has no bookings, reviews, "
+                "worker records, assignments, or audit actions."
+            ),
             "demote": "Worker and pricing access will be removed; historical assignments remain.",
             "grant_pricing": "The worker will be able to manage catalogue and pricing records.",
-            "revoke_pricing": "The worker will keep staff access but lose catalogue management access.",
+            "revoke_pricing": "The worker keeps staff access but loses catalogue management access.",
         }[self.action]
 
     def form_valid(self, form):
         target = self.user_object
         try:
-            if self.action == "activate":
-                set_account_active(target=target, active=True, actor=self.request.user)
-            elif self.action == "deactivate":
-                set_account_active(target=target, active=False, actor=self.request.user)
-            elif self.action == "promote":
-                promote_to_worker(target, self.request.user)
+            if self.action == "ban":
+                set_account_banned(target=target, banned=True, actor=self.request.user)
+            elif self.action == "unban":
+                set_account_banned(target=target, banned=False, actor=self.request.user)
+            elif self.action == "delete":
+                delete_unused_customer(target=target, actor=self.request.user)
+                messages.success(self.request, "The unused customer account was deleted.")
+                return redirect("management:management_user_list")
             elif self.action == "demote":
                 demote_worker(target, self.request.user)
             elif self.action == "grant_pricing":
@@ -805,11 +931,14 @@ class UserActionView(ProtectedUserObjectMixin, OwnerManagementMixin, ManagementC
         except (PermissionDenied, ValidationError) as error:
             form.add_error(None, error)
             return self.form_invalid(form)
-        messages.success(self.request, f"{self.ACTION_LABELS[self.action]} completed for {target}.")
+        messages.success(
+            self.request,
+            f"{self.ACTION_LABELS[self.action]} completed for {target}.",
+        )
         return redirect("management:management_user_detail", pk=target.pk)
 
 
-class BookingListView(OwnerManagementMixin, ManagementContextMixin, ListView):
+class BookingListView(FullManagementAccessMixin, ManagementContextMixin, ListView):
     template_name = "operations/management/bookings/list.html"
     context_object_name = "bookings"
     paginate_by = 25
@@ -864,7 +993,7 @@ class BookingListView(OwnerManagementMixin, ManagementContextMixin, ListView):
         return context
 
 
-class BookingDetailView(OwnerManagementMixin, ManagementContextMixin, DetailView):
+class BookingDetailView(FullManagementAccessMixin, ManagementContextMixin, DetailView):
     model = PartyBuild
     slug_field = "public_id"
     slug_url_kwarg = "public_id"
@@ -892,7 +1021,7 @@ class BookingDetailView(OwnerManagementMixin, ManagementContextMixin, DetailView
         return context
 
 
-class BookingStatusUpdateView(OwnerManagementMixin, View):
+class BookingStatusUpdateView(FullManagementAccessMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, public_id):
@@ -914,7 +1043,7 @@ class BookingStatusUpdateView(OwnerManagementMixin, View):
         return redirect("management:management_booking_detail", public_id=booking.public_id)
 
 
-class BookingManualReviewView(OwnerManagementMixin, View):
+class BookingManualReviewView(FullManagementAccessMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, public_id):
@@ -935,7 +1064,7 @@ class BookingManualReviewView(OwnerManagementMixin, View):
         return redirect("management:management_booking_detail", public_id=booking.public_id)
 
 
-class BookingAssignView(OwnerManagementMixin, ManagementContextMixin, FormView):
+class BookingAssignView(FullManagementAccessMixin, ManagementContextMixin, FormView):
     template_name = "operations/management/bookings/assign.html"
     form_class = ManualAssignmentForm
     page_title = "Assign worker"
@@ -979,7 +1108,7 @@ class BookingAssignView(OwnerManagementMixin, ManagementContextMixin, FormView):
         return redirect("management:management_booking_detail", public_id=self.booking.public_id)
 
 
-class ScheduleView(OwnerManagementMixin, ManagementContextMixin, TemplateView):
+class ScheduleView(FullManagementAccessMixin, ManagementContextMixin, TemplateView):
     template_name = "operations/management/schedules.html"
     page_title = "Worker schedules"
     active_section = "schedules"
@@ -1019,7 +1148,7 @@ class ScheduleView(OwnerManagementMixin, ManagementContextMixin, TemplateView):
         return context
 
 
-class AuditListView(OwnerManagementMixin, ManagementContextMixin, ListView):
+class AuditListView(FullManagementAccessMixin, ManagementContextMixin, ListView):
     template_name = "operations/management/audit/list.html"
     context_object_name = "events"
     paginate_by = 50
@@ -1054,7 +1183,7 @@ class AuditListView(OwnerManagementMixin, ManagementContextMixin, ListView):
         return context
 
 
-class AnalyticsView(OwnerManagementMixin, ManagementContextMixin, TemplateView):
+class AnalyticsView(FullManagementAccessMixin, ManagementContextMixin, TemplateView):
     """Show completed-party usage, verified ratings, and common combinations."""
 
     template_name = "operations/management/analytics.html"

@@ -26,6 +26,11 @@ class Command(BaseCommand):
         except User.DoesNotExist as exc:
             raise CommandError("No user exists with that username.") from exc
 
+        if user.is_superuser:
+            raise CommandError(
+                "Administrator accounts are protected and cannot be assigned a business role."
+            )
+
         role = options["role"]
         owners, _ = Group.objects.get_or_create(name=OWNER_GROUP)
         workers, _ = Group.objects.get_or_create(name=WORKER_GROUP)
@@ -41,6 +46,9 @@ class Command(BaseCommand):
             profile.save(update_fields=["is_active_worker", "updated_at"])
 
         if role == "owner":
+            user.is_staff = False
+            user.is_superuser = False
+            user.save(update_fields=["is_staff", "is_superuser"])
             owners.user_set.add(user)
         elif role in {"worker", "pricing-manager"}:
             workers.user_set.add(user)

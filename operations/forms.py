@@ -344,57 +344,59 @@ class AddonForm(CatalogueImageMixin, AccessibleModelForm):
 
 # User management forms ----------------------------------------------------
 
-class ManagedUserForm(AccessibleModelForm):
-    phone = forms.CharField(max_length=30, required=False, validators=[phone_validator])
-    default_address = forms.CharField(max_length=240, required=False)
-    default_postal_code = forms.CharField(max_length=10, required=False)
-    worker_display_name = forms.CharField(max_length=120, required=False)
-    max_daily_parties = forms.IntegerField(min_value=1, max_value=10, required=False)
+class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
+    """Collect a new Owner's sign-in details for the Administrator-only flow."""
 
-    class Meta:
+    first_name = forms.CharField(max_length=150, required=True)
+    last_name = forms.CharField(max_length=150, required=True)
+    email = forms.EmailField(required=True)
+
+    class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("first_name", "last_name", "email")
+        fields = (
+            "username", "first_name", "last_name", "email",
+            "password1", "password2",
+        )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        profile = getattr(self.instance, "customer_profile", None)
-        worker = getattr(self.instance, "worker_profile", None)
-        if profile:
-            self.fields["phone"].initial = profile.phone
-            self.fields["default_address"].initial = profile.default_address
-            self.fields["default_postal_code"].initial = profile.default_postal_code
-        if worker:
-            self.fields["worker_display_name"].initial = worker.display_name
-            self.fields["max_daily_parties"].initial = worker.max_daily_parties
+        self.fields["username"].help_text = "This is the name the Owner will use to sign in."
+        self.fields["password1"].help_text = " ".join(
+            password_validation.password_validators_help_texts()
+        )
+        self.fields["email"].widget.attrs["autocomplete"] = "email"
+        self.fields["password1"].widget.attrs["autocomplete"] = "new-password"
+        self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
+        apply_form_accessibility(self)
 
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
-        if email and User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError("Another account already uses this email address.")
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("An account already uses this email address.")
         return email
 
-    @transaction.atomic
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.first_name = user.first_name.strip()
-        user.last_name = user.last_name.strip()
+    def save(self, *, actor, commit=True):
         if not commit:
-            return user
-        user.save()
-        profile, _ = CustomerProfile.objects.get_or_create(user=user)
-        profile.phone = self.cleaned_data.get("phone", "").strip()
-        profile.default_address = self.cleaned_data.get("default_address", "").strip()
-        profile.default_postal_code = self.cleaned_data.get("default_postal_code", "").strip()
-        profile.save()
-        worker = getattr(user, "worker_profile", None)
-        if worker:
-            worker.display_name = self.cleaned_data.get("worker_display_name", "").strip()
-            worker.phone = profile.phone
-            worker.max_daily_parties = (
-                self.cleaned_data.get("max_daily_parties") or worker.max_daily_parties
-            )
-            worker.save()
-        return user
+            raise ValueError("Owner accounts must be saved in one protected transaction.")
+        from .services.users import create_owner_account
+
+        return create_owner_account(
+            actor=actor,
+            username=self.cleaned_data["username"],
+            first_name=self.cleaned_data["first_name"],
+            last_name=self.cleaned_data["last_name"],
+            email=self.cleaned_data["email"],
+            password=self.cleaned_data["password1"],
+        )
+
+
+class ManagedWorkerForm(AccessibleModelForm):
+    """Edit operational worker settings without touching customer profile data."""
+
+    class Meta:
+        model = WorkerProfile
+        fields = ("display_name", "phone", "max_daily_parties", "notes_for_owner")
+        widgets = {"notes_for_owner": forms.Textarea(attrs={"rows": 4})}
 
 
 # Booking management forms -------------------------------------------------

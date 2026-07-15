@@ -7,7 +7,12 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from .models import CustomerProfile
-from .permissions import role_context
+from .permissions import (
+    can_access_full_management,
+    is_administrator,
+    is_owner,
+    role_context,
+)
 
 
 User = get_user_model()
@@ -96,3 +101,32 @@ class AccountTests(TestCase):
         self.assertFalse(context["nav_is_owner"])
         self.assertFalse(context["nav_is_worker"])
         self.assertEqual(len(captured), 1)
+
+    def test_administrator_and_owner_are_separate_roles(self):
+        administrator = User.objects.create_superuser(
+            "role-admin", "role-admin@example.test", "Admin-pass-2026!"
+        )
+        owner = User.objects.create_user("role-owner", password="Owner-pass-2026!")
+        Group.objects.get(name="Owners").user_set.add(owner)
+
+        self.assertTrue(is_administrator(administrator))
+        self.assertFalse(is_owner(administrator))
+        self.assertTrue(can_access_full_management(administrator))
+
+        self.assertFalse(is_administrator(owner))
+        self.assertTrue(is_owner(owner))
+        self.assertTrue(can_access_full_management(owner))
+
+    def test_role_context_exposes_separate_management_flags(self):
+        administrator = User.objects.create_superuser(
+            "context-admin", "context-admin@example.test", "Admin-pass-2026!"
+        )
+        request = RequestFactory().get("/")
+        request.user = administrator
+        context = role_context(request)
+
+        self.assertTrue(context["nav_is_administrator"])
+        self.assertFalse(context["nav_is_owner"])
+        self.assertTrue(context["nav_can_access_full_management"])
+        self.assertTrue(context["nav_can_create_owner"])
+

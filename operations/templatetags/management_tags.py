@@ -2,30 +2,72 @@
 
 from django import template
 
-from accounts.permissions import OWNER_GROUP, PRICING_GROUP, WORKER_GROUP
+from accounts.permissions import (
+    OWNER_GROUP,
+    PRICING_GROUP,
+    WORKER_GROUP,
+    is_administrator,
+)
 
 register = template.Library()
 
 
+def _group_names(user) -> set[str]:
+    """Reuse prefetched groups on management lists instead of querying per row."""
+
+    prefetched = getattr(user, "_prefetched_objects_cache", {}).get("groups")
+    if prefetched is not None:
+        return {group.name for group in prefetched}
+    if not getattr(user, "is_authenticated", False):
+        return set()
+    return set(user.groups.values_list("name", flat=True))
+
+
 @register.filter
 def in_group(user, group_name: str) -> bool:
-    return bool(getattr(user, "is_authenticated", False) and user.groups.filter(name=group_name).exists())
+    return group_name in _group_names(user)
+
+
+@register.filter
+def is_administrator_account(user) -> bool:
+    return is_administrator(user)
+
+
+@register.filter
+def is_owner_account(user) -> bool:
+    return bool(not getattr(user, "is_superuser", False) and OWNER_GROUP in _group_names(user))
+
+
+@register.filter
+def is_worker_account(user) -> bool:
+    return WORKER_GROUP in _group_names(user)
+
+
+@register.filter
+def is_customer_account(user) -> bool:
+    group_names = _group_names(user)
+    return bool(
+        not getattr(user, "is_superuser", False)
+        and OWNER_GROUP not in group_names
+        and WORKER_GROUP not in group_names
+    )
 
 
 @register.filter
 def management_role(user) -> str:
     if getattr(user, "is_superuser", False):
         return "Administrator"
-    if user.groups.filter(name=OWNER_GROUP).exists():
+    group_names = _group_names(user)
+    if OWNER_GROUP in group_names:
         return "Owner"
-    if user.groups.filter(name=WORKER_GROUP).exists():
+    if WORKER_GROUP in group_names:
         return "Worker"
     return "Customer"
 
 
 @register.filter
 def has_pricing_access(user) -> bool:
-    return user.groups.filter(name=PRICING_GROUP).exists()
+    return PRICING_GROUP in _group_names(user)
 
 
 @register.filter
