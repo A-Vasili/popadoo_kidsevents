@@ -3,15 +3,15 @@
     <ol>
         <li{% if current_step == 1 %} aria-current="step"{% endif %} class="{% if current_step > 1 %}is-complete{% elif current_step == 1 %}is-current{% endif %}">
             <span aria-hidden="true">1</span>
-            <strong>Package</strong>
+            <strong data-i18n="builder.progressPackage">Package</strong>
         </li>
         <li{% if current_step == 2 %} aria-current="step"{% endif %} class="{% if current_step > 2 %}is-complete{% elif current_step == 2 %}is-current{% endif %}">
             <span aria-hidden="true">2</span>
-            <strong>Details</strong>
+            <strong data-i18n="builder.progressDetails">Details</strong>
         </li>
         <li{% if current_step == 3 %} aria-current="step"{% endif %} class="{% if current_step == 3 %}is-current{% endif %}">
             <span aria-hidden="true">3</span>
-            <strong>Checkout</strong>
+            <strong data-i18n="builder.progressCheckout">Checkout</strong>
         </li>
     </ol>
 </nav>

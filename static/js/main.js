@@ -361,6 +361,17 @@
             element.textContent = translate(key);
         });
 
+        document.querySelectorAll("[data-i18n-template]").forEach((element) => {
+            let text = translate(element.getAttribute("data-i18n-template"));
+            Array.from(element.attributes)
+                .filter((attribute) => attribute.name.startsWith("data-i18n-value-"))
+                .forEach((attribute) => {
+                    const placeholder = attribute.name.replace("data-i18n-value-", "");
+                    text = text.replaceAll(`{${placeholder}}`, attribute.value);
+                });
+            element.textContent = text;
+        });
+
         ["aria-label", "alt", "placeholder", "title"].forEach((attributeName) => {
             const dataAttribute = `data-i18n-${attributeName}`;
 

@@ -367,5 +367,5 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
         for item in response.json()["recommendations"]:
             self.assertEqual(
                 set(item),
-                {"id", "name", "short_description", "price", "reason", "pair_count"},
+                {"id", "slug", "name", "short_description", "price", "reason", "reason_key", "reason_values", "pair_count"},
             )

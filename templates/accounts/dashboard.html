@@ -30,7 +30,7 @@
                     </header>
                     <dl>
                         <div><dt>Date</dt><dd>{{ booking.event_date|date:"j F Y" }}</dd></div>
-                        <div><dt>Children</dt><dd>{{ booking.guest_count }}</dd></div>
+                        <div><dt>Package capacity</dt><dd>{{ booking.party_size_display }}</dd></div>
                         <div><dt>Total</dt><dd>€{{ booking.total_price|floatformat:2 }}</dd></div>
                         <div><dt>Booking status</dt><dd>{{ booking.get_status_display }}</dd></div>
                     </dl>

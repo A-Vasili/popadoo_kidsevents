@@ -7,8 +7,12 @@
         id="package-{{ package.pk }}"
         data-package-radio
         data-package-id="{{ package.pk }}"
+        data-package-name="{{ package.name }}"
+        data-package-slug="{{ package.slug }}"
+        data-package-price="{{ package.catalogue_price }}"
+        data-package-capacity="{{ package.included_guest_count }}"
         {% if package.pk|stringformat:'s' == selected_package_id %}checked{% endif %}
-        aria-describedby="package-{{ package.pk }}-description package-{{ package.pk }}-price"
+        aria-describedby="package-{{ package.pk }}-description package-{{ package.pk }}-capacity package-{{ package.pk }}-price"
     >
     <label class="package-card" for="package-{{ package.pk }}">
         {% if package.image %}
@@ -18,18 +22,21 @@
         {% endif %}
         <span class="package-card-content">
             <span class="package-card-heading">
-                <strong>{{ package.name }}</strong>
-                {% if package.is_default %}<span class="tier-badge">Popular start</span>{% endif %}
+                <strong data-catalogue-i18n="catalogue.package.{{ package.slug }}.name">{{ package.name }}</strong>
+                {% if package.is_default %}<span class="package-badge" data-i18n="builder.popularStart">Popular start</span>{% endif %}
             </span>
-            <span id="package-{{ package.pk }}-description">{{ package.short_description }}</span>
-            <span class="package-card-includes">{{ package.included_guest_count }} children included · {{ package.duration_minutes }} minutes</span>
+            <span id="package-{{ package.pk }}-description" data-catalogue-i18n="catalogue.package.{{ package.slug }}.description">{{ package.short_description }}</span>
+            <span class="package-card-includes" id="package-{{ package.pk }}-capacity">
+                <span data-i18n-template="builder.upToChildren" data-i18n-value-count="{{ package.included_guest_count }}">Up to {{ package.included_guest_count }} children</span> · <span data-i18n-template="builder.durationMinutes" data-i18n-value-count="{{ package.duration_minutes }}">{{ package.duration_minutes }} minutes</span>
+            </span>
+            <span class="package-card-includes" data-catalogue-i18n="catalogue.package.{{ package.slug }}.includes">{{ package.included_experiences|default:"Flexible activities confirmed with the team." }}</span>
             {% if package.rating_count %}
-                <span class="addon-rating-summary" aria-label="Average rating {{ package.average_rating|floatformat:1 }} out of 5 from {{ package.rating_count }} verified parties"><span aria-hidden="true">★</span> {{ package.average_rating|floatformat:1 }} ({{ package.rating_count }})</span>
+                <span class="addon-rating-summary" aria-label="Average rating {{ package.average_rating|floatformat:1 }} out of 5 from {{ package.rating_count }} verified parties" data-i18n-aria-label="builder.averageRating" data-i18n-value-rating="{{ package.average_rating|floatformat:1 }}" data-i18n-value-count="{{ package.rating_count }}"><span aria-hidden="true">★</span> {{ package.average_rating|floatformat:1 }} ({{ package.rating_count }})</span>
             {% else %}
-                <span class="package-card-no-rating">No ratings yet</span>
+                <span class="package-card-no-rating" data-i18n="builder.noRatings">No ratings yet</span>
             {% endif %}
-            <span class="package-card-price" id="package-{{ package.pk }}-price">From €{{ package.catalogue_price|floatformat:2 }}</span>
-            <span class="package-card-action" data-package-action data-i18n="{% if package.pk|stringformat:'s' == selected_package_id %}builder.selectedStartingPoint{% else %}builder.chooseStartingPoint{% endif %}">{% if package.pk|stringformat:'s' == selected_package_id %}Selected starting point{% else %}Choose this starting point{% endif %}</span>
+            <span class="package-card-price" id="package-{{ package.pk }}-price">€{{ package.catalogue_price|floatformat:2 }}</span>
+            <span class="package-card-action" data-package-action data-i18n="{% if package.pk|stringformat:'s' == selected_package_id %}builder.selectedPackage{% else %}builder.choosePackageAction{% endif %}">{% if package.pk|stringformat:'s' == selected_package_id %}Selected package{% else %}Choose this package{% endif %}</span>
         </span>
     </label>
 </article>

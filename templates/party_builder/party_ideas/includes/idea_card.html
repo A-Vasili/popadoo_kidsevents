@@ -49,11 +49,11 @@
 
         <div class="party-idea-meta">
             <strong>
-                {% if card.kind == "package" %}From {% else %}+{% endif %}€{{ card.price|floatformat:2 }}
+                {% if card.kind == "experience" %}+{% endif %}€{{ card.price|floatformat:2 }}
             </strong>
             <span>{{ card.duration_minutes }} minutes</span>
             {% if card.kind == "package" %}
-                <span>Up to {{ card.object.included_guest_count }} included</span>
+                <span data-i18n-template="builder.upToChildren" data-i18n-value-count="{{ card.object.included_guest_count }}">Up to {{ card.object.included_guest_count }} children</span>
             {% endif %}
         </div>
 

@@ -351,10 +351,6 @@ html[data-theme="dark"] {
     cursor: pointer;
 }
 
-html[data-theme="dark"] .management-button {
-    color: #1b1221;
-}
-
 .management-button:hover {
     background: var(--management-primary-hover);
     border-color: var(--management-primary-hover);
@@ -391,7 +387,7 @@ html[data-theme="dark"] .management-button.danger {
 .management-module-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(1.15rem, 1.5vw, 1.5rem);
 }
 
 .management-stat-grid a,
@@ -434,7 +430,13 @@ html[data-theme="dark"] .management-button.danger {
 .management-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: clamp(1.15rem, 1.5vw, 1.5rem);
+}
+
+/* The dashboard summary and detailed panels are separate groups, so this gap
+   keeps them visually distinct without adding empty markup. */
+.management-page-section + .management-dashboard-grid {
+    margin-top: clamp(1.5rem, 2vw, 2rem);
 }
 
 .management-panel,
@@ -1076,10 +1078,10 @@ html[data-theme="dark"] {
     --management-button-primary-text: #1b1221;
     --management-button-primary-hover-bg: #ddc4ef;
     --management-button-primary-active-bg: #b892d5;
-    --management-button-secondary-bg: #2a2134;
-    --management-button-secondary-text: #faf7fc;
-    --management-button-secondary-border: #766482;
-    --management-button-secondary-hover-bg: #3a2f46;
+    --management-button-secondary-bg: #5a3b70;
+    --management-button-secondary-text: #fffaff;
+    --management-button-secondary-border: #c9a7e4;
+    --management-button-secondary-hover-bg: #704b8a;
     --management-button-danger-bg: #ff91ae;
     --management-button-danger-text: #2b1019;
     --management-button-danger-hover-bg: #ffb1c5;
@@ -1193,6 +1195,27 @@ html[data-theme="dark"] .management-body { color-scheme: dark; }
     border-color: var(--management-button-secondary-border);
 }
 
+/* Dark management actions use a solid purple surface so labels stay clear
+ * against the dark workspace, including links that the browser marks visited. */
+html[data-theme="dark"] .management-body .management-button.secondary,
+html[data-theme="dark"] .management-body a.management-button.secondary:link,
+html[data-theme="dark"] .management-body a.management-button.secondary:visited,
+html[data-theme="dark"] .management-body .management-link-button,
+html[data-theme="dark"] .management-body .management-icon-button {
+    color: var(--management-button-secondary-text);
+    background: var(--management-button-secondary-bg);
+    border-color: var(--management-button-secondary-border);
+}
+
+html[data-theme="dark"] .management-body .management-button.secondary:hover,
+html[data-theme="dark"] .management-body .management-button.secondary:focus-visible,
+html[data-theme="dark"] .management-body .management-link-button:hover,
+html[data-theme="dark"] .management-body .management-icon-button:hover {
+    color: var(--management-button-secondary-text);
+    background: var(--management-button-secondary-hover-bg);
+    border-color: #e0c8f0;
+}
+
 .management-button.danger {
     color: var(--management-button-danger-text);
     background: var(--management-button-danger-bg);
@@ -1228,6 +1251,15 @@ html[data-theme="dark"] .management-body { color-scheme: dark; }
     opacity: 1;
     cursor: not-allowed;
     pointer-events: none;
+}
+
+html[data-theme="dark"] .management-body .management-button.secondary:disabled,
+html[data-theme="dark"] .management-body .management-button.secondary[disabled],
+html[data-theme="dark"] .management-body .management-button.secondary[aria-disabled="true"],
+html[data-theme="dark"] .management-body .management-button.secondary.is-submitting {
+    color: var(--management-button-disabled-text);
+    background: var(--management-button-disabled-bg);
+    border-color: var(--management-button-disabled-border);
 }
 
 .management-body .form-select option {

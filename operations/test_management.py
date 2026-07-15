@@ -30,6 +30,7 @@ from party_builder.models import (
 from .models import AuditEvent, PartyAssignment
 from .services.assignment import assign_manually
 from .services.bookings import send_to_manual_review
+from .services.catalogue import remove_tier
 
 User = get_user_model()
 
@@ -136,15 +137,15 @@ class ManagementPanelTests(TestCase):
         response = self.client.post(
             reverse("management:management_category_create"),
             {
-                "name": "Creative Activities",
-                "slug": "creative-activities",
+                "name": "Management Creative Activities",
+                "slug": "management-creative-activities",
                 "description": "Hands-on activities.",
                 "display_order": 30,
                 "is_active": "on",
             },
         )
         self.assertRedirects(response, reverse("management:management_category_list"))
-        parent = Category.objects.get(slug="creative-activities")
+        parent = Category.objects.get(slug="management-creative-activities")
 
         response = self.client.post(
             reverse("management:management_category_create"),
@@ -275,41 +276,69 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(self.package.is_active)
         self.assertTrue(replacement.is_default)
 
-    def test_overlapping_tier_is_rejected_and_default_switches(self):
-        response = self.client.post(
-            reverse("management:management_tier_create"),
-            {
-                "package": self.package.pk,
-                "label": "Overlap",
-                "min_guests": 8,
-                "max_guests": 12,
-                "total_price": "220.00",
-                "is_active": "on",
-                "display_order": 99,
-            },
+    def test_package_management_uses_capacity_and_hides_tier_crud(self):
+        catalogue = self.client.get(
+            reverse("management:management_catalogue")
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "overlaps another active tier")
+        package_detail = self.client.get(
+            reverse(
+                "management:management_package_detail",
+                args=[self.package.pk],
+            )
+        )
 
-        response = self.client.post(
+        self.assertContains(catalogue, "Capacity-based packages")
+        self.assertNotContains(catalogue, "Guest-price tiers")
+        self.assertContains(package_detail, "Fixed package price")
+        self.assertContains(package_detail, "Package capacity")
+        self.assertNotContains(package_detail, "Add tier")
+        self.assertNotContains(package_detail, "Edit tier")
+
+    def test_legacy_tier_management_urls_are_read_only_redirects(self):
+        original_count = GuestPriceTier.objects.count()
+        list_response = self.client.get(
+            reverse("management:management_tier_list")
+        )
+        create_response = self.client.post(
             reverse("management:management_tier_create"),
             {
                 "package": self.package.pk,
-                "label": "41–45 children",
+                "label": "New tier should not be created",
                 "min_guests": 41,
                 "max_guests": 45,
                 "total_price": "630.00",
-                "is_default": "on",
                 "is_active": "on",
-                "display_order": 90,
             },
         )
-        self.assertRedirects(response, reverse("management:management_tier_list"))
-        new_default = GuestPriceTier.objects.get(label="41–45 children")
-        self.assertTrue(new_default.is_default)
-        self.assertEqual(
-            GuestPriceTier.objects.filter(package=self.package, is_default=True).count(),
-            1,
+        package_create_response = self.client.get(
+            reverse(
+                "management:management_package_tier_create",
+                args=[self.package.pk],
+            )
+        )
+        update_response = self.client.get(
+            reverse("management:management_tier_update", args=[self.tier.pk])
+        )
+
+        self.assertRedirects(
+            list_response,
+            reverse("management:management_catalogue"),
+        )
+        self.assertRedirects(
+            create_response,
+            reverse("management:management_catalogue"),
+        )
+        package_detail = reverse(
+            "management:management_package_detail",
+            args=[self.package.pk],
+        )
+        self.assertRedirects(package_create_response, package_detail)
+        self.assertRedirects(update_response, package_detail)
+        self.assertEqual(GuestPriceTier.objects.count(), original_count)
+        self.assertFalse(
+            GuestPriceTier.objects.filter(
+                label="New tier should not be created"
+            ).exists()
         )
 
     def test_referenced_addon_is_archived(self):
@@ -478,15 +507,6 @@ class ManagementPanelTests(TestCase):
             is_active=True,
             is_default=True,
         )
-        extra_tier = GuestPriceTier.objects.create(
-            package=self.package,
-            label="201–210 test tier",
-            min_guests=191,
-            max_guests=200,
-            total_price=Decimal("900.00"),
-            is_active=False,
-            is_default=False,
-        )
         addon = AddonExperience.objects.create(
             name="Temporary Add-on",
             slug="temporary-addon",
@@ -496,12 +516,6 @@ class ManagementPanelTests(TestCase):
             duration_minutes=0,
             is_active=True,
         )
-
-        self.client.post(
-            reverse("management:management_tier_remove", args=[extra_tier.pk]),
-            {"confirmation": "on"},
-        )
-        self.assertFalse(GuestPriceTier.objects.filter(pk=extra_tier.pk).exists())
 
         self.client.post(
             reverse("management:management_addon_remove", args=[addon.pk]),
@@ -516,7 +530,7 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(PartyPackage.objects.filter(pk=package.pk).exists())
         self.assertFalse(GuestPriceTier.objects.filter(pk=tier.pk).exists())
 
-    def test_referenced_tier_is_archived_without_losing_booking(self):
+    def test_legacy_tier_service_archives_without_losing_booking(self):
         tier = GuestPriceTier.objects.create(
             package=self.package,
             label="Archive test 41–45",
@@ -527,17 +541,24 @@ class ManagementPanelTests(TestCase):
             is_default=False,
         )
         booking = self.make_booking(tier=tier)
-        response = self.client.post(
-            reverse("management:management_tier_remove", args=[tier.pk]),
-            {"confirmation": "on"},
-        )
-        self.assertRedirects(response, reverse("management:management_tier_list"))
+
+        result = remove_tier(tier, actor=self.owner)
+
         tier.refresh_from_db()
         booking.refresh_from_db()
+        self.assertEqual(result.action, "archived")
         self.assertFalse(tier.is_active)
         self.assertEqual(booking.guest_tier_id, tier.pk)
 
     def test_last_default_package_cannot_be_removed(self):
+        PartyPackage.objects.exclude(pk=self.package.pk).update(
+            is_active=False,
+            is_default=False,
+        )
+        PartyPackage.objects.filter(pk=self.package.pk).update(
+            is_active=True,
+            is_default=True,
+        )
         response = self.client.post(
             reverse("management:management_package_remove", args=[self.package.pk]),
             {"confirmation": "on"},

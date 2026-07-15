@@ -42,7 +42,6 @@ from .forms import (
     AddonForm,
     BookingStatusForm,
     CategoryForm,
-    GuestPriceTierForm,
     ManagedWorkerForm,
     OwnerCreationForm,
     OwnerWorkerCreationForm,
@@ -57,7 +56,6 @@ from .services.catalogue import (
     remove_addon,
     remove_category,
     remove_package,
-    remove_tier,
     save_catalogue_form,
 )
 from .services.scheduling import find_schedule_conflicts, get_event_window, worker_is_available
@@ -475,66 +473,46 @@ class PackageRemoveView(CatalogueRemoveView):
         return f"{count} historical booking(s)" if count else "Historical tier references"
 
 
-class TierListView(CatalogueManagementMixin, ManagementContextMixin, ListView):
-    template_name = "operations/management/tiers/list.html"
-    context_object_name = "tiers"
-    paginate_by = 25
-    page_title = "Guest-price tiers"
-    active_section = "catalogue"
+class LegacyTierCompatibilityView(CatalogueManagementMixin, View):
+    """Keep old tier URLs safe while directing managers to fixed-price packages.
 
-    def get_queryset(self):
-        queryset = GuestPriceTier.objects.select_related("package")
-        query = self.request.GET.get("q", "").strip()
-        package = self.request.GET.get("package", "")
-        status = self.request.GET.get("status", "")
-        if query:
-            queryset = queryset.filter(Q(label__icontains=query) | Q(package__name__icontains=query))
-        if package.isdigit():
-            queryset = queryset.filter(package_id=package)
-        if status in {"active", "inactive"}:
-            queryset = queryset.filter(is_active=(status == "active"))
-        return queryset.order_by("package__display_order", "package__name", "display_order", "min_guests")
+    Guest tiers still exist for historical bookings, but new catalogue changes
+    belong on the package itself. Both GET and POST are therefore non-mutating.
+    """
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["package_options"] = PartyPackage.objects.order_by("display_order", "name")
-        return context
+    http_method_names = ["get", "post"]
 
-
-class TierCreateView(CatalogueFormView):
-    model = GuestPriceTier
-    form_class = GuestPriceTierForm
-    success_name = "management:management_tier_list"
-    object_label = "guest-price tier"
-    page_title = "Create guest-price tier"
-    active_section = "catalogue"
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        package_id = self.kwargs.get("package_id")
+    def dispatch(self, request, *args, **kwargs):
+        self.package = None
+        package_id = kwargs.get("package_id")
+        tier_id = kwargs.get("pk")
         if package_id:
-            kwargs["package"] = get_object_or_404(PartyPackage, pk=package_id)
-        return kwargs
+            self.package = get_object_or_404(PartyPackage, pk=package_id)
+        elif tier_id:
+            tier = get_object_or_404(
+                GuestPriceTier.objects.select_related("package"),
+                pk=tier_id,
+            )
+            self.package = tier.package
+        return super().dispatch(request, *args, **kwargs)
 
+    def _redirect(self):
+        messages.info(
+            self.request,
+            "Guest-price tiers are read-only legacy records. Edit the package capacity and fixed price instead.",
+        )
+        if self.package is not None:
+            return redirect(
+                "management:management_package_detail",
+                pk=self.package.pk,
+            )
+        return redirect("management:management_catalogue")
 
-class TierUpdateView(TierCreateView):
-    page_title = "Edit guest-price tier"
+    def get(self, request, *args, **kwargs):
+        return self._redirect()
 
-
-class TierRemoveView(CatalogueRemoveView):
-    model = GuestPriceTier
-    remove_service = staticmethod(remove_tier)
-    success_name = "management:management_tier_list"
-    object_label = "guest-price tier"
-    page_title = "Delete or archive guest-price tier"
-    active_section = "catalogue"
-
-    def will_archive(self):
-        return self.object.builds.exists()
-
-    def usage_summary(self):
-        count = self.object.builds.count()
-        return f"{count} historical booking(s)" if count else ""
+    def post(self, request, *args, **kwargs):
+        return self._redirect()
 
 
 class AddonListView(CatalogueManagementMixin, ManagementContextMixin, ListView):

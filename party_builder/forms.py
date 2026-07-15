@@ -15,7 +15,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import AddonExperience, Category, GuestPriceTier, PartyPackage, PartyReview
+from .models import AddonExperience, Category, PartyPackage, PartyReview
 from .services import SafePaymentResult
 
 
@@ -56,11 +56,24 @@ class PartyIdeasFilterForm(forms.Form):
         ("4", "4+ stars"),
         ("4.5", "4.5+ stars"),
     )
+    CAPACITY_CHOICES = (
+        ("", "Any size"),
+        ("10", "Up to 10 children"),
+        ("15", "Up to 15 children"),
+        ("20", "Up to 20 children"),
+        ("25", "Up to 25 children"),
+        ("30", "Up to 30 children"),
+        ("35", "Up to 35 children"),
+        ("40", "Up to 40 children"),
+        ("50", "Up to 50 children"),
+    )
     SORT_CHOICES = (
         ("recommended", "Recommended"),
         ("name", "Name A–Z"),
         ("price_asc", "Price: low to high"),
         ("price_desc", "Price: high to low"),
+        ("capacity_asc", "Capacity: small to large"),
+        ("capacity_desc", "Capacity: large to small"),
         ("rating", "Highest rated"),
         ("reviews", "Most reviewed"),
     )
@@ -103,6 +116,13 @@ class PartyIdeasFilterForm(forms.Form):
         to_field_name="slug",
         empty_label="All categories",
         label="Category",
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    capacity = forms.ChoiceField(
+        required=False,
+        choices=CAPACITY_CHOICES,
+        label="Minimum package capacity",
+        help_text="Package results must hold at least this many children.",
         widget=forms.Select(attrs={"class": "form-select"}),
     )
     duration = forms.ChoiceField(
@@ -148,19 +168,13 @@ class PartyIdeasFilterForm(forms.Form):
 
 
 class PackageOptionsForm(forms.Form):
-    """Validate the starting package, guest bracket and optional experiences."""
+    """Validate one capacity-based package and its optional experiences."""
 
     package = forms.ModelChoiceField(
         queryset=PartyPackage.objects.none(),
         empty_label=None,
         widget=forms.RadioSelect,
-        label="Starting package",
-    )
-    guest_tier = forms.ModelChoiceField(
-        queryset=GuestPriceTier.objects.none(),
-        empty_label=None,
-        widget=forms.RadioSelect,
-        label="Number of children",
+        label="Package and party size",
     )
     addons = forms.ModelMultipleChoiceField(
         queryset=AddonExperience.objects.none(),
@@ -170,50 +184,24 @@ class PackageOptionsForm(forms.Form):
     )
 
     def __init__(self, *args, package: PartyPackage | None = None, **kwargs):
-        self.initial_package = package
-        submitted_data = args[0] if args else kwargs.get("data")
-        if submitted_data is not None and package and "package" not in submitted_data:
-            # Existing clients from the original one-package builder did not
-            # submit this field. Treat that request as the package shown to the
-            # customer, while new pages always send an explicit choice.
-            submitted = submitted_data.copy()
-            submitted["package"] = str(package.pk)
-            if args:
-                args = (submitted, *args[1:])
-            else:
-                kwargs["data"] = submitted
         super().__init__(*args, **kwargs)
-        self.fields["package"].queryset = PartyPackage.objects.filter(
-            is_active=True, category__is_active=True
-        ).filter(
-            Q(category__parent__isnull=True) | Q(category__parent__is_active=True)
-        ).order_by("display_order", "name")
-        self.fields["guest_tier"].queryset = GuestPriceTier.objects.filter(
-            is_active=True, package__is_active=True
-        ).select_related("package").order_by(
-            "package__display_order", "package__name", "display_order", "min_guests"
+        visible_category = Q(category__parent__isnull=True) | Q(
+            category__parent__is_active=True
         )
-        self.fields["addons"].queryset = AddonExperience.objects.filter(
-            is_active=True, category__is_active=True
-        ).filter(
-            Q(category__parent__isnull=True) | Q(category__parent__is_active=True)
-        ).select_related("category", "category__parent").order_by(
-            "display_order", "name"
+        self.fields["package"].queryset = (
+            PartyPackage.objects.filter(is_active=True, category__is_active=True)
+            .filter(visible_category)
+            .order_by("display_order", "name")
+        )
+        self.fields["addons"].queryset = (
+            AddonExperience.objects.filter(is_active=True, category__is_active=True)
+            .filter(visible_category)
+            .select_related("category", "category__parent")
+            .order_by("display_order", "name")
         )
         if package and not self.is_bound:
             self.initial.setdefault("package", package.pk)
         _apply_accessible_attributes(self)
-
-    def clean(self):
-        cleaned = super().clean()
-        package = cleaned.get("package")
-        tier = cleaned.get("guest_tier")
-        if package and tier and tier.package_id != package.pk:
-            self.add_error(
-                "guest_tier",
-                "Choose a group-size option that belongs to the selected package.",
-            )
-        return cleaned
 
 
 class PartyDetailsForm(forms.Form):
@@ -272,14 +260,6 @@ class PartyDetailsForm(forms.Form):
             attrs={"type": "hidden", "data-custom-time-input": ""},
         ),
     )
-    guest_count = forms.IntegerField(
-        min_value=1,
-        max_value=200,
-        label="Expected number of children",
-        widget=forms.NumberInput(
-            attrs={"class": "form-control", "inputmode": "numeric"}
-        ),
-    )
     event_address = forms.CharField(
         max_length=240,
         label="Event address",
@@ -321,23 +301,12 @@ class PartyDetailsForm(forms.Form):
         ),
     )
 
-    def __init__(self, *args, guest_tier: GuestPriceTier, show_save_profile=False, user=None, **kwargs):
-        self.guest_tier = guest_tier
+    def __init__(self, *args, show_save_profile=False, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
         if not show_save_profile:
             self.fields.pop("save_profile", None)
         self.fields["event_date"].widget.attrs["data-min"] = date.today().isoformat()
-        self.fields["guest_count"].widget.attrs.update(
-            {
-                "min": str(guest_tier.min_guests),
-                "max": str(guest_tier.max_guests),
-            }
-        )
-        self.fields["guest_count"].help_text = (
-            f"Enter a number from {guest_tier.min_guests} to "
-            f"{guest_tier.max_guests} for the selected bracket."
-        )
         _apply_accessible_attributes(self)
 
     def clean_contact_phone(self) -> str:
@@ -353,14 +322,6 @@ class PartyDetailsForm(forms.Form):
             raise forms.ValidationError("Choose today or a future date.")
         return event_date
 
-    def clean_guest_count(self) -> int:
-        guest_count = self.cleaned_data["guest_count"]
-        if not self.guest_tier.contains_guest_count(guest_count):
-            raise forms.ValidationError(
-                f"This option covers {self.guest_tier.min_guests}–"
-                f"{self.guest_tier.max_guests} children."
-            )
-        return guest_count
 
     def clean_postal_code(self) -> str:
         postal_code = self.cleaned_data["postal_code"].strip()

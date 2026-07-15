@@ -16,12 +16,13 @@
 
     {% if packages %}
         <div class="management-result-summary">{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}</div>
-        <div class="management-table-wrap"><table class="management-table"><caption class="visually-hidden">Party packages</caption><thead><tr><th>Package</th><th>Category</th><th>Price</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+        <div class="management-table-wrap"><table class="management-table"><caption class="visually-hidden">Party packages</caption><thead><tr><th>Package</th><th>Category</th><th>Fixed price</th><th>Capacity</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>
         {% for package in packages %}
             <tr>
                 <td data-label="Package"><div class="management-record-cell">{% if package.image %}<img src="{{ package.image.url }}" alt="" width="54" height="54">{% else %}<span class="management-thumbnail-placeholder" aria-hidden="true">★</span>{% endif %}<span><a href="{% url 'management:management_package_detail' package.pk %}"><strong>{{ package.name }}</strong></a><small>{{ package.slug }} {% if package.is_default %}· Default{% endif %}</small></span></div></td>
                 <td data-label="Category">{{ package.category|default:"Uncategorised" }}</td>
-                <td data-label="Price">€{{ package.base_price }}</td>
+                <td data-label="Fixed price">€{{ package.base_price }}</td>
+                <td data-label="Capacity">Up to {{ package.included_guest_count }} children</td>
                 <td data-label="Duration">{{ package.duration_minutes }} min</td>
                 <td data-label="Status">{% if package.is_active %}{% include "operations/management/includes/status_badge.html" with value="active" label="Active" %}{% else %}{% include "operations/management/includes/status_badge.html" with value="inactive" label="Archived" %}{% endif %}</td>
                 <td data-label="Actions"><div class="management-row-actions"><a href="{% url 'management:management_package_update' package.pk %}">Edit</a><a class="danger-link" href="{% url 'management:management_package_remove' package.pk %}">Delete/Archive</a></div></td>

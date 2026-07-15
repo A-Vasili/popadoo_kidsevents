@@ -49,7 +49,6 @@
                     {% include "party_builder/includes/form_field.html" with field=form.contact_name only %}
                     {% include "party_builder/includes/form_field.html" with field=form.contact_email only %}
                     {% include "party_builder/includes/form_field.html" with field=form.contact_phone only %}
-                    {% include "party_builder/includes/form_field.html" with field=form.guest_count only %}
                     {% include "includes/custom_date_field.html" with field=form.event_date placeholder="Choose a date" only %}
                     {% include "includes/custom_time_field.html" with field=form.event_time placeholder="To be confirmed" help_text="Optional. The final time is confirmed after availability review." start="10:00" end="22:00" step="30" only %}
                     {% include "party_builder/includes/form_field.html" with field=form.event_address wide=True only %}

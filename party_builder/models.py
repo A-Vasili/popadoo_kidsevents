@@ -552,6 +552,12 @@ class PartyBuild(models.Model):
     def __str__(self) -> str:
         return f"{self.contact_name} — {self.package.name} ({self.event_date})"
 
+    @property
+    def party_size_display(self) -> str:
+        """Describe capacity without presenting it as confirmed attendance."""
+
+        return self.guest_tier_label or f"Up to {self.guest_count} children"
+
     def get_absolute_url(self) -> str:
         return reverse(
             "party_builder:party_builder_order_success",

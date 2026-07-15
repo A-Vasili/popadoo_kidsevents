@@ -49,7 +49,7 @@
                         <div><dt>Contact</dt><dd>{{ details.contact_name }}</dd></div>
                         <div><dt>Email</dt><dd>{{ details.contact_email }}</dd></div>
                         <div><dt>Phone</dt><dd>{{ details.contact_phone }}</dd></div>
-                        <div><dt>Children</dt><dd>{{ details.guest_count }} ({{ guest_tier.label }})</dd></div>
+                        <div><dt data-i18n="builder.packageCapacity">Package capacity</dt><dd data-i18n-template="builder.upToChildren" data-i18n-value-count="{{ package.included_guest_count }}">Up to {{ package.included_guest_count }} children</dd></div>
                         <div><dt>Date</dt><dd>{{ details.event_date }}</dd></div>
                         <div><dt>Time</dt><dd>{{ details.event_time|default:"To be confirmed" }}</dd></div>
                         <div class="review-detail-wide"><dt>Venue</dt><dd>{{ details.event_address }}, {{ details.postal_code }}</dd></div>

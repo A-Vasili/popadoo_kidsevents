@@ -1,3 +1,4 @@
+"""Checkout tests for capacity-based packages and simulated payment."""
 
 from datetime import timedelta
 from decimal import Decimal
@@ -6,36 +7,29 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import AddonExperience, GuestPriceTier, PartyBuild, PartyPackage
-from .services import calculate_party_quote
+from .forms import PackageOptionsForm, PartyDetailsForm
+from .models import AddonExperience, PartyBuild, PartyPackage
+from .services import CHECKOUT_SESSION_KEY, calculate_party_quote
 
 
 class PartyCheckoutTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
-        cls.default_tier = GuestPriceTier.objects.get(
-            package=cls.package,
-            min_guests=1,
-            max_guests=10,
-        )
-        cls.large_tier = GuestPriceTier.objects.get(
-            package=cls.package,
-            min_guests=11,
-            max_guests=15,
-        )
+        cls.larger_package = PartyPackage.objects.get(slug="popadoo-plus-party")
         cls.addon = AddonExperience.objects.get(slug="face-painting")
 
-    def select_options(self, tier=None, addons=None):
+    def select_options(self, package=None, addons=None):
+        selected_package = package or self.package
         return self.client.post(
             reverse("party_builder:party_builder_package_options"),
             {
-                "guest_tier": str((tier or self.default_tier).pk),
+                "package": str(selected_package.pk),
                 "addons": [str(item.pk) for item in (addons or [])],
             },
         )
 
-    def submit_details(self, guest_count=8):
+    def submit_details(self):
         return self.client.post(
             reverse("party_builder:party_builder_customer_details"),
             {
@@ -46,7 +40,6 @@ class PartyCheckoutTests(TestCase):
                     timezone.localdate() + timedelta(days=14)
                 ).isoformat(),
                 "event_time": "16:30",
-                "guest_count": str(guest_count),
                 "event_address": "Agiou Ioannou 102, Agia Paraskevi",
                 "postal_code": "153 42",
                 "notes": "Rainbow theme",
@@ -67,33 +60,29 @@ class PartyCheckoutTests(TestCase):
             "/party-builder/checkout/",
         )
 
-    def test_options_page_contains_tiers_addons_and_accessibility_status(self):
+    def test_options_page_contains_capacity_packages_addons_and_status(self):
         response = self.client.get(
             reverse("party_builder:party_builder_package_options")
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "0–10 children")
-        self.assertContains(response, "26–30 children")
+        self.assertContains(response, "Up to 10 children")
+        self.assertContains(response, "Up to 50 children")
         self.assertContains(response, self.addon.name)
         self.assertContains(response, 'aria-live="polite"')
+        self.assertNotContains(response, 'name="guest_tier"')
 
-    def test_larger_tiers_reduce_effective_price_per_child(self):
-        self.assertEqual(self.default_tier.total_price, Decimal("180.00"))
-        self.assertEqual(
-            self.default_tier.price_per_child_at_capacity,
-            Decimal("18.00"),
-        )
-        self.assertLess(
-            self.large_tier.price_per_child_at_capacity,
-            self.default_tier.price_per_child_at_capacity,
-        )
-        self.assertGreater(self.large_tier.total_price, self.default_tier.total_price)
+    def test_forms_no_longer_collect_a_tier_or_exact_child_count(self):
+        self.assertNotIn("guest_tier", PackageOptionsForm().fields)
+        self.assertNotIn("guest_count", PartyDetailsForm().fields)
 
-    def test_quote_uses_selected_tier_and_database_addon_prices(self):
-        quote = calculate_party_quote(self.large_tier, [self.addon])
+    def test_quote_uses_package_and_database_addon_prices(self):
+        quote = calculate_party_quote(self.larger_package, [self.addon])
         self.assertEqual(quote.package_price, Decimal("255.00"))
-        self.assertEqual(quote.addon_price, Decimal("70.00"))
-        self.assertEqual(quote.total_price, Decimal("325.00"))
+        self.assertEqual(quote.addon_price, self.addon.price)
+        self.assertEqual(
+            quote.total_price,
+            Decimal("255.00") + self.addon.price,
+        )
 
     def test_later_steps_redirect_when_cart_is_missing(self):
         details_response = self.client.get(
@@ -106,19 +95,32 @@ class PartyCheckoutTests(TestCase):
         self.assertRedirects(details_response, target)
         self.assertRedirects(checkout_response, target)
 
-    def test_guest_count_must_match_selected_bracket(self):
-        self.select_options(tier=self.large_tier)
-        response = self.submit_details(guest_count=8)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "This option covers 11–15 children.")
+    def test_legacy_tier_session_key_is_removed(self):
+        session = self.client.session
+        session[CHECKOUT_SESSION_KEY] = {
+            "package_id": self.package.pk,
+            "guest_tier_id": 999999,
+            "addon_ids": [],
+        }
+        session.save()
 
-    def test_complete_simulated_checkout_saves_only_safe_card_metadata(self):
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(
+            "guest_tier_id",
+            self.client.session[CHECKOUT_SESSION_KEY],
+        )
+
+    def test_complete_checkout_saves_capacity_snapshot_and_safe_card_metadata(self):
         self.assertRedirects(
-            self.select_options(tier=self.large_tier, addons=[self.addon]),
+            self.select_options(package=self.larger_package, addons=[self.addon]),
             reverse("party_builder:party_builder_customer_details"),
         )
         self.assertRedirects(
-            self.submit_details(guest_count=14),
+            self.submit_details(),
             reverse("party_builder:party_builder_simulated_checkout"),
         )
 
@@ -137,10 +139,13 @@ class PartyCheckoutTests(TestCase):
 
         build = PartyBuild.objects.get()
         self.assertRedirects(response, build.get_absolute_url())
-        self.assertEqual(build.guest_tier, self.large_tier)
+        self.assertIsNone(build.guest_tier)
+        self.assertEqual(build.guest_count, self.larger_package.included_guest_count)
+        self.assertEqual(build.guest_tier_label, "Up to 15 children")
+        self.assertEqual(build.party_size_display, "Up to 15 children")
         self.assertEqual(build.package_price, Decimal("255.00"))
-        self.assertEqual(build.addon_price, Decimal("70.00"))
-        self.assertEqual(build.total_price, Decimal("325.00"))
+        self.assertEqual(build.addon_price, self.addon.price)
+        self.assertEqual(build.total_price, Decimal("255.00") + self.addon.price)
         self.assertEqual(build.card_brand, "Visa")
         self.assertEqual(build.card_last_four, "4242")
         self.assertNotIn("4242424242424242", str(build.__dict__))
@@ -148,7 +153,7 @@ class PartyCheckoutTests(TestCase):
 
     def test_invalid_test_card_is_rejected(self):
         self.select_options()
-        self.submit_details(guest_count=8)
+        self.submit_details()
         response = self.client.post(
             reverse("party_builder:party_builder_simulated_checkout"),
             {
@@ -162,7 +167,10 @@ class PartyCheckoutTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Use an approved demo number such as 4242 4242 4242 4242.")
+        self.assertContains(
+            response,
+            "Use an approved demo number such as 4242 4242 4242 4242.",
+        )
         self.assertFalse(PartyBuild.objects.exists())
 
     def test_details_step_uses_custom_date_and_time_controls(self):
@@ -170,12 +178,10 @@ class PartyCheckoutTests(TestCase):
         response = self.client.get(
             reverse("party_builder:party_builder_customer_details")
         )
-        self.assertContains(response, 'data-date-picker')
-        self.assertContains(response, 'data-time-picker')
+        self.assertContains(response, "data-date-picker")
+        self.assertContains(response, "data-time-picker")
         self.assertContains(response, 'type="hidden" name="event_date"')
         self.assertContains(response, 'type="hidden" name="event_time"')
+        self.assertNotContains(response, 'name="guest_count"')
         self.assertNotContains(response, 'type="date"')
         self.assertNotContains(response, 'type="time"')
-        self.assertNotContains(response, '{#')
-        self.assertNotContains(response, 'Reusable custom date control')
-        self.assertNotContains(response, 'Reusable custom time control')

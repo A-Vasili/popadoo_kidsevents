@@ -11,8 +11,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
-from django.db.models import Avg, Count, DecimalField, F, Min, Prefetch, Q
-from django.db.models.functions import Coalesce
+from django.db.models import Avg, Count, F, Prefetch, Q
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -21,7 +20,7 @@ from django.views.generic import DetailView, TemplateView
 
 from .analytics import recommend_addons
 from .forms import PartyIdeasFilterForm
-from .models import AddonExperience, Category, GuestPriceTier, PartyBuild, PartyPackage
+from .models import AddonExperience, Category, PartyBuild, PartyPackage
 from .services import add_addon_to_session, resolve_active_package, select_package
 
 
@@ -52,14 +51,7 @@ def public_package_queryset():
         .filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
         .select_related("category", "category__parent")
         .annotate(
-            catalogue_price=Coalesce(
-                Min(
-                    "guest_price_tiers__total_price",
-                    filter=Q(guest_price_tiers__is_active=True),
-                ),
-                F("base_price"),
-                output_field=DecimalField(max_digits=8, decimal_places=2),
-            ),
+            catalogue_price=F("base_price"),
             rating_count=Count(
                 "builds__review", filter=completed_reviews, distinct=True
             ),
@@ -133,6 +125,7 @@ def _normalise_card(item, kind: str) -> dict:
         "rating_count": item.rating_count,
         "display_order": item.display_order,
         "is_featured": kind == "experience" and item.is_featured,
+        "capacity": item.included_guest_count if kind == "package" else None,
     }
 
 
@@ -146,6 +139,16 @@ def _price_ascending_sort_key(card: dict) -> tuple:
 
 def _price_descending_sort_key(card: dict) -> tuple:
     return -card["price"], card["name"].casefold()
+
+
+def _capacity_ascending_sort_key(card: dict) -> tuple:
+    capacity = card["capacity"] if card["capacity"] is not None else 10_000
+    return capacity, card["name"].casefold()
+
+
+def _capacity_descending_sort_key(card: dict) -> tuple:
+    capacity = card["capacity"] if card["capacity"] is not None else -1
+    return -capacity, card["name"].casefold()
 
 
 def _rating_sort_key(card: dict) -> tuple:
@@ -177,6 +180,8 @@ def _sort_cards(cards: list[dict], ordering: str) -> None:
         "name": _name_sort_key,
         "price_asc": _price_ascending_sort_key,
         "price_desc": _price_descending_sort_key,
+        "capacity_asc": _capacity_ascending_sort_key,
+        "capacity_desc": _capacity_descending_sort_key,
         "rating": _rating_sort_key,
         "reviews": _review_count_sort_key,
     }
@@ -219,6 +224,7 @@ class PartyIdeasListView(TemplateView):
             "min_price": None,
             "max_price": None,
             "category": category,
+            "capacity": "",
             "duration": "",
             "min_rating": "",
             "featured": False,
@@ -268,6 +274,10 @@ class PartyIdeasListView(TemplateView):
             packages = packages.filter(catalogue_price__lte=maximum)
             addons = addons.filter(catalogue_price__lte=maximum)
 
+        capacity = filters.get("capacity")
+        if capacity:
+            packages = packages.filter(included_guest_count__gte=int(capacity))
+
         minimum_rating = filters.get("min_rating")
         if minimum_rating:
             threshold = Decimal(minimum_rating)
@@ -310,6 +320,7 @@ class PartyIdeasListView(TemplateView):
             "q": "Search",
             "min_price": "Minimum price",
             "max_price": "Maximum price",
+            "capacity": "Minimum capacity",
             "duration": "Duration",
             "min_rating": "Rating",
             "featured": "Featured",
@@ -392,15 +403,7 @@ class PartyPackageDetailView(DetailView):
     slug_url_kwarg = "slug"
 
     def get_queryset(self):
-        return public_package_queryset().prefetch_related(
-            Prefetch(
-                "guest_price_tiers",
-                queryset=GuestPriceTier.objects.filter(is_active=True).order_by(
-                    "display_order", "min_guests"
-                ),
-                to_attr="active_tiers",
-            )
-        )
+        return public_package_queryset()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -446,7 +449,7 @@ class StartPackageView(View):
         select_package(request.session, package)
         messages.success(
             request,
-            f"{package.name} is now your starting package. Choose the group size next.",
+            f"{package.name} is now your package. Add any experiences you would like.",
         )
         return redirect("party_builder:party_builder_package_options")
 

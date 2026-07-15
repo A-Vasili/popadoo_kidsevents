@@ -270,6 +270,18 @@ class PackageForm(CatalogueImageMixin, AccessibleModelForm):
         self.fields["category"].help_text = (
             "Choose the category or subcategory where customers will find this package."
         )
+        self.fields["base_price"].label = "Fixed package price"
+        self.fields["base_price"].help_text = (
+            "This trusted server-side price includes the package capacity."
+        )
+        self.fields["included_guest_count"].label = "Package capacity"
+        self.fields["included_guest_count"].help_text = (
+            "Maximum number of children covered by this package."
+        )
+        self.fields["duration_minutes"].help_text = "Total package duration in minutes."
+        self.fields["included_experiences"].help_text = (
+            "List the experiences already included in the fixed package price."
+        )
 
 
 class GuestPriceTierForm(AccessibleModelForm):

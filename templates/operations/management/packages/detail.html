@@ -4,21 +4,19 @@
 <section class="management-page-section">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Package details</p><h2>{{ package.name }}</h2><p>{{ package.short_description }}</p></div>
-        <div class="management-quick-actions">{% if package.is_active and package.category.is_active %}{% if not package.category.parent or package.category.parent.is_active %}<a class="management-button secondary" href="{% url 'party_ideas:package_detail' package.slug %}">View on website</a>{% endif %}{% endif %}<a class="management-button" href="{% url 'management:management_package_update' package.pk %}">Edit package</a><a class="management-button secondary" href="{% url 'management:management_package_tier_create' package.pk %}">Add tier</a><a class="management-button danger" href="{% url 'management:management_package_remove' package.pk %}">Delete/Archive</a></div>
+        <div class="management-quick-actions">{% if package.is_active and package.category.is_active %}{% if not package.category.parent or package.category.parent.is_active %}<a class="management-button secondary" href="{% url 'party_ideas:package_detail' package.slug %}">View on website</a>{% endif %}{% endif %}<a class="management-button" href="{% url 'management:management_package_update' package.pk %}">Edit package</a><a class="management-button danger" href="{% url 'management:management_package_remove' package.pk %}">Delete/Archive</a></div>
     </div>
     <div class="management-detail-grid">
         <section class="management-panel">
             {% if package.image %}<img class="management-detail-image" src="{{ package.image.url }}" alt="{{ package.image_alt_text }}">{% endif %}
             <dl class="management-definition-grid">
-                <div><dt>Category</dt><dd>{{ package.category|default:"Uncategorised" }}</dd></div><div><dt>Base price</dt><dd>€{{ package.base_price }}</dd></div><div><dt>Duration</dt><dd>{{ package.duration_minutes }} minutes</dd></div><div><dt>Included guests</dt><dd>{{ package.included_guest_count }}</dd></div><div><dt>Status</dt><dd>{% if package.is_active %}Active{% else %}Archived{% endif %}</dd></div><div><dt>Default</dt><dd>{{ package.is_default|yesno:"Yes,No" }}</dd></div><div><dt>Display order</dt><dd>{{ package.display_order }}</dd></div><div><dt>Slug</dt><dd>{{ package.slug }}</dd></div>
+                <div><dt>Category</dt><dd>{{ package.category|default:"Uncategorised" }}</dd></div><div><dt>Fixed package price</dt><dd>€{{ package.base_price }}</dd></div><div><dt>Duration</dt><dd>{{ package.duration_minutes }} minutes</dd></div><div><dt>Package capacity</dt><dd>Up to {{ package.included_guest_count }} children</dd></div><div><dt>Status</dt><dd>{% if package.is_active %}Active{% else %}Archived{% endif %}</dd></div><div><dt>Default</dt><dd>{{ package.is_default|yesno:"Yes,No" }}</dd></div><div><dt>Display order</dt><dd>{{ package.display_order }}</dd></div><div><dt>Slug</dt><dd>{{ package.slug }}</dd></div>
             </dl>
             <h3>Included experiences</h3><ul>{% for item in package.included_experiences_list %}<li>{{ item }}</li>{% empty %}<li>No included experiences listed.</li>{% endfor %}</ul>
         </section>
         <section class="management-panel management-panel-wide">
-            <div class="management-panel-header"><h3>Guest-price tiers</h3><a href="{% url 'management:management_package_tier_create' package.pk %}">Create tier</a></div>
-            {% if package.guest_price_tiers.all %}
-                <div class="management-table-wrap"><table class="management-table compact"><thead><tr><th>Label</th><th>Guests</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody>{% for tier in package.guest_price_tiers.all %}<tr><td>{{ tier.label }}{% if tier.is_default %} <span class="management-badge info">Default</span>{% endif %}</td><td>{{ tier.min_guests }}–{{ tier.max_guests }}</td><td>€{{ tier.total_price }}</td><td>{{ tier.is_active|yesno:"Active,Archived" }}</td><td><div class="management-row-actions"><a href="{% url 'management:management_tier_update' tier.pk %}">Edit</a><a class="danger-link" href="{% url 'management:management_tier_remove' tier.pk %}">Delete/Archive</a></div></td></tr>{% endfor %}</tbody></table></div>
-            {% else %}<p>No price tiers have been created.</p>{% endif %}
+            <h3>Historical pricing compatibility</h3>
+            <p>Older bookings may still reference guest-price tiers. Those records are kept read-only so historical totals remain accurate, while all new bookings use this package’s fixed price and capacity.</p>
         </section>
     </div>
 </section>

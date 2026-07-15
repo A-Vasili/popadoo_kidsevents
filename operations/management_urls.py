@@ -22,11 +22,11 @@ urlpatterns = [
     path("catalogue/packages/<int:pk>/edit/", views.PackageUpdateView.as_view(), name="management_package_update"),
     path("catalogue/packages/<int:pk>/remove/", views.PackageRemoveView.as_view(), name="management_package_remove"),
 
-    path("catalogue/tiers/", views.TierListView.as_view(), name="management_tier_list"),
-    path("catalogue/tiers/create/", views.TierCreateView.as_view(), name="management_tier_create"),
-    path("catalogue/packages/<int:package_id>/tiers/create/", views.TierCreateView.as_view(), name="management_package_tier_create"),
-    path("catalogue/tiers/<int:pk>/edit/", views.TierUpdateView.as_view(), name="management_tier_update"),
-    path("catalogue/tiers/<int:pk>/remove/", views.TierRemoveView.as_view(), name="management_tier_remove"),
+    path("catalogue/tiers/", views.LegacyTierCompatibilityView.as_view(), name="management_tier_list"),
+    path("catalogue/tiers/create/", views.LegacyTierCompatibilityView.as_view(), name="management_tier_create"),
+    path("catalogue/packages/<int:package_id>/tiers/create/", views.LegacyTierCompatibilityView.as_view(), name="management_package_tier_create"),
+    path("catalogue/tiers/<int:pk>/edit/", views.LegacyTierCompatibilityView.as_view(), name="management_tier_update"),
+    path("catalogue/tiers/<int:pk>/remove/", views.LegacyTierCompatibilityView.as_view(), name="management_tier_remove"),
 
     path("catalogue/addons/", views.AddonListView.as_view(), name="management_addon_list"),
     path("catalogue/addons/create/", views.AddonCreateView.as_view(), name="management_addon_create"),

@@ -32,8 +32,7 @@
                 </header>
 
                 <dl class="saved-build-details">
-                    <div><dt>Guest option</dt><dd>{{ party_build.guest_tier_label }}</dd></div>
-                    <div><dt>Expected children</dt><dd>{{ party_build.guest_count }}</dd></div>
+                    <div><dt>Package capacity</dt><dd>{{ party_build.party_size_display }}</dd></div>
                     <div><dt>Preferred date</dt><dd>{{ party_build.event_date|date:"j F Y" }}</dd></div>
                     <div><dt>Preferred time</dt><dd>{{ party_build.event_time|time:"H:i"|default:"To be confirmed" }}</dd></div>
                     <div><dt>Contact email</dt><dd>{{ party_build.contact_email }}</dd></div>

@@ -253,6 +253,8 @@ def _fallback_recommendations(
             "pair_count": None,
             "confidence": None,
             "kind": "general",
+            "reason_key": "builder.recommendationFeatured",
+            "reason_values": {},
         }
         for addon in suggestion_pool[:limit]
     ]
@@ -320,6 +322,12 @@ def recommend_addons(
                             "average_rating"
                         ),
                         "kind": "pair",
+                        "reason_key": "builder.recommendationPair",
+                        "reason_values": {
+                            "addon_name": strongest[1].name,
+                            "addon_slug": strongest[1].slug,
+                            "count": strongest[2],
+                        },
                     }
                 )
         recommendations.sort(
@@ -367,6 +375,12 @@ def recommend_addons(
                 "pair_count": None,
                 "confidence": None,
                 "kind": "package",
+                "reason_key": "builder.recommendationPackage",
+                "reason_values": {
+                    "package_name": package.name,
+                    "package_slug": package.slug,
+                    "count": package_counts[addon.pk],
+                },
             }
             for addon in candidates[:limit]
         ]

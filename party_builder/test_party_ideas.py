@@ -2,7 +2,9 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from importlib import import_module
 
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase
@@ -214,22 +216,14 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(response.status_code, 200)
         state = self.client.session[CHECKOUT_SESSION_KEY]
         self.assertEqual(state["package_id"], self.package.pk)
-        self.assertEqual(state["guest_tier_id"], self.tier.pk)
+        self.assertNotIn("guest_tier_id", state)
         self.assertEqual(state["addon_ids"], [self.addon.pk])
 
-    def test_archived_tier_falls_back_to_the_package_default(self):
-        archived_tier = GuestPriceTier.objects.create(
-            package=self.package,
-            label="Archived session tier",
-            min_guests=11,
-            max_guests=20,
-            total_price=Decimal("300.00"),
-            is_active=False,
-        )
+    def test_legacy_tier_session_key_is_removed(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
             "package_id": self.package.pk,
-            "guest_tier_id": archived_tier.pk,
+            "guest_tier_id": self.tier.pk,
             "addon_ids": [],
         }
         session.save()
@@ -239,12 +233,12 @@ class PartyIdeasTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            self.client.session[CHECKOUT_SESSION_KEY]["guest_tier_id"],
-            self.tier.pk,
+        self.assertNotIn(
+            "guest_tier_id",
+            self.client.session[CHECKOUT_SESSION_KEY],
         )
 
-    def test_package_fallback_requires_saved_details_to_be_reviewed(self):
+    def test_package_fallback_preserves_saved_contact_details(self):
         hidden_package = PartyPackage.objects.create(
             name="Archived Checkout Package",
             slug="archived-checkout-package",
@@ -256,36 +250,35 @@ class PartyIdeasTests(TestCase):
             included_experiences="Games",
             is_active=False,
         )
-        hidden_tier = GuestPriceTier.objects.create(
-            package=hidden_package,
-            label="1–8 children",
-            min_guests=1,
-            max_guests=8,
-            total_price=Decimal("180.00"),
-            is_default=True,
-            is_active=True,
-        )
+        saved_details = {
+            "contact_name": "Saved Parent",
+            "contact_email": "saved@example.com",
+            "contact_phone": "+30 6900000000",
+            "event_date": "2030-01-01",
+            "event_time": "10:00",
+            "event_address": "Saved address",
+            "postal_code": "15342",
+            "notes": "Saved note",
+        }
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
             "package_id": hidden_package.pk,
-            "guest_tier_id": hidden_tier.pk,
+            "guest_tier_id": self.tier.pk,
             "addon_ids": [],
-            "details": {"event_date": "2030-01-01", "event_time": "10:00"},
+            "details": saved_details,
         }
         session.save()
 
         response = self.client.get(
-            reverse("party_builder:party_builder_simulated_checkout")
+            reverse("party_builder:party_builder_package_options")
         )
 
-        self.assertRedirects(
-            response,
-            reverse("party_builder:party_builder_customer_details"),
-            fetch_redirect_response=False,
-        )
+        self.assertEqual(response.status_code, 200)
         state = self.client.session[CHECKOUT_SESSION_KEY]
         self.assertNotEqual(state["package_id"], hidden_package.pk)
-        self.assertTrue(state["details_need_review"])
+        self.assertEqual(state["details"], saved_details)
+        self.assertNotIn("guest_tier_id", state)
+        self.assertNotIn("details_need_review", state)
 
     def test_malformed_saved_details_return_to_the_details_form(self):
         session = self.client.session
@@ -340,18 +333,18 @@ class PartyIdeasTests(TestCase):
             405,
         )
 
-    def test_starting_package_sets_package_and_valid_default_tier(self):
+    def test_starting_package_sets_package_without_a_tier(self):
         response = self.client.post(
             reverse("party_ideas:start_package", args=[self.package.slug])
         )
         self.assertRedirects(response, reverse("party_builder:party_builder_package_options"))
         state = self.client.session[CHECKOUT_SESSION_KEY]
         self.assertEqual(state["package_id"], self.package.pk)
-        self.assertEqual(state["guest_tier_id"], self.tier.pk)
+        self.assertNotIn("guest_tier_id", state)
 
     def test_add_experience_is_idempotent_and_preserves_package(self):
         session = self.client.session
-        session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "guest_tier_id": self.tier.pk, "addon_ids": []}
+        session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "addon_ids": []}
         session.save()
         url = reverse("party_ideas:add_addon", args=[self.addon.slug])
         self.client.post(url)
@@ -362,37 +355,30 @@ class PartyIdeasTests(TestCase):
 
     def test_builder_uses_session_package_and_shows_multiple_packages(self):
         session = self.client.session
-        session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "guest_tier_id": self.tier.pk, "addon_ids": []}
+        session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "addon_ids": []}
         session.save()
         response = self.client.get(reverse("party_builder:party_builder_package_options"))
         self.assertContains(response, self.package.name)
         self.assertContains(response, f'value="{self.package.pk}"')
         self.assertEqual(response.context["package"], self.package)
 
-    def test_package_form_rejects_tier_from_another_package(self):
-        other_package = PartyPackage.objects.filter(is_active=True).exclude(pk=self.package.pk).first()
-        other_tier = other_package.guest_price_tiers.filter(is_active=True).first()
-        form = PackageOptionsForm(
-            {"package": self.package.pk, "guest_tier": other_tier.pk, "addons": []},
-            package=self.package,
-        )
+    def test_package_form_has_no_guest_tier_field(self):
+        form = PackageOptionsForm(package=self.package)
+        self.assertNotIn("guest_tier", form.fields)
+        self.assertIn("package", form.fields)
+        self.assertIn("addons", form.fields)
+
+    def test_package_form_requires_an_explicit_public_package(self):
+        form = PackageOptionsForm({"addons": []}, package=self.package)
         self.assertFalse(form.is_valid())
-        self.assertIn("guest_tier", form.errors)
+        self.assertIn("package", form.errors)
 
     def test_invalid_builder_submission_keeps_the_submitted_package_visible(self):
-        other_package = (
-            PartyPackage.objects.filter(is_active=True)
-            .exclude(pk=self.package.pk)
-            .first()
-        )
-        other_tier = other_package.guest_price_tiers.filter(is_active=True).first()
-
         response = self.client.post(
             reverse("party_builder:party_builder_package_options"),
             {
                 "package": self.package.pk,
-                "guest_tier": other_tier.pk,
-                "addons": [],
+                "addons": [self.hidden_addon.pk],
             },
         )
 
@@ -402,7 +388,7 @@ class PartyIdeasTests(TestCase):
             response.context["selected_package_id"],
             str(self.package.pk),
         )
-        self.assertContains(response, "Choose a group-size option")
+        self.assertIn("addons", response.context["form"].errors)
 
     def test_private_review_comment_is_not_exposed_on_public_pages(self):
         user = get_user_model().objects.create_user(
@@ -504,10 +490,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, self.package.name)
         self.assertNotContains(response, self.addon.name)
 
-    def test_package_detail_uses_the_lowest_active_tier_for_from_price(self):
+    def test_package_detail_uses_fixed_package_price_and_capacity(self):
         GuestPriceTier.objects.create(
             package=self.package,
-            label="11–20 children",
+            label="Legacy 11–20 children",
             min_guests=11,
             max_guests=20,
             total_price=Decimal("190.00"),
@@ -516,8 +502,11 @@ class PartyIdeasTests(TestCase):
         response = self.client.get(
             reverse("party_ideas:package_detail", args=[self.package.slug])
         )
-        self.assertEqual(response.context["package"].catalogue_price, Decimal("190"))
-        self.assertContains(response, "€190.00")
+        self.assertEqual(response.context["package"].catalogue_price, self.package.base_price)
+        self.assertContains(response, "€210.00")
+        self.assertContains(response, "Up to 10 children")
+        self.assertNotContains(response, "Legacy 11–20 children")
+        self.assertNotContains(response, "From €")
 
     def test_inactive_catalogue_records_cannot_be_added_through_post_actions(self):
         self.package.is_active = False
@@ -535,7 +524,6 @@ class PartyIdeasTests(TestCase):
         form = PackageOptionsForm(
             {
                 "package": self.package.pk,
-                "guest_tier": self.tier.pk,
                 "addons": [self.hidden_addon.pk],
             },
             package=self.package,
@@ -543,19 +531,19 @@ class PartyIdeasTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("addons", form.errors)
 
-    def test_switching_package_marks_existing_details_for_review(self):
+    def test_switching_package_preserves_existing_contact_details(self):
         other_package = (
             PartyPackage.objects.filter(is_active=True)
             .exclude(pk=self.package.pk)
             .first()
         )
-        other_tier = other_package.guest_price_tiers.filter(is_active=True).first()
+        saved_details = {"contact_name": "Saved Parent", "event_date": "2030-01-01"}
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
             "package_id": other_package.pk,
-            "guest_tier_id": other_tier.pk,
+            "guest_tier_id": self.tier.pk,
             "addon_ids": [],
-            "details": {"guest_count": other_tier.min_guests},
+            "details": saved_details,
         }
         session.save()
 
@@ -565,7 +553,137 @@ class PartyIdeasTests(TestCase):
 
         state = self.client.session[CHECKOUT_SESSION_KEY]
         self.assertEqual(state["package_id"], self.package.pk)
-        self.assertTrue(state["details_need_review"])
+        self.assertEqual(state["details"], saved_details)
+        self.assertNotIn("guest_tier_id", state)
+        self.assertNotIn("details_need_review", state)
+
+
+    def test_capacity_filter_returns_packages_large_enough_for_the_party(self):
+        response = self.client.get(
+            reverse("party_ideas:list"),
+            {"type": "package", "capacity": "15"},
+        )
+        self.assertNotContains(response, "Basic Popadoo Party")
+        self.assertContains(response, "Popadoo Plus Party")
+        self.assertContains(response, "Popadoo Festival Party")
+
+    def test_capacity_sorting_orders_packages_by_size(self):
+        ascending = self.client.get(
+            reverse("party_ideas:list"),
+            {"type": "package", "sort": "capacity_asc"},
+        )
+        descending = self.client.get(
+            reverse("party_ideas:list"),
+            {"type": "package", "sort": "capacity_desc"},
+        )
+        ascending_names = [
+            card["name"] for card in ascending.context["page_obj"].object_list
+        ]
+        descending_names = [
+            card["name"] for card in descending.context["page_obj"].object_list
+        ]
+        self.assertLess(
+            ascending_names.index("Basic Popadoo Party"),
+            ascending_names.index("Popadoo Festival Party"),
+        )
+        self.assertLess(
+            descending_names.index("Popadoo Festival Party"),
+            descending_names.index("Basic Popadoo Party"),
+        )
+
+    def test_seeded_catalogue_contains_eight_packages_and_twenty_experiences(self):
+        package_slugs = {
+            "basic-popadoo-party",
+            "popadoo-plus-party",
+            "popadoo-classic-party",
+            "popadoo-big-party",
+            "popadoo-xl-party",
+            "popadoo-mega-party",
+            "popadoo-super-party",
+            "popadoo-festival-party",
+        }
+        addon_slugs = {
+            "face-painting",
+            "balloon-modelling",
+            "treasure-hunt",
+            "creative-craft-workshop",
+            "mini-magic-show",
+            "themed-balloon-decoration",
+            "extra-entertainer",
+            "party-favour-pack",
+            "bubble-show",
+            "kids-disco-dance-games",
+            "slime-laboratory",
+            "junior-science-experiments",
+            "character-visit",
+            "superhero-training",
+            "puppet-show",
+            "karaoke-party",
+            "party-photo-booth",
+            "glitter-tattoos",
+            "cupcake-decorating",
+            "pinata-game",
+        }
+        self.assertEqual(
+            set(
+                PartyPackage.objects.filter(
+                    slug__in=package_slugs,
+                    is_active=True,
+                ).values_list("slug", flat=True)
+            ),
+            package_slugs,
+        )
+        self.assertEqual(
+            set(
+                AddonExperience.objects.filter(
+                    slug__in=addon_slugs,
+                    is_active=True,
+                ).values_list("slug", flat=True)
+            ),
+            addon_slugs,
+        )
+        self.assertEqual(
+            PartyPackage.objects.filter(slug__in=package_slugs, is_default=True).count(),
+            1,
+        )
+
+    def test_catalogue_seed_is_idempotent_and_preserves_legacy_booking_snapshots(self):
+        user = get_user_model().objects.create_user(
+            username="migration-history-user",
+            email="migration-history@example.com",
+            password="StrongPass123!",
+        )
+        legacy = PartyBuild.objects.create(
+            customer=user,
+            package=self.package,
+            guest_tier=self.tier,
+            contact_name="Legacy Parent",
+            contact_email=user.email,
+            contact_phone="+30 6900000042",
+            event_date=timezone.localdate() - timedelta(days=1),
+            guest_count=7,
+            guest_tier_label=self.tier.label,
+            package_price=Decimal("205.00"),
+            addon_price=Decimal("0.00"),
+            total_price=Decimal("205.00"),
+        )
+        seed = import_module(
+            "party_builder.migrations.0014_seed_capacity_packages_and_experiences"
+        ).seed_capacity_packages_and_experiences
+
+        seed(django_apps, None)
+        first_package_count = PartyPackage.objects.count()
+        first_addon_count = AddonExperience.objects.count()
+        seed(django_apps, None)
+
+        legacy.refresh_from_db()
+        self.assertEqual(PartyPackage.objects.count(), first_package_count)
+        self.assertEqual(AddonExperience.objects.count(), first_addon_count)
+        self.assertEqual(legacy.guest_tier_id, self.tier.pk)
+        self.assertEqual(legacy.guest_count, 7)
+        self.assertEqual(legacy.guest_tier_label, self.tier.label)
+        self.assertEqual(legacy.package_price, Decimal("205.00"))
+        self.assertEqual(legacy.total_price, Decimal("205.00"))
 
     def test_pagination_preserves_filters(self):
         for index in range(13):
@@ -599,9 +717,9 @@ class PartyIdeasTests(TestCase):
         with CaptureQueriesContext(connection) as captured:
             response = self.client.get(reverse("party_ideas:list"))
             self.assertEqual(response.status_code, 200)
-        self.assertLessEqual(len(captured), 12)
+        self.assertLessEqual(len(captured), 16)
 
-    def test_package_detail_hides_inactive_tiers(self):
+    def test_package_detail_does_not_render_legacy_tiers(self):
         GuestPriceTier.objects.create(
             package=self.package,
             label="Archived tier",
@@ -614,6 +732,7 @@ class PartyIdeasTests(TestCase):
             reverse("party_ideas:package_detail", args=[self.package.slug])
         )
         self.assertNotContains(response, "Archived tier")
+        self.assertNotContains(response, "Guest-price tiers")
 
     def test_incomplete_review_does_not_change_public_rating(self):
         user = get_user_model().objects.create_user(
@@ -688,8 +807,10 @@ class PartyIdeasTests(TestCase):
         css = (settings.BASE_DIR / "static/css/party-builder.css").read_text()
         self.assertEqual(css.count(".recommendation-card {"), 1)
         self.assertEqual(css.count(".recommendation-card-footer {"), 1)
-        self.assertIn("grid-template-rows: minmax(0, 1fr) auto", css)
-        self.assertIn("grid-template-rows: auto minmax(3rem, auto)", css)
+        self.assertIn("grid-auto-rows: 1fr", css)
+        self.assertIn("display: flex", css)
+        self.assertIn("flex: 1 1 auto", css)
+        self.assertIn("min-height: 4.5rem", css)
 
     def test_javascript_recommendations_use_the_same_alignment_classes(self):
         from django.conf import settings
@@ -699,4 +820,44 @@ class PartyIdeasTests(TestCase):
         self.assertIn('footer.className = "recommendation-card-footer"', script)
         self.assertIn('price.className = "recommendation-price"', script)
         self.assertIn('button.className = "button button-outline recommendation-action"', script)
+    def test_builder_copy_and_catalogue_cards_have_translation_hooks(self):
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+        self.assertContains(response, 'data-i18n="builder.browseIntro"')
+        self.assertContains(response, 'data-i18n="builder.packageChoiceHelp"')
+        self.assertContains(response, 'data-i18n="builder.recommendationHelp"')
+        self.assertContains(
+            response,
+            f'data-catalogue-i18n="catalogue.package.{self.package.slug}.name"',
+        )
+        self.assertContains(
+            response,
+            f'data-catalogue-i18n="catalogue.addon.{self.addon.slug}.name"',
+        )
 
+    def test_greek_builder_catalogue_translations_are_present(self):
+        from django.conf import settings
+
+        catalog = (settings.BASE_DIR / "static/js/translations.js").read_text()
+        self.assertIn('"builder.partyTotal": "Σύνολο πάρτι"', catalog)
+        self.assertIn(
+            '"catalogue.package.basic-popadoo-party.name": "Βασικό Πάρτι Popadoo"',
+            catalog,
+        )
+        self.assertIn(
+            '"catalogue.addon.face-painting.name": "Ζωγραφική Προσώπου"',
+            catalog,
+        )
+
+    def test_recommendation_json_contains_translation_metadata(self):
+        response = self.client.get(
+            reverse("party_builder:party_builder_recommendations"),
+            {"package": self.package.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        recommendations = response.json()["recommendations"]
+        self.assertTrue(recommendations)
+        self.assertIn("slug", recommendations[0])
+        self.assertIn("reason_key", recommendations[0])
+        self.assertIn("reason_values", recommendations[0])

@@ -17,7 +17,6 @@ from django.utils import timezone
 
 from .models import (
     AddonExperience,
-    GuestPriceTier,
     PartyBuild,
     PartyBuildAddon,
     PartyPackage,
@@ -74,13 +73,28 @@ def checkout_state(session: MutableMapping) -> dict[str, Any]:
     """
 
     state = session.get(CHECKOUT_SESSION_KEY, {})
-    return dict(state) if isinstance(state, dict) else {}
+    clean_state = dict(state) if isinstance(state, dict) else {}
+    if "guest_tier_id" in clean_state:
+        # Guest tiers remain in the database for old bookings, but they no
+        # longer control a new cart. Removing the old key also prevents stale
+        # tier prices from influencing later checkout code.
+        clean_state.pop("guest_tier_id", None)
+        session[CHECKOUT_SESSION_KEY] = clean_state
+        if hasattr(session, "modified"):
+            session.modified = True
+    return clean_state
 
 
 def save_checkout_state(session: MutableMapping, state: Mapping[str, Any]) -> None:
-    """Store only the small set of choices needed to continue the builder."""
+    """Store only the small set of choices needed to continue the builder.
 
-    session[CHECKOUT_SESSION_KEY] = dict(state)
+    Old browsers may still carry a guest-tier ID. New bookings use the package
+    itself for capacity and price, so that legacy key is discarded safely.
+    """
+
+    clean_state = dict(state)
+    clean_state.pop("guest_tier_id", None)
+    session[CHECKOUT_SESSION_KEY] = clean_state
     if hasattr(session, "modified"):
         session.modified = True
 
@@ -91,47 +105,6 @@ def clear_checkout_state(session: MutableMapping) -> None:
     session.pop(CHECKOUT_SESSION_KEY, None)
     if hasattr(session, "modified"):
         session.modified = True
-
-
-def default_active_tier(package: PartyPackage) -> GuestPriceTier | None:
-    """Choose the safest starting guest bracket for one active package."""
-
-    tiers = package.guest_price_tiers.filter(is_active=True)
-    return tiers.filter(is_default=True).first() or tiers.order_by(
-        "display_order", "min_guests"
-    ).first()
-
-
-def resolve_active_tier(
-    session: MutableMapping,
-    package: PartyPackage,
-) -> GuestPriceTier | None:
-    """Return a valid tier for the selected package and repair stale session data.
-
-    A tier may be archived while a customer is part-way through checkout.  The
-    builder chooses the package's current default (or first active tier) and
-    writes that safe choice back to the session.  It never carries a tier from
-    one package into another package's checkout.
-    """
-
-    state = checkout_state(session)
-    raw_tier_id = state.get("guest_tier_id")
-    tier = None
-    tier_id = _positive_integer(raw_tier_id)
-    if tier_id is not None:
-        tier = package.guest_price_tiers.filter(
-            pk=tier_id,
-            is_active=True,
-        ).first()
-
-    if tier is None:
-        tier = default_active_tier(package)
-
-    clean_tier_id = tier.pk if tier else None
-    if state and state.get("guest_tier_id") != clean_tier_id:
-        state["guest_tier_id"] = clean_tier_id
-        save_checkout_state(session, state)
-    return tier
 
 
 def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
@@ -157,16 +130,9 @@ def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
 
     clean_package_id = package.pk if package else None
     if state and state.get("package_id") != clean_package_id:
-        previous_package_id = state.get("package_id")
         state["package_id"] = clean_package_id
-        # A package change can alter the allowed guest range.  Saved customer
-        # details are retained for convenience but must be reviewed again.
-        if previous_package_id and state.get("details"):
-            state["details_need_review"] = True
         save_checkout_state(session, state)
 
-    if package is not None and state:
-        resolve_active_tier(session, package)
     return package
 
 
@@ -193,34 +159,21 @@ def active_session_addons(session: MutableMapping) -> list[AddonExperience]:
 
 
 def select_package(session: MutableMapping, package: PartyPackage) -> dict[str, Any]:
-    """Use a package as the builder starting point without losing valid extras."""
+    """Use a capacity-based package without losing valid extras or details."""
 
     if not public_packages().filter(pk=package.pk).exists():
         raise ValueError("Only publicly available packages can start a party.")
     state = checkout_state(session)
-    previous_package_id = state.get("package_id")
-    current_tier_id = _positive_integer(state.get("guest_tier_id"))
-    current_tier = (
-        GuestPriceTier.objects.filter(
-            pk=current_tier_id, package=package, is_active=True
-        ).first()
-        if current_tier_id is not None
-        else None
-    )
-    tier = current_tier or default_active_tier(package)
     state.update(
         {
             "package_id": package.pk,
-            "guest_tier_id": tier.pk if tier else None,
             "addon_ids": [addon.pk for addon in active_session_addons(session)],
         }
     )
-    if previous_package_id != package.pk and state.get("details"):
-        # Guest limits differ between packages, so saved event details must be
-        # shown to the customer again before checkout can continue.
-        state["details_need_review"] = True
+    state.pop("guest_tier_id", None)
+    state.pop("details_need_review", None)
     save_checkout_state(session, state)
-    return state
+    return checkout_state(session)
 
 
 def add_addon_to_session(
@@ -257,16 +210,16 @@ class SafePaymentResult:
 
 
 def calculate_party_quote(
-    guest_tier: GuestPriceTier,
+    package: PartyPackage,
     addons: Iterable[AddonExperience],
 ) -> PartyQuote:
-    """Calculate a trusted quote from active database prices."""
+    """Calculate a trusted quote from the package and active database prices."""
 
     addon_total = sum((addon.price for addon in addons), Decimal("0.00"))
     return PartyQuote(
-        package_price=guest_tier.total_price,
+        package_price=package.base_price,
         addon_price=addon_total,
-        total_price=guest_tier.total_price + addon_total,
+        total_price=package.base_price + addon_total,
     )
 
 
@@ -274,7 +227,6 @@ def calculate_party_quote(
 def create_completed_party_build(
     *,
     package: PartyPackage,
-    guest_tier: GuestPriceTier,
     addons: Iterable[AddonExperience],
     details: Mapping[str, Any],
     payment: SafePaymentResult,
@@ -283,12 +235,14 @@ def create_completed_party_build(
     """Create the simulated order and all trusted price snapshots atomically."""
 
     selected_addons = list(addons)
-    quote = calculate_party_quote(guest_tier, selected_addons)
+    quote = calculate_party_quote(package, selected_addons)
 
     build_values = {
         "customer": customer if getattr(customer, "is_authenticated", False) else None,
         "package": package,
-        "guest_tier": guest_tier,
+        # GuestPriceTier remains for old bookings, but new bookings use the
+        # chosen package as the authoritative capacity and price.
+        "guest_tier": None,
         "contact_name": details["contact_name"],
         "contact_email": details["contact_email"],
         "contact_phone": details["contact_phone"],
@@ -296,9 +250,9 @@ def create_completed_party_build(
         "event_time": details.get("event_time"),
         "event_address": details.get("event_address", ""),
         "postal_code": details.get("postal_code", ""),
-        "guest_count": details["guest_count"],
+        "guest_count": package.included_guest_count,
         "notes": details.get("notes", ""),
-        "guest_tier_label": guest_tier.label,
+        "guest_tier_label": f"Up to {package.included_guest_count} children",
         "package_price": quote.package_price,
         "addon_price": quote.addon_price,
         "total_price": quote.total_price,
