@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{# This template displays the worker schedule page or reusable section for the operations area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 {% block title %}
     My Schedule | Popadoo Kids Events
 {% endblock %}
@@ -11,11 +9,9 @@
 {% block page_name %}
     operationsSchedule
 {% endblock %}
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
     <section class="operations-page" aria-labelledby="schedule-heading">
         <div class="container">

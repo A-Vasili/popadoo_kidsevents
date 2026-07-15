@@ -1,15 +1,20 @@
+"""Automatic and manual worker assignment business rules.
+
+This module keeps conflict checks and status transitions out of views so every
+entry point applies the same safety rules and audit behaviour.
+"""
 
 from __future__ import annotations
 
 from datetime import datetime, timezone as datetime_timezone
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import Count, Max, Q
+from django.db.models import Max
 from django.utils import timezone
 
 from accounts.models import WorkerProfile
-from accounts.permissions import WORKER_GROUP
+from accounts.permissions import WORKER_GROUP, is_owner
 from party_builder.models import PartyBuild
 
 from ..models import AuditEvent, PartyAssignment
@@ -197,7 +202,23 @@ def assign_manually(
 ):
     """Create an owner assignment, requiring a reason whenever a conflict is overridden."""
 
+    if not is_owner(owner) or not owner.has_perm("operations.manually_assign_party"):
+        raise PermissionDenied("Owner assignment permission is required.")
+    if (
+        not worker.is_active_worker
+        or not worker.user.is_active
+        or not worker.user.groups.filter(name=WORKER_GROUP).exists()
+    ):
+        raise ValidationError("Choose an active worker account.")
+
     locked_build = PartyBuild.objects.select_for_update().get(pk=party_build.pk)
+    if locked_build.status in {
+        PartyBuild.Status.COMPLETED,
+        PartyBuild.Status.CANCELLED,
+    }:
+        raise ValidationError(
+            "Completed or cancelled bookings cannot receive a worker assignment."
+        )
     event_window = get_event_window(party_build)
     conflicts = []
     is_available = False

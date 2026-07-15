@@ -12,7 +12,7 @@ from django.utils import timezone
 from accounts.models import WorkerProfile
 from party_builder.models import GuestPriceTier, PartyBuild, PartyPackage
 
-from .models import AuditEvent, PartyAssignment, WorkerAvailability
+from .models import PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, offer_assignment
 
 

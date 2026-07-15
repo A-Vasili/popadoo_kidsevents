@@ -1,20 +1,16 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# This template displays the second checkout step where the visitor enters contact and event details. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}Event Details | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Provide the personal and venue details required for your customised Popadoo party request.{% endblock %}
 {% block meta_robots %}noindex,follow{% endblock %}
 {% block page_name %}partyBuilder{% endblock %}
 
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
     {# This header introduces the page and gives visitors the main context before they continue. #}
     <header class="checkout-hero" aria-labelledby="party-details-heading">
@@ -22,7 +18,6 @@
             <p class="section-kicker">Step two</p>
             <h1 id="party-details-heading">Tell us about your event</h1>
             <p class="lead">Your selections are saved in this browser while you complete the checkout.</p>
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "party_builder/includes/progress.html" %}
         </div>
     </header>
@@ -36,8 +31,7 @@
     >
         {% csrf_token %}
         <div class="container checkout-layout">
-            {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-            <section class="checkout-panel" aria-labelledby="details-form-heading">
+                        <section class="checkout-panel" aria-labelledby="details-form-heading">
                 <div class="panel-heading">
                     <span class="panel-step" aria-hidden="true">2</span>
                     <div>
@@ -47,32 +41,21 @@
                     </div>
                 </div>
 
-                {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-                {% if form.non_field_errors %}
+                                {% if form.non_field_errors %}
                     <div class="form-alert" role="alert">{{ form.non_field_errors }}</div>
                 {% endif %}
 
                 <div class="builder-form-grid">
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.contact_name only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.contact_email only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.contact_phone only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.guest_count only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "includes/custom_date_field.html" with field=form.event_date placeholder="Choose a date" only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "includes/custom_time_field.html" with field=form.event_time placeholder="To be confirmed" help_text="Optional. The final time is confirmed after availability review." start="10:00" end="22:00" step="30" only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.event_address wide=True only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.postal_code only %}
-                    {# This include reuses a shared template fragment instead of repeating the same markup. #}
                     {% include "party_builder/includes/form_field.html" with field=form.notes wide=True only %}
                     {% if form.save_profile %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.save_profile wide=True only %}
                     {% endif %}
                 </div>
@@ -86,13 +69,11 @@
                 </nav>
             </section>
 
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "party_builder/includes/order_summary.html" %}
         </div>
     </form>
 {% endblock %}
 
-{# This block loads only the JavaScript needed by this page. #}
 {% block extra_js %}
     <script src="{% static 'js/party-builder.js' %}" defer></script>
 {% endblock %}

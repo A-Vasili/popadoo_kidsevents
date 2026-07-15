@@ -1,3 +1,8 @@
+"""Catalogue, booking, price snapshot and customer review models.
+
+Historical booking values are stored alongside live catalogue relationships so
+future catalogue edits never rewrite what a customer originally selected.
+"""
 
 from __future__ import annotations
 
@@ -413,12 +418,10 @@ class PartyBuild(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
-    # This database model stores payment status information.
     class PaymentStatus(models.TextChoices):
         SIMULATED = "simulated", "Simulated payment accepted"
         NOT_REQUIRED = "not_required", "No payment data"
 
-    # This database model stores assignment state information.
     class AssignmentState(models.TextChoices):
         UNASSIGNED = "unassigned", "Unassigned"
         PENDING = "pending_acceptance", "Awaiting worker response"

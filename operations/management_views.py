@@ -13,14 +13,12 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import redirect_to_login
-from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
 from django.db.models import CharField, Count, Prefetch, Q
 from django.db.models.functions import Cast
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views import View
@@ -29,7 +27,6 @@ from django.views.generic import DetailView, FormView, ListView, TemplateView
 from accounts.models import WorkerProfile
 from accounts.permissions import (
     OWNER_GROUP,
-    PRICING_GROUP,
     WORKER_GROUP,
     can_manage_pricing,
     is_owner,
@@ -924,8 +921,15 @@ class BookingManualReviewView(OwnerManagementMixin, View):
         booking = get_object_or_404(PartyBuild, public_id=public_id)
         form = ManualReviewForm(request.POST)
         if form.is_valid():
-            send_to_manual_review(booking=booking, actor=request.user, reason=form.cleaned_data["reason"])
-            messages.success(request, "The booking now requires manual review.")
+            try:
+                send_to_manual_review(
+                    booking=booking,
+                    actor=request.user,
+                    reason=form.cleaned_data["reason"],
+                )
+                messages.success(request, "The booking now requires manual review.")
+            except ValidationError as error:
+                messages.error(request, "; ".join(error.messages))
         else:
             messages.error(request, "Explain why the booking needs manual review.")
         return redirect("management:management_booking_detail", public_id=booking.public_id)

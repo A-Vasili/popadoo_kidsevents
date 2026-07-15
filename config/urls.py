@@ -18,7 +18,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.urls import include, path
 
-# These URL patterns connect web addresses to the views that handle them.
 urlpatterns = [
     path("", include("core.urls")),
     path("accounts/", include("accounts.urls")),

@@ -61,7 +61,28 @@ def change_booking_status(*, booking: PartyBuild, status: str, actor, note: str 
 
 @transaction.atomic
 def send_to_manual_review(*, booking: PartyBuild, actor, reason: str) -> PartyBuild:
+    """Move an active booking into the owner attention queue.
+
+    The permission check lives in the service as well as the view so future
+    command-line or API entry points cannot bypass the same business rule.
+    Completed and cancelled bookings are historical records and must not be
+    returned to an operational assignment state.
+    """
+
+    if not is_owner(actor):
+        raise PermissionDenied("Only an owner can send bookings to manual review.")
     locked = PartyBuild.objects.select_for_update().get(pk=booking.pk)
+    if locked.status in {PartyBuild.Status.COMPLETED, PartyBuild.Status.CANCELLED}:
+        raise ValidationError(
+            "Completed or cancelled bookings cannot be sent to manual review."
+        )
+    if locked.assignment_state == PartyBuild.AssignmentState.MANUAL_REVIEW:
+        raise ValidationError("This booking is already waiting for manual review.")
+
+    cleaned_reason = reason.strip()
+    if not cleaned_reason:
+        raise ValidationError("Explain why the booking needs manual review.")
+
     previous = locked.assignment_state
     # A booking under manual review must not remain on a worker's confirmed
     # schedule. Previous offers stay in history as superseded records.
@@ -80,6 +101,6 @@ def send_to_manual_review(*, booking: PartyBuild, actor, reason: str) -> PartyBu
         target=locked,
         summary=f"{actor} sent booking {locked.public_id} to manual review.",
         before={"assignment_state": previous},
-        after={"assignment_state": locked.assignment_state, "reason": reason.strip()},
+        after={"assignment_state": locked.assignment_state, "reason": cleaned_reason},
     )
     return locked

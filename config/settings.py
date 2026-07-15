@@ -14,8 +14,21 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def env_flag(name: str, default: bool = False) -> bool:
+    """Read a conventional true/false environment value."""
+
+    return os.environ.get(name, str(default)).lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
 
 
 # Quick-start development settings - unsuitable for production
@@ -28,9 +41,12 @@ SECRET_KEY = os.environ.get(
     "django-insecure-development-only-change-before-deployment",
 )
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in {
-    "1", "true", "yes", "on"
-}
+DEBUG = env_flag("DJANGO_DEBUG", True)
+
+if not DEBUG and SECRET_KEY.startswith("django-insecure-development-only"):
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY must be set to a strong private value in production."
+    )
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -74,10 +90,8 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# This setting points Django to the main URL file for the project.
 ROOT_URLCONF = 'config.urls'
 
-# These settings tell Django where templates live and which shared template helpers are available.
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -94,7 +108,6 @@ TEMPLATES = [
     },
 ]
 
-# This setting points deployment servers to the WSGI application.
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
@@ -143,15 +156,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
 # Deployment collects all static files into this folder.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# This address prefix is used for files uploaded through the website.
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 # Uploaded files are stored in this folder.
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -173,7 +185,6 @@ X_FRAME_OPTIONS = "DENY"
 # Authentication routes used by Django's LoginRequiredMixin and safe redirects.
 LOGIN_URL = "accounts:accounts_sign_in"
 LOGIN_REDIRECT_URL = "accounts:accounts_customer_dashboard"
-# After signing out, users return to this public page.
 LOGOUT_REDIRECT_URL = "core:core_home"
 
 
@@ -182,15 +193,20 @@ LOGOUT_REDIRECT_URL = "core:core_home"
 # are enabled automatically when DEBUG is false or through environment flags.
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", str(not DEBUG)).lower() in {
-    "1", "true", "yes", "on"
-}
+SECURE_SSL_REDIRECT = env_flag("DJANGO_SECURE_SSL_REDIRECT", not DEBUG)
 SECURE_HSTS_SECONDS = int(
     os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000" if not DEBUG else "0")
 )
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env_flag(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    False,
+)
+SECURE_HSTS_PRELOAD = env_flag("DJANGO_SECURE_HSTS_PRELOAD", False)
+
+# Trust this header only when the application is behind a known HTTPS proxy.
+# Enabling it on a directly exposed server would let clients spoof the scheme.
+if env_flag("DJANGO_TRUST_PROXY_SSL_HEADER", False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Conservative request limits reduce abuse without affecting normal booking forms.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024

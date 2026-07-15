@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from datetime import timedelta
 from decimal import Decimal
 
@@ -27,7 +26,7 @@ from .models import (
     PartyPackage,
     PartyReview,
 )
-from .review_services import REVIEW_AUTH_SESSION_KEY, save_party_review
+from .review_services import REVIEW_AUTH_SESSION_KEY
 
 User = get_user_model()
 

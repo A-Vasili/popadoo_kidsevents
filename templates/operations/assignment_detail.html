@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{# This template displays the assignment detail page or reusable section for the operations area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 {% block title %}
     Assignment Details | Popadoo Kids Events
 {% endblock %}
@@ -11,16 +9,12 @@
 {% block page_name %}
     operationsAssignmentDetail
 {% endblock %}
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-    <section class="operations-page" aria-labelledby="assignment-heading">
+        <section class="operations-page" aria-labelledby="assignment-heading">
         <div class="container">
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "operations/includes/nav.html" %}
             {# This article represents one self-contained item that can be understood on its own. #}
             <article class="operations-panel assignment-detail">
@@ -110,8 +104,7 @@
                         </dd>
                     </div>
                 </dl>
-                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-                <section>
+                                <section>
                     <h2>
                         Optional experiences
                     </h2>
@@ -139,8 +132,7 @@
                         {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
                         <form class="decline-form" method="post" action="{% url 'operations:operations_worker_assignment_decline' assignment.pk %}" novalidate>
                             {% csrf_token %}
-                            {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-                            {% if decline_form.non_field_errors %}
+                                                        {% if decline_form.non_field_errors %}
                                 <div role="alert">
                                     {{ decline_form.non_field_errors }}
                                 </div>

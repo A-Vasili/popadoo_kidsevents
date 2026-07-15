@@ -1,6 +1,4 @@
 
-{# This template displays the order summary page or reusable section for the includes area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 <aside class="checkout-summary" aria-labelledby="checkout-summary-heading">
     <div class="checkout-summary-inner">
         <p class="section-kicker">Your cart</p>
@@ -16,8 +14,7 @@
                     <dd>{{ guest_tier.label }}</dd>
                 </div>
             {% endif %}
-            {# This loop creates one visible item for each record supplied by the Django view. #}
-            {% for addon in selected_addons %}
+                        {% for addon in selected_addons %}
                 <div>
                     <dt>{{ addon.name }}</dt>
                     <dd>€{{ addon.price|floatformat:2 }}</dd>

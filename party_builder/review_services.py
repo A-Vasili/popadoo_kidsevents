@@ -260,4 +260,3 @@ def save_party_review(
         "is_public_testimonial": is_public,
         "old_visibility": old_visibility,
     }
-

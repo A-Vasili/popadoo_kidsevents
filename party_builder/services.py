@@ -1,3 +1,8 @@
+"""Shared checkout-state, pricing and booking-creation services.
+
+Browser sessions may outlive catalogue changes, so this module is the single
+place that cleans stale selections and creates trusted price snapshots.
+"""
 
 from __future__ import annotations
 
@@ -22,6 +27,43 @@ from .models import (
 
 CHECKOUT_SESSION_KEY = "party_builder_checkout"
 AUTHORIZED_BUILD_SESSION_KEY = "party_builder_builds"
+
+
+def _positive_integer(value: object) -> int | None:
+    """Convert a session value to a database ID without accepting booleans."""
+
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, str) and value.isdigit():
+        parsed = int(value)
+        return parsed if parsed > 0 else None
+    return None
+
+
+def public_packages():
+    """Return packages that are safe to show or select on the public website.
+
+    Catalogue records can stay in the database after an administrator archives
+    them because completed bookings still need their history.  The public site
+    therefore checks both the item and its category tree instead of relying on
+    the package's own active flag alone.
+    """
+
+    return PartyPackage.objects.filter(
+        is_active=True,
+        category__is_active=True,
+    ).filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
+
+
+def public_addons():
+    """Return experiences that are safe to show or keep in a public cart."""
+
+    return AddonExperience.objects.filter(
+        is_active=True,
+        category__is_active=True,
+    ).filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
 
 
 def checkout_state(session: MutableMapping) -> dict[str, Any]:
@@ -60,6 +102,38 @@ def default_active_tier(package: PartyPackage) -> GuestPriceTier | None:
     ).first()
 
 
+def resolve_active_tier(
+    session: MutableMapping,
+    package: PartyPackage,
+) -> GuestPriceTier | None:
+    """Return a valid tier for the selected package and repair stale session data.
+
+    A tier may be archived while a customer is part-way through checkout.  The
+    builder chooses the package's current default (or first active tier) and
+    writes that safe choice back to the session.  It never carries a tier from
+    one package into another package's checkout.
+    """
+
+    state = checkout_state(session)
+    raw_tier_id = state.get("guest_tier_id")
+    tier = None
+    tier_id = _positive_integer(raw_tier_id)
+    if tier_id is not None:
+        tier = package.guest_price_tiers.filter(
+            pk=tier_id,
+            is_active=True,
+        ).first()
+
+    if tier is None:
+        tier = default_active_tier(package)
+
+    clean_tier_id = tier.pk if tier else None
+    if state and state.get("guest_tier_id") != clean_tier_id:
+        state["guest_tier_id"] = clean_tier_id
+        save_checkout_state(session, state)
+    return tier
+
+
 def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
     """Resolve the selected package, with a predictable public fallback.
 
@@ -71,26 +145,28 @@ def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
     state = checkout_state(session)
     raw_package_id = state.get("package_id")
     package = None
-    if isinstance(raw_package_id, int) or (
-        isinstance(raw_package_id, str) and raw_package_id.isdigit()
-    ):
-        package = (
-            PartyPackage.objects.filter(
-                pk=int(raw_package_id),
-                is_active=True,
-                category__is_active=True,
-            )
-            .filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
-            .first()
-        )
+    package_id = _positive_integer(raw_package_id)
+    if package_id is not None:
+        package = public_packages().filter(pk=package_id).first()
     if package is None:
-        public_packages = PartyPackage.objects.filter(
-            is_active=True, category__is_active=True
-        ).filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
+        available_packages = public_packages()
         package = (
-            public_packages.filter(is_default=True).first()
-            or public_packages.order_by("display_order", "name").first()
+            available_packages.filter(is_default=True).first()
+            or available_packages.order_by("display_order", "name").first()
         )
+
+    clean_package_id = package.pk if package else None
+    if state and state.get("package_id") != clean_package_id:
+        previous_package_id = state.get("package_id")
+        state["package_id"] = clean_package_id
+        # A package change can alter the allowed guest range.  Saved customer
+        # details are retained for convenience but must be reviewed again.
+        if previous_package_id and state.get("details"):
+            state["details_need_review"] = True
+        save_checkout_state(session, state)
+
+    if package is not None and state:
+        resolve_active_tier(session, package)
     return package
 
 
@@ -102,19 +178,15 @@ def active_session_addons(session: MutableMapping) -> list[AddonExperience]:
     ids: list[int] = []
     if isinstance(raw_ids, (list, tuple)):
         for value in raw_ids:
-            if isinstance(value, int) or (isinstance(value, str) and value.isdigit()):
-                value = int(value)
-                if value not in ids:
-                    ids.append(value)
-    addons = list(
-        AddonExperience.objects.filter(
-            pk__in=ids, is_active=True, category__is_active=True
-        )
-        .filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
-        .order_by("display_order", "name")
-    )
+            parsed = _positive_integer(value)
+            if parsed is not None and parsed not in ids:
+                ids.append(parsed)
+    available_by_id = public_addons().in_bulk(ids)
+    # Preserve the customer's original order while removing records that are
+    # no longer public.  This also makes the cleaned session deterministic.
+    addons = [available_by_id[item_id] for item_id in ids if item_id in available_by_id]
     clean_ids = [addon.pk for addon in addons]
-    if clean_ids != ids:
+    if raw_ids != clean_ids:
         state["addon_ids"] = clean_ids
         save_checkout_state(session, state)
     return addons
@@ -123,18 +195,18 @@ def active_session_addons(session: MutableMapping) -> list[AddonExperience]:
 def select_package(session: MutableMapping, package: PartyPackage) -> dict[str, Any]:
     """Use a package as the builder starting point without losing valid extras."""
 
-    parent = package.category.parent
-    if (
-        not package.is_active
-        or not package.category.is_active
-        or (parent is not None and not parent.is_active)
-    ):
+    if not public_packages().filter(pk=package.pk).exists():
         raise ValueError("Only publicly available packages can start a party.")
     state = checkout_state(session)
     previous_package_id = state.get("package_id")
-    current_tier = GuestPriceTier.objects.filter(
-        pk=state.get("guest_tier_id"), package=package, is_active=True
-    ).first()
+    current_tier_id = _positive_integer(state.get("guest_tier_id"))
+    current_tier = (
+        GuestPriceTier.objects.filter(
+            pk=current_tier_id, package=package, is_active=True
+        ).first()
+        if current_tier_id is not None
+        else None
+    )
     tier = current_tier or default_active_tier(package)
     state.update(
         {
@@ -156,12 +228,7 @@ def add_addon_to_session(
 ) -> dict[str, Any]:
     """Add one active experience to the same cart used by the party builder."""
 
-    parent = addon.category.parent
-    if (
-        not addon.is_active
-        or not addon.category.is_active
-        or (parent is not None and not parent.is_active)
-    ):
+    if not public_addons().filter(pk=addon.pk).exists():
         raise ValueError("Only publicly available experiences can be added to a party.")
     state = checkout_state(session)
     ids = [item.pk for item in active_session_addons(session)]

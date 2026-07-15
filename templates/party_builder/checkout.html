@@ -1,20 +1,16 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# This template displays the final review and simulated payment step. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}Simulated Checkout | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Review your customised party and complete a clearly labelled simulated card checkout.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}partyBuilder{% endblock %}
 
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
     {# This header introduces the page and gives visitors the main context before they continue. #}
     <header class="checkout-hero" aria-labelledby="checkout-heading">
@@ -25,7 +21,6 @@
                 No real transaction occurs. Card details are validated for demonstration
                 and discarded immediately after submission.
             </p>
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "party_builder/includes/progress.html" %}
         </div>
     </header>
@@ -42,8 +37,7 @@
         {% csrf_token %}
         <div class="container checkout-layout">
             <div class="checkout-main-column">
-                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-                <section class="checkout-panel" aria-labelledby="review-heading">
+                                <section class="checkout-panel" aria-labelledby="review-heading">
                     <div class="panel-heading">
                         <span class="panel-step" aria-hidden="true">3A</span>
                         <div>
@@ -64,8 +58,7 @@
                     <a class="text-link" href="{% url 'party_builder:party_builder_customer_details' %}">Edit event details</a>
                 </section>
 
-                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-                <section class="checkout-panel" aria-labelledby="payment-heading">
+                                <section class="checkout-panel" aria-labelledby="payment-heading">
                     <div class="panel-heading">
                         <span class="panel-step" aria-hidden="true">3B</span>
                         <div>
@@ -83,21 +76,14 @@
                         <span>No payment gateway is contacted and no funds are moved.</span>
                     </div>
 
-                    {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-                    {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+                                        {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
 
                     <div class="builder-form-grid">
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.cardholder_name wide=True only %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.card_number wide=True only %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.expiry_month only %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.expiry_year only %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.security_code only %}
-                        {# This include reuses a shared template fragment instead of repeating the same markup. #}
                         {% include "party_builder/includes/form_field.html" with field=form.billing_postal_code only %}
                     </div>
 
@@ -105,11 +91,9 @@
                         {{ form.simulation_consent }}
                         <label for="{{ form.simulation_consent.id_for_label }}">{{ form.simulation_consent.label }}</label>
                         <span class="field-help" id="{{ form.simulation_consent.id_for_label }}_help">Required to complete the demonstration.</span>
-                        {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-                        {% if form.simulation_consent.errors %}
+                                                {% if form.simulation_consent.errors %}
                             <ul class="field-errors" id="{{ form.simulation_consent.id_for_label }}_error" role="alert">
-                                {# This loop creates one visible item for each record supplied by the Django view. #}
-                                {% for error in form.simulation_consent.errors %}<li>{{ error }}</li>{% endfor %}
+                                                                {% for error in form.simulation_consent.errors %}<li>{{ error }}</li>{% endfor %}
                             </ul>
                         {% else %}
                             <span class="visually-hidden" id="{{ form.simulation_consent.id_for_label }}_error"></span>
@@ -126,13 +110,11 @@
                 </section>
             </div>
 
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "party_builder/includes/order_summary.html" %}
         </div>
     </form>
 {% endblock %}
 
-{# This block loads only the JavaScript needed by this page. #}
 {% block extra_js %}
     <script src="{% static 'js/party-builder.js' %}" defer></script>
 {% endblock %}

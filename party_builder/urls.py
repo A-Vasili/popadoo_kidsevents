@@ -5,7 +5,6 @@ from . import views
 
 app_name = "party_builder"
 
-# These URL patterns connect web addresses to the views that handle them.
 urlpatterns = [
     path(
         "",

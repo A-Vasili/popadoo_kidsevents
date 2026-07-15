@@ -1,3 +1,8 @@
+"""Public account pages and the customer booking dashboard.
+
+These views handle HTTP flow only.  Forms own validation and the party builder
+models provide the booking records shown to each signed-in customer.
+"""
 
 from __future__ import annotations
 
@@ -6,7 +11,7 @@ from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import redirect
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
 
 from party_builder.models import PartyBuild

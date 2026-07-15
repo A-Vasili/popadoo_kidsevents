@@ -1,3 +1,8 @@
+"""Account registration, sign-in and profile forms.
+
+These forms validate customer-entered identity and contact details.  Role and
+permission changes stay in the operations services rather than public forms.
+"""
 
 from __future__ import annotations
 
@@ -59,7 +64,6 @@ class SignUpForm(UserCreationForm):
         self.fields["phone"].widget.attrs["autocomplete"] = "tel"
         apply_form_control_classes(self)
 
-    # This validation step checks and prepares the email value before it is used.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
@@ -122,7 +126,6 @@ class ProfileForm(forms.ModelForm):
             self.fields["email"].initial = user.email
         apply_form_control_classes(self)
 
-    # This validation step checks and prepares the email value before it is used.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():

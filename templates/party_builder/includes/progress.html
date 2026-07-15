@@ -1,6 +1,4 @@
 
-{# This template displays the progress page or reusable section for the includes area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 <nav class="checkout-progress" aria-label="Booking checkout progress">
     <ol>
         <li{% if current_step == 1 %} aria-current="step"{% endif %} class="{% if current_step > 1 %}is-complete{% elif current_step == 1 %}is-current{% endif %}">

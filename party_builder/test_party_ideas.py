@@ -191,6 +191,125 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(package_response, hidden_addon.name)
         self.assertEqual(self.client.session[CHECKOUT_SESSION_KEY]["addon_ids"], [])
 
+    def test_malformed_and_duplicate_session_addons_are_normalized(self):
+        session = self.client.session
+        session[CHECKOUT_SESSION_KEY] = {
+            "package_id": str(self.package.pk),
+            "guest_tier_id": str(self.tier.pk),
+            "addon_ids": [
+                str(self.addon.pk),
+                self.addon.pk,
+                True,
+                -1,
+                "not-an-id",
+                999999,
+            ],
+        }
+        session.save()
+
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        state = self.client.session[CHECKOUT_SESSION_KEY]
+        self.assertEqual(state["package_id"], self.package.pk)
+        self.assertEqual(state["guest_tier_id"], self.tier.pk)
+        self.assertEqual(state["addon_ids"], [self.addon.pk])
+
+    def test_archived_tier_falls_back_to_the_package_default(self):
+        archived_tier = GuestPriceTier.objects.create(
+            package=self.package,
+            label="Archived session tier",
+            min_guests=11,
+            max_guests=20,
+            total_price=Decimal("300.00"),
+            is_active=False,
+        )
+        session = self.client.session
+        session[CHECKOUT_SESSION_KEY] = {
+            "package_id": self.package.pk,
+            "guest_tier_id": archived_tier.pk,
+            "addon_ids": [],
+        }
+        session.save()
+
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            self.client.session[CHECKOUT_SESSION_KEY]["guest_tier_id"],
+            self.tier.pk,
+        )
+
+    def test_package_fallback_requires_saved_details_to_be_reviewed(self):
+        hidden_package = PartyPackage.objects.create(
+            name="Archived Checkout Package",
+            slug="archived-checkout-package",
+            category=self.main_category,
+            short_description="No longer public",
+            base_price=Decimal("180.00"),
+            duration_minutes=90,
+            included_guest_count=8,
+            included_experiences="Games",
+            is_active=False,
+        )
+        hidden_tier = GuestPriceTier.objects.create(
+            package=hidden_package,
+            label="1–8 children",
+            min_guests=1,
+            max_guests=8,
+            total_price=Decimal("180.00"),
+            is_default=True,
+            is_active=True,
+        )
+        session = self.client.session
+        session[CHECKOUT_SESSION_KEY] = {
+            "package_id": hidden_package.pk,
+            "guest_tier_id": hidden_tier.pk,
+            "addon_ids": [],
+            "details": {"event_date": "2030-01-01", "event_time": "10:00"},
+        }
+        session.save()
+
+        response = self.client.get(
+            reverse("party_builder:party_builder_simulated_checkout")
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("party_builder:party_builder_customer_details"),
+            fetch_redirect_response=False,
+        )
+        state = self.client.session[CHECKOUT_SESSION_KEY]
+        self.assertNotEqual(state["package_id"], hidden_package.pk)
+        self.assertTrue(state["details_need_review"])
+
+    def test_malformed_saved_details_return_to_the_details_form(self):
+        session = self.client.session
+        session[CHECKOUT_SESSION_KEY] = {
+            "package_id": self.package.pk,
+            "guest_tier_id": self.tier.pk,
+            "addon_ids": [],
+            "details": {"event_date": "not-a-date", "event_time": "10:00"},
+        }
+        session.save()
+
+        response = self.client.get(
+            reverse("party_builder:party_builder_simulated_checkout")
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("party_builder:party_builder_customer_details"),
+            fetch_redirect_response=False,
+        )
+        self.assertNotIn(
+            "details", self.client.session[CHECKOUT_SESSION_KEY]
+        )
+
     def test_public_cards_include_csrf_tokens_for_session_actions(self):
         response = self.client.get(reverse("party_ideas:list"))
         self.assertContains(response, 'name="csrfmiddlewaretoken"')
@@ -259,6 +378,31 @@ class PartyIdeasTests(TestCase):
         )
         self.assertFalse(form.is_valid())
         self.assertIn("guest_tier", form.errors)
+
+    def test_invalid_builder_submission_keeps_the_submitted_package_visible(self):
+        other_package = (
+            PartyPackage.objects.filter(is_active=True)
+            .exclude(pk=self.package.pk)
+            .first()
+        )
+        other_tier = other_package.guest_price_tiers.filter(is_active=True).first()
+
+        response = self.client.post(
+            reverse("party_builder:party_builder_package_options"),
+            {
+                "package": self.package.pk,
+                "guest_tier": other_tier.pk,
+                "addons": [],
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["package"].pk, self.package.pk)
+        self.assertEqual(
+            response.context["selected_package_id"],
+            str(self.package.pk),
+        )
+        self.assertContains(response, "Choose a group-size option")
 
     def test_private_review_comment_is_not_exposed_on_public_pages(self):
         user = get_user_model().objects.create_user(

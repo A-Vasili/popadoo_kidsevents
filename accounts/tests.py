@@ -1,10 +1,13 @@
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.db import connection
+from django.test import RequestFactory, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from .models import CustomerProfile
+from .permissions import role_context
 
 
 User = get_user_model()
@@ -81,3 +84,15 @@ class AccountTests(TestCase):
         self.assertContains(response, "form-field--first_name")
         self.assertContains(response, "form-field--privacy_consent")
         self.assertContains(response, "form-check-row")
+
+    def test_navigation_role_context_reuses_one_group_lookup_for_customers(self):
+        user = User.objects.create_user("role-context-user", password="pass-12345")
+        request = RequestFactory().get("/")
+        request.user = user
+
+        with CaptureQueriesContext(connection) as captured:
+            context = role_context(request)
+
+        self.assertFalse(context["nav_is_owner"])
+        self.assertFalse(context["nav_is_worker"])
+        self.assertEqual(len(captured), 1)

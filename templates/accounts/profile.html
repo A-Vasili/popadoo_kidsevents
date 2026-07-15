@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# This template displays the profile page or reusable section for the accounts area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}My Profile | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Manage your saved Popadoo contact and booking details.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}accountProfile{% endblock %}
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section class="account-page" aria-labelledby="profile-heading">
     <div class="container account-shell">
         {# This header introduces the page and gives visitors the main context before they continue. #}
@@ -25,11 +20,9 @@
         {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
         <form method="post" class="account-card" novalidate>
             {% csrf_token %}
-            {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-            {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+                        {% if form.non_field_errors %}<div class="form-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
             <div class="account-form-grid">
-                {# This loop creates one visible item for each record supplied by the Django view. #}
-                {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
+                                {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
             </div>
             <button class="button" type="submit">Save profile</button>
         </form>

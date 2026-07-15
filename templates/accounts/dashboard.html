@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# This template displays the dashboard page or reusable section for the accounts area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}My Bookings | Popadoo Kids Events{% endblock %}
 {% block meta_description %}View your saved Popadoo party bookings and assignment status.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}accountDashboard{% endblock %}
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section class="account-page" aria-labelledby="dashboard-heading">
     <div class="container account-shell">
         {# This header introduces the page and gives visitors the main context before they continue. #}
@@ -25,8 +20,7 @@
             <a class="button" href="{% url 'party_builder:party_builder_package_options' %}">Build another party</a>
         </header>
         <div class="booking-list">
-            {# This loop creates one visible item for each record supplied by the Django view. #}
-            {% for booking in bookings %}
+                        {% for booking in bookings %}
                 {# This article represents one self-contained item that can be understood on its own. #}
                 <article class="booking-card">
                     {# This header introduces the page and gives visitors the main context before they continue. #}

@@ -1,4 +1,5 @@
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
@@ -92,6 +93,12 @@ class NavigationAndSecurityTests(TestCase):
         self.assertIn("default-src 'self'", response["Content-Security-Policy"])
         self.assertEqual(response["Cross-Origin-Resource-Policy"], "same-origin")
         self.assertIn("payment=()", response["Permissions-Policy"])
+
+    def test_static_and_media_urls_are_absolute_site_paths(self):
+        """Nested public pages must not resolve assets relative to their URL."""
+
+        self.assertTrue(settings.STATIC_URL.startswith("/"))
+        self.assertTrue(settings.MEDIA_URL.startswith("/"))
 
 class ConsolidatedStaticAssetTests(TestCase):
     """Ensure templates reference only the surviving consolidated assets."""

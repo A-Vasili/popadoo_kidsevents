@@ -14,7 +14,6 @@ from django.contrib import messages
 from django.db.models import Avg, Count, DecimalField, F, Min, Prefetch, Q
 from django.db.models.functions import Coalesce
 from django.core.paginator import Paginator
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views import View
@@ -23,7 +22,7 @@ from django.views.generic import DetailView, TemplateView
 from .analytics import recommend_addons
 from .forms import PartyIdeasFilterForm
 from .models import AddonExperience, Category, GuestPriceTier, PartyBuild, PartyPackage
-from .services import add_addon_to_session, checkout_state, resolve_active_package, select_package
+from .services import add_addon_to_session, resolve_active_package, select_package
 
 
 VISIBLE_CATEGORY_FILTER = Q(parent__isnull=True) | Q(parent__is_active=True)
@@ -137,32 +136,51 @@ def _normalise_card(item, kind: str) -> dict:
     }
 
 
+def _name_sort_key(card: dict) -> tuple:
+    return card["name"].casefold(), card["kind"]
+
+
+def _price_ascending_sort_key(card: dict) -> tuple:
+    return card["price"], card["name"].casefold()
+
+
+def _price_descending_sort_key(card: dict) -> tuple:
+    return -card["price"], card["name"].casefold()
+
+
+def _rating_sort_key(card: dict) -> tuple:
+    return (
+        -float(card["average_rating"] or 0),
+        -card["rating_count"],
+        card["name"].casefold(),
+    )
+
+
+def _review_count_sort_key(card: dict) -> tuple:
+    return (
+        -card["rating_count"],
+        -float(card["average_rating"] or 0),
+        card["name"].casefold(),
+    )
+
+
+def _recommended_sort_key(card: dict) -> tuple:
+    return (
+        0 if card["kind"] == "package" else 1,
+        card["display_order"],
+        card["name"].casefold(),
+    )
+
+
 def _sort_cards(cards: list[dict], ordering: str) -> None:
-    if ordering == "name":
-        key = lambda card: (card["name"].casefold(), card["kind"])
-    elif ordering == "price_asc":
-        key = lambda card: (card["price"], card["name"].casefold())
-    elif ordering == "price_desc":
-        key = lambda card: (-card["price"], card["name"].casefold())
-    elif ordering == "rating":
-        key = lambda card: (
-            -float(card["average_rating"] or 0),
-            -card["rating_count"],
-            card["name"].casefold(),
-        )
-    elif ordering == "reviews":
-        key = lambda card: (
-            -card["rating_count"],
-            -float(card["average_rating"] or 0),
-            card["name"].casefold(),
-        )
-    else:
-        key = lambda card: (
-            0 if card["kind"] == "package" else 1,
-            card["display_order"],
-            card["name"].casefold(),
-        )
-    cards.sort(key=key)
+    sort_keys = {
+        "name": _name_sort_key,
+        "price_asc": _price_ascending_sort_key,
+        "price_desc": _price_descending_sort_key,
+        "rating": _rating_sort_key,
+        "reviews": _review_count_sort_key,
+    }
+    cards.sort(key=sort_keys.get(ordering, _recommended_sort_key))
 
 
 def _query_string(querydict, **changes) -> str:

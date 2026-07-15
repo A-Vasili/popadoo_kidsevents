@@ -2,22 +2,18 @@
 {% load static %}
 
 {# This template confirms that the simulated checkout was completed and summarizes the booking. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}Simulated Purchase Complete | Popadoo Kids Events{% endblock %}
 {% block meta_description %}Your customised Popadoo party request and simulated checkout have been completed.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}partyBuilderSuccess{% endblock %}
 
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-    <section class="checkout-success" aria-labelledby="success-heading">
+        <section class="checkout-success" aria-labelledby="success-heading">
         <div class="container narrow-content">
             <p class="success-icon" aria-hidden="true">✓</p>
             <p class="section-kicker">Simulation completed</p>
@@ -45,12 +41,10 @@
                     <div class="review-detail-wide"><dt>Venue</dt><dd>{{ party_build.event_address }}, {{ party_build.postal_code }}</dd></div>
                 </dl>
 
-                {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-                <section aria-labelledby="saved-addons-heading">
+                                <section aria-labelledby="saved-addons-heading">
                     <h3 id="saved-addons-heading">Optional experiences</h3>
                     <ul class="saved-addon-list">
-                        {# This loop creates one visible item for each record supplied by the Django view. #}
-                        {% for item in party_build.addon_items.all %}
+                                                {% for item in party_build.addon_items.all %}
                             <li><span>{{ item.addon.name }}</span><strong>€{{ item.unit_price|floatformat:2 }}</strong></li>
                         {% empty %}
                             <li>No optional experiences selected.</li>

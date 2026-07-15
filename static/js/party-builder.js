@@ -34,6 +34,7 @@
         const emptySummary = document.querySelector("#summary-empty");
         const totalOutput = document.querySelector("#party-total");
         const liveStatus = document.querySelector("#builder-live-status");
+        let recommendationController = null;
 
         const selectedPackage = () => packageRadios.find((radio) => radio.checked);
         const selectedPackageId = () => selectedPackage()?.value || "";
@@ -44,15 +45,29 @@
         const updateChoiceLabels = () => {
             packageRadios.forEach((radio) => {
                 const action = radio.closest(".package-option")?.querySelector("[data-package-action]");
-                if (action) action.textContent = radio.checked ? "Selected starting point" : "Choose this starting point";
+                if (action) {
+                    const key = radio.checked
+                        ? "builder.selectedStartingPoint"
+                        : "builder.chooseStartingPoint";
+                    action.dataset.i18n = key;
+                    action.textContent = translate(key);
+                }
             });
             tierRadios.forEach((radio) => {
                 const action = radio.closest(".tier-option")?.querySelector("[data-tier-action]");
-                if (action) action.textContent = radio.checked ? "Selected" : "Choose this group size";
+                if (action) {
+                    const key = radio.checked ? "builder.selected" : "builder.chooseGroupSize";
+                    action.dataset.i18n = key;
+                    action.textContent = translate(key);
+                }
             });
             addonCheckboxes.forEach((checkbox) => {
                 const action = checkbox.closest(".addon-option")?.querySelector("[data-addon-action]");
-                if (action) action.textContent = checkbox.checked ? "Added — remove" : "Add experience";
+                if (action) {
+                    const key = checkbox.checked ? "builder.addedRemove" : "builder.addExperience";
+                    action.dataset.i18n = key;
+                    action.textContent = translate(key);
+                }
             });
         };
 
@@ -83,7 +98,7 @@
             );
             const total = tierPrice + addonTotal;
 
-            if (selectedTierLabel) selectedTierLabel.textContent = selectedTier?.dataset.tierLabel || "Select a group size";
+            if (selectedTierLabel) selectedTierLabel.textContent = selectedTier?.dataset.tierLabel || translate("builder.selectGroupSize");
             if (selectedTierPrice) selectedTierPrice.textContent = selectedTier ? currencyFormatter.format(tierPrice) : "—";
             if (totalOutput) totalOutput.textContent = selectedTier ? currencyFormatter.format(total) : "—";
 
@@ -173,13 +188,19 @@
 
         const refreshRecommendations = async () => {
             if (!recommendationSection || !recommendationList) return;
+            recommendationController?.abort();
+            recommendationController = new AbortController();
             const url = new URL(recommendationSection.dataset.endpoint, window.location.origin);
             url.searchParams.set("package", selectedPackageId());
             addonCheckboxes.filter((item) => item.checked).forEach((item) => url.searchParams.append("addons", item.value));
             try {
-                const response = await fetch(url, { headers: { Accept: "application/json" } });
+                const response = await fetch(url, {
+                    headers: { Accept: "application/json" },
+                    signal: recommendationController.signal,
+                });
                 if (response.ok) renderRecommendations((await response.json()).recommendations || []);
-            } catch (_error) {
+            } catch (error) {
+                if (error.name === "AbortError") return;
                 // The server-rendered suggestions remain usable when the network is unavailable.
             }
         };

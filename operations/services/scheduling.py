@@ -1,3 +1,8 @@
+"""Read-only scheduling calculations shared by workers and owners.
+
+It converts booking details into event windows and reports availability or
+assignment conflicts without mutating bookings.
+"""
 
 from __future__ import annotations
 

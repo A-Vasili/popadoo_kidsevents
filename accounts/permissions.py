@@ -59,15 +59,50 @@ def can_manage_workers(user: AbstractBaseUser) -> bool:
 
 
 def role_context(request):
-    """Expose stable role flags used by shared navigation templates."""
+    """Expose navigation flags with one group lookup for the current request.
+
+    The individual permission helpers remain useful in views and services.  A
+    shared page header needs several flags at once, so calculating them from one
+    group-name set avoids repeating the same database query on every response.
+    """
 
     user = request.user
-    owner = is_owner(user)
-    pricing = can_manage_pricing(user)
+    if not getattr(user, "is_authenticated", False):
+        return {
+            "nav_is_owner": False,
+            "nav_is_worker": False,
+            "nav_can_access_operations": False,
+            "nav_can_manage_pricing": False,
+            "nav_can_access_management": False,
+        }
+
+    group_names = set(user.groups.values_list("name", flat=True))
+    owner = bool(user.is_superuser or OWNER_GROUP in group_names)
+    profile = (
+        getattr(user, "worker_profile", None)
+        if WORKER_GROUP in group_names and not user.is_superuser
+        else None
+    )
+    worker = bool(
+        user.is_superuser
+        or (
+            WORKER_GROUP in group_names
+            and profile
+            and profile.is_active_worker
+        )
+    )
+    pricing = bool(
+        owner
+        or (
+            PRICING_GROUP in group_names
+            and user.has_perm("party_builder.change_partypackage")
+            and user.has_perm("party_builder.change_addonexperience")
+        )
+    )
     return {
         "nav_is_owner": owner,
-        "nav_is_worker": is_worker(user),
-        "nav_can_access_operations": can_access_operations(user),
+        "nav_is_worker": worker,
+        "nav_can_access_operations": owner or worker,
         "nav_can_manage_pricing": pricing,
         "nav_can_access_management": owner or pricing,
     }

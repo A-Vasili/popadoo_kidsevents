@@ -1,21 +1,16 @@
 {% extends "base.html" %}
 {% load static %}
 
-{# This template displays the about page or reusable section for the core area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 {% block title %}About Us | Popadoo Kids Events{% endblock %}
 {% block page_name %}about{% endblock %}
 
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/content-pages.css' %}">
 {% endblock %}
 
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
 Page introduction: explains the real service rather than a software concept.
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section aria-labelledby="about-heading" class="content-section">
 <div class="container narrow-content">
 <p class="section-kicker" data-i18n="about.kicker">Mobile children’s event planning</p>
@@ -24,7 +19,6 @@ Page introduction: explains the real service rather than a software concept.
 </div>
 </section>
  The service model is made explicit because Popadoo has no fixed party venue.
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section aria-labelledby="mobile-service-heading" class="content-section section-surface">
 <div class="container">
 <div class="row g-4 align-items-center mobile-service-layout">
@@ -50,7 +44,6 @@ Page introduction: explains the real service rather than a software concept.
 </div>
 </section>
  Bootstrap grid classes work alongside the existing custom card styling.
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section aria-labelledby="team-heading" class="content-section">
 <div class="container">
 <div class="section-heading-group">
@@ -95,7 +88,6 @@ Page introduction: explains the real service rather than a software concept.
 </div>
 </div>
 </section>
-{# This section groups one meaningful part of the page so it is easier to scan and understand. #}
 <section aria-labelledby="process-heading" class="content-section section-surface">
 <div class="container">
 <div class="section-heading-group">

@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -26,6 +27,8 @@ from party_builder.models import (
 )
 
 from .models import AuditEvent, PartyAssignment
+from .services.assignment import assign_manually
+from .services.bookings import send_to_manual_review
 
 User = get_user_model()
 
@@ -684,6 +687,19 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    def test_manual_assignment_service_rejects_non_owner(self):
+        booking = self.make_booking()
+
+        with self.assertRaises(PermissionDenied):
+            assign_manually(
+                party_build=booking,
+                worker=self.worker,
+                owner=self.customer,
+                override_reason="Attempted outside the owner workflow.",
+            )
+
+        self.assertFalse(booking.assignments.exists())
+
     def test_manual_review_removes_confirmed_schedule_entry(self):
         booking = self.make_booking()
         assignment = PartyAssignment.objects.create(
@@ -713,4 +729,45 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(
             booking.assignment_state,
             PartyBuild.AssignmentState.MANUAL_REVIEW,
+        )
+
+    def test_manual_review_service_rejects_non_owner(self):
+        booking = self.make_booking()
+
+        with self.assertRaises(PermissionDenied):
+            send_to_manual_review(
+                booking=booking,
+                actor=self.customer,
+                reason="Attempted outside the owner workflow.",
+            )
+
+        booking.refresh_from_db()
+        self.assertEqual(
+            booking.assignment_state,
+            PartyBuild.AssignmentState.UNASSIGNED,
+        )
+
+    def test_terminal_booking_cannot_return_to_manual_review(self):
+        booking = self.make_booking()
+        booking.status = PartyBuild.Status.CANCELLED
+        booking.save(update_fields=["status"])
+
+        response = self.client.post(
+            reverse(
+                "management:management_booking_manual_review",
+                args=[booking.public_id],
+            ),
+            {"reason": "This should be rejected safely."},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Completed or cancelled bookings cannot be sent to manual review.",
+        )
+        booking.refresh_from_db()
+        self.assertEqual(
+            booking.assignment_state,
+            PartyBuild.AssignmentState.UNASSIGNED,
         )

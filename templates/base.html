@@ -1,7 +1,6 @@
 {% load static %}
 
 {# This base template provides the shared page structure, metadata, header, footer, styles, and scripts used across the site. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -47,7 +46,6 @@
     <link rel="stylesheet" href="{% static 'css/navigation.css' %}">
     <link rel="stylesheet" href="{% static 'css/custom-controls.css' %}">
 
-    {# This block adds only the stylesheet needed by this page. #}
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -60,24 +58,18 @@
         Skip to main content
     </a>
 
-    {# This include reuses a shared template fragment instead of repeating the same markup. #}
     {% include "includes/header.html" %}
 
-    {# This condition displays helpful feedback only when Django has a message or validation error to show. #}
-    {% if messages %}
+        {% if messages %}
         <div class="site-messages" aria-live="polite">
-            {# This loop creates one visible item for each record supplied by the Django view. #}
-            {% for message in messages %}<p class="site-message {{ message.tags }}">{{ message }}</p>{% endfor %}
+                        {% for message in messages %}<p class="site-message {{ message.tags }}">{{ message }}</p>{% endfor %}
         </div>
     {% endif %}
 
-    {# This main element contains the unique primary content of the page. #}
     <main id="main-content">
-        {# This block contains the visible page content inserted into the shared base template. #}
         {% block content %}{% endblock %}
     </main>
 
-    {# This include reuses a shared template fragment instead of repeating the same markup. #}
     {% include "includes/footer.html" %}
 
     <script src="{% static 'vendor/bootstrap/bootstrap.js' %}" defer></script>
@@ -85,7 +77,6 @@
     <script src="{% static 'js/custom-controls.js' %}" defer></script>
     <script src="{% static 'js/main.js' %}" defer></script>
 
-    {# This block loads only the JavaScript needed by this page. #}
     {% block extra_js %}{% endblock %}
 </body>
 </html>

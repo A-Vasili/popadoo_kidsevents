@@ -1,7 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{# This template displays the assignment list page or reusable section for the operations area. #}
-{# The comments guide future readers and do not appear in the rendered web page. #}
 {% block title %}
     Assignments | Popadoo Kids Events
 {% endblock %}
@@ -11,14 +9,11 @@
 {% block page_name %}
     operationsAssignments
 {% endblock %}
-{# This block adds only the stylesheet needed by this page. #}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
-{# This block contains the visible page content inserted into the shared base template. #}
 {% block content %}
-    {# This section groups one meaningful part of the page so it is easier to scan and understand. #}
-    <section class="operations-page" aria-labelledby="assignments-heading">
+        <section class="operations-page" aria-labelledby="assignments-heading">
         <div class="container">
             {# This header introduces the page and gives visitors the main context before they continue. #}
             <header class="operations-heading">
@@ -29,11 +24,9 @@
                     Party assignments
                 </h1>
             </header>
-            {# This include reuses a shared template fragment instead of repeating the same markup. #}
             {% include "operations/includes/nav.html" %}
             <div class="operations-list">
-                {# This loop creates one visible item for each record supplied by the Django view. #}
-                {% for assignment in assignments %}
+                                {% for assignment in assignments %}
                     {# This article represents one self-contained item that can be understood on its own. #}
                     <article class="assignment-card">
                         {# This header introduces the page and gives visitors the main context before they continue. #}

@@ -1,3 +1,8 @@
+"""Party builder, simulated checkout, success and review HTTP workflows.
+
+Views coordinate forms and services while keeping session cleaning, pricing and
+booking creation in the shared service layer.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +14,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.http import Http404, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from django.views import View
 from django.views.generic import DetailView, FormView, TemplateView
 
@@ -21,6 +25,7 @@ from .forms import (
     SimulatedPaymentForm,
 )
 from .models import AddonExperience, GuestPriceTier, PartyBuild, PartyPackage
+from .party_ideas import public_package_queryset, visible_categories
 from .analytics import addon_popularity, recommend_addons, review_score_updates
 from .review_services import (
     authorize_review_session,
@@ -29,11 +34,18 @@ from .review_services import (
     save_party_review,
     verify_review_code,
 )
-from .services import calculate_party_quote, create_completed_party_build
-
-
-CHECKOUT_SESSION_KEY = "party_builder_checkout"
-AUTHORIZED_BUILD_SESSION_KEY = "party_builder_builds"
+from .services import (
+    AUTHORIZED_BUILD_SESSION_KEY,
+    active_session_addons,
+    calculate_party_quote,
+    checkout_state,
+    clear_checkout_state,
+    create_completed_party_build,
+    resolve_active_package,
+    resolve_active_tier,
+    save_checkout_state,
+    select_package,
+)
 
 
 class CheckoutStateMixin:
@@ -43,47 +55,32 @@ class CheckoutStateMixin:
 
     def dispatch(self, request, *args, **kwargs):
         self.package = self.get_package()
+        # A cart can remain in a browser after catalogue records are archived.
+        # Cleaning it at the start of every builder step prevents hidden items
+        # from surviving simply because a page did not need to price them yet.
+        self.get_selected_addons()
         return super().dispatch(request, *args, **kwargs)
 
     def get_package(self) -> PartyPackage:
-        package = (
-            PartyPackage.objects.filter(is_active=True, is_default=True).first()
-            or PartyPackage.objects.filter(is_active=True).first()
-        )
+        package = resolve_active_package(self.request.session)
         if package is None:
             raise Http404("No active party package is currently available.")
         return package
 
     def get_checkout_state(self) -> dict[str, Any]:
-        state = self.request.session.get(CHECKOUT_SESSION_KEY, {})
-        return state if isinstance(state, dict) else {}
+        return checkout_state(self.request.session)
 
     def save_checkout_state(self, state: dict[str, Any]) -> None:
-        self.request.session[CHECKOUT_SESSION_KEY] = state
-        self.request.session.modified = True
+        save_checkout_state(self.request.session, state)
 
     def clear_checkout_state(self) -> None:
-        self.request.session.pop(CHECKOUT_SESSION_KEY, None)
-        self.request.session.modified = True
+        clear_checkout_state(self.request.session)
 
     def get_selected_tier(self) -> GuestPriceTier | None:
-        tier_id = self.get_checkout_state().get("guest_tier_id")
-        if not tier_id:
-            return None
-        return self.package.guest_price_tiers.filter(
-            pk=tier_id,
-            is_active=True,
-        ).first()
+        return resolve_active_tier(self.request.session, self.package)
 
     def get_selected_addons(self) -> list[AddonExperience]:
-        addon_ids = self.get_checkout_state().get("addon_ids", [])
-        if not isinstance(addon_ids, list):
-            return []
-        return list(
-            AddonExperience.objects.filter(pk__in=addon_ids, is_active=True).order_by(
-                "display_order", "name"
-            )
-        )
+        return active_session_addons(self.request.session)
 
     def get_quote_context(self) -> dict[str, Any]:
         guest_tier = self.get_selected_tier()
@@ -110,6 +107,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
         state = self.get_checkout_state()
         if self.request.method == "GET" and state:
             kwargs["initial"] = {
+                "package": self.package.pk,
                 "guest_tier": state.get("guest_tier_id"),
                 "addons": state.get("addon_ids", []),
             }
@@ -122,12 +120,16 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
                 or self.package.guest_price_tiers.filter(is_active=True).first()
             )
             if default_tier:
-                kwargs["initial"] = {"guest_tier": default_tier.pk}
+                kwargs["initial"] = {
+                    "package": self.package.pk,
+                    "guest_tier": default_tier.pk,
+                }
         return kwargs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form = context["form"]
+        selected_package_id = str(form["package"].value() or self.package.pk)
         selected_tier_id = str(form["guest_tier"].value() or "")
         selected_addon_ids = {str(value) for value in (form["addons"].value() or [])}
         tiers = list(form.fields["guest_tier"].queryset)
@@ -139,11 +141,25 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
         selected_addons = [
             addon for addon in addons if str(addon.pk) in selected_addon_ids
         ]
+        package_options = list(
+            public_package_queryset().order_by("display_order", "name")
+        )
+        displayed_package = next(
+            (
+                option
+                for option in package_options
+                if str(option.pk) == selected_package_id
+            ),
+            self.package,
+        )
         popularity = addon_popularity(days=365)
         context.update(
             {
-                "package": self.package,
+                "package": displayed_package,
+                "package_options": package_options,
+                "selected_package_id": selected_package_id,
                 "price_tiers": tiers,
+                "addon_categories": list(visible_categories()),
                 "addon_options": [
                     {
                         "addon": addon,
@@ -154,7 +170,7 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
                 ],
                 "recommendations": recommend_addons(
                     selected_ids=[addon.pk for addon in selected_addons],
-                    package=self.package,
+                    package=displayed_package,
                     popularity_by_id=popularity["by_id"],
                 ),
                 "selected_tier_id": selected_tier_id,
@@ -169,12 +185,13 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
         return context
 
     def form_valid(self, form):
+        package = form.cleaned_data["package"]
         guest_tier = form.cleaned_data["guest_tier"]
         addons = list(form.cleaned_data["addons"])
-        state = self.get_checkout_state()
+        state = select_package(self.request.session, package)
         state.update(
             {
-                "package_id": self.package.pk,
+                "package_id": package.pk,
                 "guest_tier_id": guest_tier.pk,
                 "addon_ids": [addon.pk for addon in addons],
             }
@@ -192,6 +209,11 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
     form_class = PartyDetailsForm
 
     def dispatch(self, request, *args, **kwargs):
+        original_state = checkout_state(request.session)
+        if not original_state.get("package_id") or not original_state.get(
+            "guest_tier_id"
+        ):
+            return redirect("party_builder:party_builder_package_options")
         self.package = self.get_package()
         if self.get_selected_tier() is None:
             return redirect("party_builder:party_builder_package_options")
@@ -240,6 +262,7 @@ class PartyDetailsView(CheckoutStateMixin, FormView):
             "postal_code": cleaned["postal_code"],
             "notes": cleaned.get("notes", ""),
         }
+        state.pop("details_need_review", None)
         self.save_checkout_state(state)
         if self.request.user.is_authenticated and cleaned.get("save_profile"):
             from accounts.models import CustomerProfile
@@ -270,11 +293,25 @@ class PartyCheckoutView(CheckoutStateMixin, FormView):
     form_class = SimulatedPaymentForm
 
     def dispatch(self, request, *args, **kwargs):
+        original_state = checkout_state(request.session)
+        if not original_state.get("package_id") or not original_state.get(
+            "guest_tier_id"
+        ):
+            return redirect("party_builder:party_builder_package_options")
         self.package = self.get_package()
         state = self.get_checkout_state()
         if self.get_selected_tier() is None:
             return redirect("party_builder:party_builder_package_options")
-        if not state.get("details"):
+        if not state.get("details") or state.get("details_need_review"):
+            return redirect("party_builder:party_builder_customer_details")
+        try:
+            self._deserialize_details(state["details"])
+        except (KeyError, TypeError, ValueError):
+            # Old or manually altered session values should return the customer
+            # to a safe form instead of causing a server error at checkout.
+            state.pop("details", None)
+            state.pop("details_need_review", None)
+            self.save_checkout_state(state)
             return redirect("party_builder:party_builder_customer_details")
         return FormView.dispatch(self, request, *args, **kwargs)
 

@@ -12,9 +12,7 @@
 window.popadooTranslations = Object.freeze({
     /* English source copy. */
     en: Object.freeze({
-        // The following text belongs to the common section of the website.
         "common.skipLink": "Skip to main content",
-        // The following text belongs to the nav section of the website.
         "nav.primaryLabel": "Primary navigation",
         "nav.logoLabel": "Popadoo Kids Events home",
         "nav.openMenu": "Open primary navigation",
@@ -41,16 +39,13 @@ window.popadooTranslations = Object.freeze({
         "account.siteAdmin": "Site administration",
         "account.signInHelp": "Access bookings and saved details",
         "account.signUpHelp": "Save details for faster future bookings",
-        // The following text belongs to the language section of the website.
         "language.label": "Language",
         "language.english": "English",
         "language.greek": "Greek",
-        // The following text belongs to the theme section of the website.
         "theme.light": "Light mode",
         "theme.dark": "Dark mode",
         "theme.switchToLight": "Switch to light mode",
         "theme.switchToDark": "Switch to dark mode",
-        // The following text belongs to the footer section of the website.
         "footer.copyright": "© 2026 Popadoo Kids Events",
         "footer.styleGuide": "Documentation",
         "footer.tagline": "Joyful children’s events, brought to your chosen venue.",
@@ -59,10 +54,8 @@ window.popadooTranslations = Object.freeze({
         "footer.instagram": "Instagram",
         "footer.instagramLabel": "Visit Popadoo on Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.index.title": "Home | Popadoo Kids Events",
         "meta.index.description": "Plan joyful children’s events with Popadoo Kids Events.",
-        // The following text belongs to the home section of the website.
         "home.welcomeHeading": "Welcome to Popadoo Kids Events",
         "home.welcomeText": "Creative children’s parties planned around your family, your theme, and the venue you choose.",
         "home.bookingHeading": "Browse for inspiration, then make it your own",
@@ -124,6 +117,13 @@ window.popadooTranslations = Object.freeze({
         "builder.recommendations": "Popular additions for your party",
         "builder.searchExperiences": "Search experiences",
         "builder.selectExperience": "Select this experience",
+        "builder.selectedStartingPoint": "Selected starting point",
+        "builder.chooseStartingPoint": "Choose this starting point",
+        "builder.selected": "Selected",
+        "builder.chooseGroupSize": "Choose this group size",
+        "builder.addedRemove": "Added — remove",
+        "builder.addExperience": "Add experience",
+        "builder.selectGroupSize": "Select a group size",
         "builder.noAdditionalSuggestions": "No additional suggestions are available yet.",
         "builder.experienceShown": "{count} experience shown.",
         "builder.experiencesShown": "{count} experiences shown.",
@@ -131,10 +131,8 @@ window.popadooTranslations = Object.freeze({
         "builder.chooseGroupToContinue": "Choose a group size to continue.",
         "builder.completingSimulation": "Completing simulation…",
 
-        // The following text belongs to the meta section of the website.
         "meta.gallery.title": "Gallery | Popadoo Kids Events",
         "meta.gallery.description": "Explore playful Popadoo colour studies for children’s event themes.",
-        // The following text belongs to the gallery section of the website.
         "gallery.kicker": "Visual inspiration",
         "gallery.heading": "Gallery",
         "gallery.lead": "Explore four playful colour studies from the Popadoo visual concept. They show how confetti, balloons, and pastel combinations can shape a cheerful event mood.",
@@ -149,10 +147,8 @@ window.popadooTranslations = Object.freeze({
         "gallery.imageFourAlt": "Abstract pink background with colourful circles and confetti",
         "gallery.imageFourCaption": "Pink party: a lively mix of rose, lavender, aqua, and peach.",
 
-        // The following text belongs to the meta section of the website.
         "meta.about.title": "About | Popadoo Kids Events",
         "meta.about.description": "Meet the mobile Popadoo Kids Events team and learn how we bring children’s celebrations to client-selected venues.",
-        // The following text belongs to the about section of the website.
         "about.kicker": "Mobile children’s event planning",
         "about.heading": "About Popadoo",
         "about.lead": "Popadoo Kids Events creates playful, well-organized celebrations for children and families. We help shape the theme, activities, timing, and practical details so hosts can enjoy the day with their guests.",
@@ -190,7 +186,6 @@ window.popadooTranslations = Object.freeze({
         "about.instagramText": "See current themes, activity ideas, and event updates on our official Instagram page.",
         "about.instagramLink": "Visit Popadoo on Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.packages.title": "Packages | Popadoo Kids Events",
         "meta.partyIdeas.title": "Party Ideas | Popadoo Kids Events",
         "meta.partyIdeas.description": "Browse starting packages and party experiences, then make the celebration your own.",
@@ -199,7 +194,6 @@ window.popadooTranslations = Object.freeze({
         "meta.partyBuilderSuccess.title": "Simulated Purchase Complete | Popadoo Kids Events",
         "meta.partyBuilderSuccess.description": "Your Popadoo party request and simulated checkout have been completed.",
         "meta.packages.description": "Explore Popadoo Kids Events packages, select a party option, and compare packages dynamically.",
-        // The following text belongs to the packages section of the website.
         "packages.heading": "Event Packages",
         "packages.lead": "Choose a starting point, compare your favourites, and send the latest selected package to the booking form.",
         "packages.availableHeading": "Available packages",
@@ -286,10 +280,8 @@ window.popadooTranslations = Object.freeze({
         "packages.faqBookingQuestion": "How early should I book?",
         "packages.faqBookingAnswer": "Booking four to six weeks in advance is recommended, especially for weekends and popular dates.",
 
-        // The following text belongs to the meta section of the website.
         "meta.testimonials.title": "Testimonials | Popadoo Kids Events",
         "meta.testimonials.description": "Learn how Popadoo collects honest, permission-based feedback after children’s events.",
-        // The following text belongs to the testimonials section of the website.
         "testimonials.kicker": "Verified feedback",
         "testimonials.heading": "Testimonials",
         "testimonials.lead": "These comments come from verified completed parties and are displayed only with the customer’s explicit permission.",
@@ -308,10 +300,8 @@ window.popadooTranslations = Object.freeze({
         "testimonials.headingThree": "On-site coordination",
         "testimonials.quoteThree": "We invite practical feedback about arrival, setup, activity flow, adaptability, and the overall organization of the event.",
 
-        // The following text belongs to the meta section of the website.
         "meta.contact.title": "Make Your Own Party | Popadoo Kids Events",
         "meta.contact.description": "Send a children’s event enquiry to Popadoo and specify the venue where our mobile team should travel.",
-        // The following text belongs to the contact section of the website.
         "contact.kicker": "Tell us about your celebration",
         "contact.heading": "Book Your Party",
         "contact.lead": "Complete the enquiry form with your preferred date and venue. We will review the details and contact you to discuss availability, travel, and the right event plan.",
@@ -365,10 +355,8 @@ window.popadooTranslations = Object.freeze({
         "contact.openMap": "Open this location in OpenStreetMap",
         "contact.instagram": "Follow Popadoo on Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.styleGuide.title": "Documentation | Popadoo Kids Events",
         "meta.styleGuide.description": "Documentation and design guidance for Popadoo Kids Events.",
-        // The following text belongs to the styleGuide section of the website.
         "styleGuide.kicker": "Brand decoration system",
         "styleGuide.heading": "Documentation",
         "styleGuide.lead": "A practical system for turning the colourful Popadoo logo into a soft, harmonious light theme and a readable, hue-consistent dark theme.",
@@ -455,9 +443,7 @@ window.popadooTranslations = Object.freeze({
 
     /* Greek translations shown when the active language is el. */
     el: Object.freeze({
-        // The following text belongs to the common section of the website.
         "common.skipLink": "Μετάβαση στο κύριο περιεχόμενο",
-        // The following text belongs to the nav section of the website.
         "nav.primaryLabel": "Κύρια πλοήγηση",
         "nav.logoLabel": "Αρχική σελίδα Popadoo Kids Events",
         "nav.openMenu": "Άνοιγμα κύριου μενού",
@@ -484,16 +470,13 @@ window.popadooTranslations = Object.freeze({
         "account.siteAdmin": "Διαχείριση ιστοτόπου",
         "account.signInHelp": "Πρόσβαση σε κρατήσεις και αποθηκευμένα στοιχεία",
         "account.signUpHelp": "Αποθηκεύστε στοιχεία για ταχύτερες κρατήσεις",
-        // The following text belongs to the language section of the website.
         "language.label": "Γλώσσα",
         "language.english": "Αγγλικά",
         "language.greek": "Ελληνικά",
-        // The following text belongs to the theme section of the website.
         "theme.light": "Φωτεινή λειτουργία",
         "theme.dark": "Σκοτεινή λειτουργία",
         "theme.switchToLight": "Μετάβαση σε φωτεινή λειτουργία",
         "theme.switchToDark": "Μετάβαση σε σκοτεινή λειτουργία",
-        // The following text belongs to the footer section of the website.
         "footer.copyright": "© 2026 Popadoo Kids Events",
         "footer.styleGuide": "Τεκμηρίωση",
         "footer.tagline": "Χαρούμενες παιδικές εκδηλώσεις στον χώρο που επιλέγετε.",
@@ -502,10 +485,8 @@ window.popadooTranslations = Object.freeze({
         "footer.instagram": "Instagram",
         "footer.instagramLabel": "Επισκεφθείτε το Popadoo στο Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.index.title": "Αρχική | Popadoo Kids Events",
         "meta.index.description": "Οργανώστε χαρούμενες παιδικές εκδηλώσεις με το Popadoo Kids Events.",
-        // The following text belongs to the home section of the website.
         "home.welcomeHeading": "Καλώς ήρθατε στο Popadoo Kids Events",
         "home.welcomeText": "Δημιουργικά παιδικά πάρτι σχεδιασμένα για την οικογένειά σας, το θέμα σας και τον χώρο που επιλέγετε.",
         "home.bookingHeading": "Πάρτε έμπνευση και μετά κάντε το δικό σας",
@@ -567,6 +548,13 @@ window.popadooTranslations = Object.freeze({
         "builder.recommendations": "Δημοφιλείς προσθήκες για το πάρτι σας",
         "builder.searchExperiences": "Αναζήτηση εμπειριών",
         "builder.selectExperience": "Επιλέξτε αυτή την εμπειρία",
+        "builder.selectedStartingPoint": "Επιλεγμένο πακέτο εκκίνησης",
+        "builder.chooseStartingPoint": "Επιλέξτε αυτό το πακέτο εκκίνησης",
+        "builder.selected": "Επιλεγμένο",
+        "builder.chooseGroupSize": "Επιλέξτε αυτό το μέγεθος ομάδας",
+        "builder.addedRemove": "Προστέθηκε — αφαίρεση",
+        "builder.addExperience": "Προσθήκη εμπειρίας",
+        "builder.selectGroupSize": "Επιλέξτε μέγεθος ομάδας",
         "builder.noAdditionalSuggestions": "Δεν υπάρχουν ακόμη επιπλέον προτάσεις.",
         "builder.experienceShown": "Εμφανίζεται {count} εμπειρία.",
         "builder.experiencesShown": "Εμφανίζονται {count} εμπειρίες.",
@@ -574,10 +562,8 @@ window.popadooTranslations = Object.freeze({
         "builder.chooseGroupToContinue": "Επιλέξτε μέγεθος ομάδας για να συνεχίσετε.",
         "builder.completingSimulation": "Ολοκλήρωση προσομοίωσης…",
 
-        // The following text belongs to the meta section of the website.
         "meta.gallery.title": "Συλλογή | Popadoo Kids Events",
         "meta.gallery.description": "Εξερευνήστε παιχνιδιάρικες χρωματικές μελέτες Popadoo για θέματα παιδικών εκδηλώσεων.",
-        // The following text belongs to the gallery section of the website.
         "gallery.kicker": "Οπτική έμπνευση",
         "gallery.heading": "Συλλογή",
         "gallery.lead": "Εξερευνήστε τέσσερις παιχνιδιάρικες χρωματικές μελέτες από την οπτική ιδέα του Popadoo. Δείχνουν πώς το κομφετί, τα μπαλόνια και οι παστέλ συνδυασμοί μπορούν να δημιουργήσουν χαρούμενη ατμόσφαιρα εκδήλωσης.",
@@ -592,10 +578,8 @@ window.popadooTranslations = Object.freeze({
         "gallery.imageFourAlt": "Αφηρημένο ροζ φόντο με πολύχρωμους κύκλους και κομφετί",
         "gallery.imageFourCaption": "Ροζ πάρτι: ζωηρός συνδυασμός ροζ, λεβάντας, γαλάζιου και ροδακινί.",
 
-        // The following text belongs to the meta section of the website.
         "meta.about.title": "Σχετικά | Popadoo Kids Events",
         "meta.about.description": "Γνωρίστε την κινητή ομάδα του Popadoo Kids Events και μάθετε πώς οργανώνουμε παιδικές γιορτές σε χώρους που επιλέγουν οι πελάτες.",
-        // The following text belongs to the about section of the website.
         "about.kicker": "Κινητή οργάνωση παιδικών εκδηλώσεων",
         "about.heading": "Σχετικά με το Popadoo",
         "about.lead": "Το Popadoo Kids Events δημιουργεί παιχνιδιάρικες και καλά οργανωμένες γιορτές για παιδιά και οικογένειες. Βοηθάμε στη διαμόρφωση του θέματος, των δραστηριοτήτων, του προγράμματος και των πρακτικών λεπτομερειών, ώστε οι οικοδεσπότες να απολαμβάνουν τη μέρα με τους καλεσμένους τους.",
@@ -633,7 +617,6 @@ window.popadooTranslations = Object.freeze({
         "about.instagramText": "Δείτε τρέχοντα θέματα, ιδέες δραστηριοτήτων και νέα εκδηλώσεων στην επίσημη σελίδα μας στο Instagram.",
         "about.instagramLink": "Επισκεφθείτε το Popadoo στο Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.packages.title": "Πακέτα | Popadoo Kids Events",
         "meta.partyIdeas.title": "Ιδέες για Πάρτι | Popadoo Kids Events",
         "meta.partyIdeas.description": "Εξερευνήστε πακέτα εκκίνησης και εμπειρίες και μετά κάντε τη γιορτή δική σας.",
@@ -642,7 +625,6 @@ window.popadooTranslations = Object.freeze({
         "meta.partyBuilderSuccess.title": "Η Προσομοιωμένη Αγορά Ολοκληρώθηκε | Popadoo Kids Events",
         "meta.partyBuilderSuccess.description": "Το αίτημα πάρτι και η προσομοιωμένη αγορά ολοκληρώθηκαν.",
         "meta.packages.description": "Εξερευνήστε τα πακέτα, επιλέξτε επιλογή πάρτι και συγκρίνετε δυναμικά τα πακέτα του Popadoo Kids Events.",
-        // The following text belongs to the packages section of the website.
         "packages.heading": "Πακέτα Εκδηλώσεων",
         "packages.lead": "Επιλέξτε ένα σημείο εκκίνησης, συγκρίνετε τα αγαπημένα σας και στείλτε το τελευταίο επιλεγμένο πακέτο στη φόρμα κράτησης.",
         "packages.availableHeading": "Διαθέσιμα πακέτα",
@@ -729,10 +711,8 @@ window.popadooTranslations = Object.freeze({
         "packages.faqBookingQuestion": "Πόσο νωρίς πρέπει να κάνω κράτηση;",
         "packages.faqBookingAnswer": "Συνιστάται κράτηση τέσσερις έως έξι εβδομάδες νωρίτερα, ιδιαίτερα για Σαββατοκύριακα και δημοφιλείς ημερομηνίες.",
 
-        // The following text belongs to the meta section of the website.
         "meta.testimonials.title": "Μαρτυρίες | Popadoo Kids Events",
         "meta.testimonials.description": "Μάθετε πώς το Popadoo συλλέγει ειλικρινή σχόλια με άδεια μετά από παιδικές εκδηλώσεις.",
-        // The following text belongs to the testimonials section of the website.
         "testimonials.kicker": "Επαληθευμένα σχόλια",
         "testimonials.heading": "Μαρτυρίες",
         "testimonials.lead": "Αυτά τα σχόλια προέρχονται από επαληθευμένες ολοκληρωμένες γιορτές και εμφανίζονται μόνο με τη ρητή άδεια του πελάτη.",
@@ -751,10 +731,8 @@ window.popadooTranslations = Object.freeze({
         "testimonials.headingThree": "Συντονισμός στον χώρο",
         "testimonials.quoteThree": "Ζητάμε πρακτικά σχόλια για την άφιξη, το στήσιμο, τη ροή δραστηριοτήτων, την προσαρμοστικότητα και τη συνολική οργάνωση της εκδήλωσης.",
 
-        // The following text belongs to the meta section of the website.
         "meta.contact.title": "Κράτηση | Popadoo Kids Events",
         "meta.contact.description": "Στείλτε αίτημα για παιδική εκδήλωση στο Popadoo και δηλώστε τον χώρο στον οποίο θα μεταβεί η κινητή ομάδα μας.",
-        // The following text belongs to the contact section of the website.
         "contact.kicker": "Πείτε μας για τη γιορτή σας",
         "contact.heading": "Κλείστε το Πάρτι σας",
         "contact.lead": "Συμπληρώστε τη φόρμα ενδιαφέροντος με την προτιμώμενη ημερομηνία και τον χώρο. Θα εξετάσουμε τα στοιχεία και θα επικοινωνήσουμε μαζί σας για τη διαθεσιμότητα, τη μετακίνηση και το κατάλληλο πλάνο εκδήλωσης.",
@@ -808,10 +786,8 @@ window.popadooTranslations = Object.freeze({
         "contact.openMap": "Άνοιγμα αυτής της τοποθεσίας στο OpenStreetMap",
         "contact.instagram": "Ακολουθήστε το Popadoo στο Instagram",
 
-        // The following text belongs to the meta section of the website.
         "meta.styleGuide.title": "Τεκμηρίωση | Popadoo Kids Events",
         "meta.styleGuide.description": "Τεκμηρίωση και οδηγίες σχεδιασμού για το Popadoo Kids Events.",
-        // The following text belongs to the styleGuide section of the website.
         "styleGuide.kicker": "Σύστημα οπτικής διακόσμησης",
         "styleGuide.heading": "Τεκμηρίωση",
         "styleGuide.lead": "Ένα πρακτικό σύστημα που μετατρέπει το πολύχρωμο λογότυπο Popadoo σε ένα απαλό, αρμονικό φωτεινό θέμα και ένα ευανάγνωστο σκοτεινό θέμα με σταθερές χρωματικές αποχρώσεις.",

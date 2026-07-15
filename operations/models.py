@@ -1,3 +1,8 @@
+"""Worker availability, party assignments and management audit history.
+
+The models preserve operational history while service modules coordinate
+changes that touch several records or require permission checks.
+"""
 
 from __future__ import annotations
 
@@ -43,7 +48,6 @@ class WorkerAvailability(models.Model):
             models.Index(fields=("worker", "start_at", "end_at")),
         ]
 
-    # This validation step checks values that depend on more than one form field.
     def clean(self) -> None:
         super().clean()
         if self.start_at and self.end_at and self.end_at <= self.start_at:
@@ -63,7 +67,6 @@ class PartyAssignment(models.Model):
         SUPERSEDED = "superseded", "Superseded"
         CANCELLED = "cancelled", "Cancelled"
 
-    # This database model stores source information.
     class Source(models.TextChoices):
         AUTOMATIC = "automatic", "Automatic"
         OWNER_MANUAL = "owner_manual", "Owner manual"

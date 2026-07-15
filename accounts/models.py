@@ -1,3 +1,8 @@
+"""Customer and worker profile data attached to Django user accounts.
+
+Authentication remains Django's responsibility; this module stores only the
+extra contact and operational details Popadoo needs.
+"""
 
 from __future__ import annotations
 
