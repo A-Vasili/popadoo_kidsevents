@@ -2,8 +2,7 @@
 # 0007_seed_catalogue_categories.
 # It allows new and existing installations to reach the same stored structure or seed data in a
 # repeatable order.
-# Only explanatory comments belong here because changing a past migration could make databases
-# disagree.
+
 from django.db import migrations
 
 

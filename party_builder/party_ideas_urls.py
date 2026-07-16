@@ -1,4 +1,3 @@
-"""Customer-facing routes for browsing ideas before using the builder."""
 # This file maps readable website addresses to the part of Popadoo responsible for answering each
 # request.
 # The route order also protects specialised management and messaging paths from being swallowed by

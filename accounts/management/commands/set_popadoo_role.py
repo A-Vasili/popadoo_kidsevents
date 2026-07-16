@@ -2,7 +2,6 @@
 # boundaries.
 # It keeps this responsibility in one place so nearby pages and services can reuse the same
 # behaviour without duplication.
-# The comments explain the business purpose while the existing code remains unchanged.
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group

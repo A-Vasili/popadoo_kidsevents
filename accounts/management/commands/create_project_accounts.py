@@ -1,14 +1,7 @@
-"""Create the demonstration owner, worker, and customer accounts safely.
-
-The command generates temporary passwords at run time rather than storing them
-in source code. Passwords are printed once so the project administrator can
-record them securely and ask users to change them before real deployment.
-"""
 # This module supports customer accounts, staff roles, sign-in, profile details, and permission
 # boundaries.
 # It keeps this responsibility in one place so nearby pages and services can reuse the same
 # behaviour without duplication.
-# The comments explain the business purpose while the existing code remains unchanged.
 
 from __future__ import annotations
 
@@ -37,7 +30,7 @@ class Command(BaseCommand):
         "temporary passwords."
     )
 
-    # This business action carries out add arguments.
+    # This action carries out add arguments.
     # It validates the live records and permissions before changing anything, then keeps related
     # updates together so partial results are not left behind.
     def add_arguments(self, parser):
@@ -65,7 +58,7 @@ class Command(BaseCommand):
             ):
                 return password
 
-    # This business action carries out create or update user.
+    # This action carries out the create or update user.
     # It validates the live records and permissions before changing anything, then keeps related
     # updates together so partial results are not left behind.
     def _create_or_update_user(

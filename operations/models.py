@@ -1,8 +1,3 @@
-"""Worker availability, party assignments and management audit history.
-
-The models preserve operational history while service modules coordinate
-changes that touch several records or require permission checks.
-"""
 # This file describes the business records stored by this part of Popadoo and the relationships
 # between them.
 # The models preserve important history and enforce rules that must remain true no matter which

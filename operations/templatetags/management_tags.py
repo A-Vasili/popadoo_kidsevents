@@ -1,4 +1,3 @@
-"""Small presentation helpers for the custom management templates."""
 # This file provides small presentation helpers used by management templates.
 # The helpers turn stored values into consistent labels or display choices without moving
 # permission decisions into HTML.

@@ -1,8 +1,3 @@
-"""Party builder, simulated checkout, success and review HTTP workflows.
-
-Views coordinate forms and services while keeping session cleaning, pricing and
-booking creation in the shared service layer.
-"""
 # This file coordinates page requests for this area of Popadoo.
 # Each view checks who is making the request, gathers only the records they are allowed to see,
 # and chooses the template or response to return.

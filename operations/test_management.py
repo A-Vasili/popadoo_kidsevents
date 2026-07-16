@@ -1,4 +1,3 @@
-"""Integration tests for the custom management panel."""
 # This file protects worker tasks and the custom management area used by Owners and Administrators
 # with automated regression checks.
 # The scenarios describe what customers and staff should be allowed to do, and what must remain

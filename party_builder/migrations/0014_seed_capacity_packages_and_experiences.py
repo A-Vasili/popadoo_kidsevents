@@ -2,8 +2,7 @@
 # 0014_seed_capacity_packages_and_experiences.
 # It allows new and existing installations to reach the same stored structure or seed data in a
 # repeatable order.
-# Only explanatory comments belong here because changing a past migration could make databases
-# disagree.
+
 from decimal import Decimal
 
 from django.db import migrations

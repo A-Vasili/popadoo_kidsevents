@@ -1,9 +1,3 @@
-"""Public discovery pages that feed choices into the existing party builder.
-
-The management panel remains the source of catalogue data. These views expose
-only active records, calculate public rating summaries, and keep every cart
-change behind a CSRF-protected POST request.
-"""
 # This file prepares the searchable Party Ideas catalogue used before a customer enters the
 # builder.
 # It validates filters and sorting, combines package and experience results, and prepares

@@ -1,8 +1,4 @@
-"""Account registration, sign-in and profile forms.
 
-These forms validate customer-entered identity and contact details.  Role and
-permission changes stay in the operations services rather than public forms.
-"""
 # This file defines the information people may submit through Popadoo forms and the checks applied
 # before it is accepted.
 # The forms keep browser input separate from trusted database values and return clear errors when

@@ -1,8 +1,3 @@
-"""Automatic and manual worker assignment business rules.
-
-This module keeps conflict checks and status transitions out of views so every
-entry point applies the same safety rules and audit behaviour.
-"""
 # This service manages which worker is responsible for a completed party booking.
 # It checks availability and role eligibility before changing an assignment, and preserves a clear
 # history for staff and management users.

@@ -1,4 +1,3 @@
-"""Small helpers for recording sensitive management actions consistently."""
 # This small service records a plain summary of important management actions in Popadoo’s audit
 # history.
 # Callers provide only the before-and-after business facts needed for accountability; private

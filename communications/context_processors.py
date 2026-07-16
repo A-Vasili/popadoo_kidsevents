@@ -1,4 +1,3 @@
-"""Small bounded chat-navigation context shared by public templates."""
 # This file supplies small chat-navigation facts to templates on every page, such as the correct
 # inbox link and personal unread count.
 # The calculation respects the signed-in role and uses bounded queries so navigation does not

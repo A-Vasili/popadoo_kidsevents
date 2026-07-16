@@ -1,10 +1,3 @@
-"""Protected account and role changes for the custom management panel.
-
-Administrators and Owners share day-to-day business management, but they are
-separate roles. Only an Administrator can create or change an Owner. Customer
-profile details stay under the customer's control; management actions here are
-limited to account status, safe deletion, and staff operations.
-"""
 # This service manages sensitive account and staff-role changes requested from the management
 # area.
 # It protects historical records, keeps delegated roles independent, and records important changes

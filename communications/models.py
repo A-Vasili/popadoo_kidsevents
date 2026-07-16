@@ -1,9 +1,3 @@
-"""Persistent, plain-text customer chat history.
-
-The chat models deliberately store only the conversation, immutable messages,
-and per-user read state. Role checks remain in services and views so changing a
-worker's delegation takes effect immediately.
-"""
 # This file describes the business records stored by this part of Popadoo and the relationships
 # between them.
 # The models preserve important history and enforce rules that must remain true no matter which

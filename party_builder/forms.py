@@ -1,8 +1,3 @@
-"""Validation for Party Ideas, the builder, simulated checkout and reviews.
-
-Forms clean untrusted browser input.  Prices and catalogue relationships are
-always resolved again from database records before a booking is created.
-"""
 # This file defines the information people may submit through Popadoo forms and the checks applied
 # before it is accepted.
 # The forms keep browser input separate from trusted database values and return clear errors when

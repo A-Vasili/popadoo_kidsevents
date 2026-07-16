@@ -1,4 +1,3 @@
-"""Public catalogue tests for discovery, privacy and builder hand-off."""
 # This file protects party packages, add-ons, checkout, reviews, recommendations, and customer
 # booking records with automated regression checks.
 # The scenarios describe what customers and staff should be allowed to do, and what must remain

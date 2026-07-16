@@ -2,7 +2,6 @@
 # boundaries.
 # It keeps this responsibility in one place so nearby pages and services can reuse the same
 # behaviour without duplication.
-# The comments explain the business purpose while the existing code remains unchanged.
 
 from django.core.management.base import BaseCommand
 

@@ -1,8 +1,3 @@
-"""Database-backed public content views.
-
-Only the Testimonials page needs application data. Other public information
-pages remain simple TemplateView routes in ``core.urls``.
-"""
 # This file coordinates page requests for this area of Popadoo.
 # Each view checks who is making the request, gathers only the records they are allowed to see,
 # and chooses the template or response to return.

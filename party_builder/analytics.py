@@ -1,8 +1,3 @@
-"""Usage analytics and explainable recommendations for completed parties.
-
-This module derives statistics from completed booking records. Nothing here is
-stored permanently, so badges and suggestions always reflect current data.
-"""
 # This file turns stored business records into summary figures used by the management analytics
 # screens.
 # It keeps reporting calculations separate from page rendering and avoids exposing private review

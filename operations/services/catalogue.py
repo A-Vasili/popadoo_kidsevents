@@ -1,8 +1,3 @@
-"""Catalogue save, image, default-item, and safe-delete rules.
-
-Views call these functions instead of repeating business rules. This keeps
-historical bookings safe and makes every important change auditable.
-"""
 # This service applies catalogue changes made through the management area.
 # It protects packages, experiences, and categories that are already referenced by bookings while
 # still allowing safe archive and restore actions.

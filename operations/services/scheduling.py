@@ -1,8 +1,3 @@
-"""Read-only scheduling calculations shared by workers and owners.
-
-It converts booking details into event windows and reports availability or
-assignment conflicts without mutating bookings.
-"""
 # This service combines worker availability, assigned parties, and management scheduling
 # decisions.
 # It prevents overlapping or unsuitable work from being presented as available and keeps schedule

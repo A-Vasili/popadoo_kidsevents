@@ -1,4 +1,3 @@
-"""Checkout tests for capacity-based packages and simulated payment."""
 # This file protects party packages, add-ons, checkout, reviews, recommendations, and customer
 # booking records with automated regression checks.
 # The scenarios describe what customers and staff should be allowed to do, and what must remain

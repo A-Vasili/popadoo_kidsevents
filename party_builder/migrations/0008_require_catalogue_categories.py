@@ -1,10 +1,8 @@
-"""Make catalogue categories required after the earlier safe data migration."""
 # This historical migration records the database change identified as
 # 0008_require_catalogue_categories.
 # It allows new and existing installations to reach the same stored structure or seed data in a
 # repeatable order.
-# Only explanatory comments belong here because changing a past migration could make databases
-# disagree.
+
 
 import django.db.models.deletion
 from django.db import migrations, models

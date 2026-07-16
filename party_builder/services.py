@@ -1,8 +1,3 @@
-"""Shared checkout-state, pricing and booking-creation services.
-
-Browser sessions may outlive catalogue changes, so this module is the single
-place that cleans stale selections and creates trusted price snapshots.
-"""
 # This file contains the trusted business actions for this feature.
 # Keeping these actions outside views means the same permission, validation, history, and
 # all-or-nothing database rules apply wherever the action is used.

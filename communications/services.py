@@ -1,4 +1,3 @@
-"""Authoritative chat mutations, permissions, and unread calculations."""
 # This file contains the trusted business actions for this feature.
 # Keeping these actions outside views means the same permission, validation, history, and
 # all-or-nothing database rules apply wherever the action is used.

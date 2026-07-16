@@ -1,8 +1,6 @@
 # This historical migration records the database change identified as 0011_populate_review_codes.
 # It allows new and existing installations to reach the same stored structure or seed data in a
 # repeatable order.
-# Only explanatory comments belong here because changing a past migration could make databases
-# disagree.
 import secrets
 
 from django.db import migrations

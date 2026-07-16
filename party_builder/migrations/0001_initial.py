@@ -1,11 +1,7 @@
 # This historical migration records the database change identified as 0001_initial.
 # It allows new and existing installations to reach the same stored structure or seed data in a
 # repeatable order.
-# Only explanatory comments belong here because changing a past migration could make databases
-# disagree.
 # This migration records a database change so every environment can build the same structure.
-# Comments in this file explain the purpose of each section without changing how the program works.
-
 # Generated for the Popadoo party builder.
 
 import django.core.validators

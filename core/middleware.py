@@ -1,10 +1,3 @@
-"""Small security headers shared by every public response.
-
-Django already escapes template values, protects forms with CSRF tokens, and
-uses parameterised database queries through its ORM. This middleware adds a
-browser-side boundary that limits where scripts, styles, images, and forms may
-come from if unsafe content ever reaches a page.
-"""
 # This file handles request-wide behaviour that must run consistently around many pages.
 # Middleware can inspect or adjust a request before a view runs and can shape the response
 # afterwards, avoiding repeated code in every page.

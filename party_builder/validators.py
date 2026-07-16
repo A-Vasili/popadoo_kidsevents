@@ -1,9 +1,3 @@
-"""Validation and upload-name helpers for catalogue images.
-
-The helpers live outside the models so packages, add-ons, and categories share
-one security policy. Uploaded names are replaced with generated names, which
-prevents user-controlled paths from reaching the media folder.
-"""
 # This file contains reusable checks for values that must follow the same rule in several forms or
 # models.
 # Central validation prevents one screen from accepting information that another part of the site

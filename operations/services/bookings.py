@@ -1,4 +1,3 @@
-"""Booking-state actions kept separate from request handling."""
 # This service applies trusted booking actions for full managers and, for the dedicated completion
 # workflow, the worker who delivered the assigned party.
 # It preserves the price and party-size history captured at checkout and records sensitive changes

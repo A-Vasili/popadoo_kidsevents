@@ -1,4 +1,3 @@
-"""Customer chat and role-restricted management message views."""
 # This file coordinates page requests for this area of Popadoo.
 # Each view checks who is making the request, gathers only the records they are allowed to see,
 # and chooses the template or response to return.

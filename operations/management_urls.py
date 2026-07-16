@@ -1,4 +1,3 @@
-"""Named routes for the custom business management panel."""
 # This file lists the addresses available inside Popadoo’s custom management area.
 # Routes are grouped by business area so the sidebar, views, and permission checks can refer to
 # stable names.

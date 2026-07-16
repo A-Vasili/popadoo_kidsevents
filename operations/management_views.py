@@ -1,9 +1,3 @@
-"""Views for Popadoo's custom management panel.
-
-The management interface is intentionally separate from the public website and
-from the worker portal. Views stay focused on request handling while role,
-archive, assignment, and audit rules remain in reusable services.
-"""
 # This file coordinates the custom management pages used by Popadoo Administrators, Owners, and
 # specifically delegated workers.
 # Each view limits records and actions to the visitor’s current privileges before presenting

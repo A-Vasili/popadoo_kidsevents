@@ -1,8 +1,3 @@
-"""Verified review-code and feedback workflows.
-
-The code identifies a booking, but authentication, ownership, completed status,
-and a short-lived session marker are all still required before feedback is saved.
-"""
 # This service manages customer ratings, written testimonials, and publication consent after a
 # completed party.
 # It separates private feedback from public display and preserves consent history so customer

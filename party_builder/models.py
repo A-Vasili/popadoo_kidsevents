@@ -1,8 +1,3 @@
-"""Catalogue, booking, price snapshot and customer review models.
-
-Historical booking values are stored alongside live catalogue relationships so
-future catalogue edits never rewrite what a customer originally selected.
-"""
 # This file describes the business records stored by this part of Popadoo and the relationships
 # between them.
 # The models preserve important history and enforce rules that must remain true no matter which

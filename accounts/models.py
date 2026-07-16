@@ -1,8 +1,3 @@
-"""Customer and worker profile data attached to Django user accounts.
-
-Authentication remains Django's responsibility; this module stores only the
-extra contact and operational details Popadoo needs.
-"""
 # This file describes the business records stored by this part of Popadoo and the relationships
 # between them.
 # The models preserve important history and enforce rules that must remain true no matter which

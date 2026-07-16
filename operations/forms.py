@@ -1,8 +1,3 @@
-"""Forms for the worker portal and custom management panel.
-
-Field-level validation and accessible widget configuration live here. Business
-transactions such as role changes, archiving, and assignments stay in services.
-"""
 # This file defines the information people may submit through Popadoo forms and the checks applied
 # before it is accepted.
 # The forms keep browser input separate from trusted database values and return clear errors when
