@@ -10,15 +10,18 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import WorkerProfile
 from party_builder.models import GuestPriceTier, PartyBuild, PartyPackage
+from party_builder.review_services import verify_review_code
 
-from .models import PartyAssignment, WorkerAvailability
+from .models import AuditEvent, PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, offer_assignment
+from .services.bookings import mark_booking_completed
 
 
 User = get_user_model()
@@ -421,3 +424,407 @@ class OwnerAccountManagementTests(TestCase):
         )
         self.assertContains(response, "Own Client")
         self.assertNotContains(response, "Other Client")
+
+
+# This group of tests protects the new party-completion workflow shared by full managers and the
+# worker who delivered the accepted assignment. The scenarios prove that completion unlocks the
+# existing customer review journey without granting workers any broader booking-control powers.
+class PartyCompletionWorkflowTests(TestCase):
+    # This setup creates separate customer, manager, and worker accounts so each permission boundary
+    # can be tested against realistic booking and assignment records.
+    @classmethod
+    def setUpTestData(cls):
+        cls.customer = User.objects.create_user(
+            "completion-customer",
+            password="Customer-pass-123!",
+        )
+        cls.owner = User.objects.create_user(
+            "completion-owner",
+            password="Owner-pass-123!",
+        )
+        cls.administrator = User.objects.create_superuser(
+            "completion-admin",
+            "completion-admin@example.test",
+            "Admin-pass-123!",
+        )
+        cls.worker_user = User.objects.create_user(
+            "completion-worker",
+            password="Worker-pass-123!",
+        )
+        cls.other_worker_user = User.objects.create_user(
+            "completion-other-worker",
+            password="Worker-pass-456!",
+        )
+        Group.objects.get(name="Owners").user_set.add(cls.owner)
+        Group.objects.get(name="Workers").user_set.add(
+            cls.worker_user,
+            cls.other_worker_user,
+        )
+        cls.worker = WorkerProfile.objects.create(
+            user=cls.worker_user,
+            display_name="Completion Worker",
+        )
+        cls.other_worker = WorkerProfile.objects.create(
+            user=cls.other_worker_user,
+            display_name="Other Completion Worker",
+        )
+        cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
+        cls.tier = GuestPriceTier.objects.filter(package=cls.package).first()
+
+    # This helper creates a booking at a chosen stage while keeping the customer, price snapshot,
+    # and review code realistic enough for both operations and customer-dashboard checks.
+    def make_booking(
+        self,
+        *,
+        status=PartyBuild.Status.CONFIRMED,
+        event_date=None,
+        customer=None,
+    ):
+        return PartyBuild.objects.create(
+            customer=customer if customer is not None else self.customer,
+            package=self.package,
+            guest_tier=self.tier,
+            contact_name="Completion Parent",
+            contact_email="completion-parent@example.test",
+            contact_phone="+306900000000",
+            event_date=event_date or timezone.localdate(),
+            event_time=timezone.datetime.strptime("16:00", "%H:%M").time(),
+            event_address="Athens",
+            postal_code="10558",
+            guest_count=8,
+            guest_tier_label=self.tier.label,
+            package_price=Decimal("180.00"),
+            addon_price=Decimal("0.00"),
+            total_price=Decimal("180.00"),
+            status=status,
+            assignment_state=PartyBuild.AssignmentState.ASSIGNED,
+        )
+
+    # This helper records the worker relationship that authorises completion. Different assignment
+    # states let the tests prove that merely appearing in assignment history is not enough.
+    def make_assignment(self, booking, *, worker=None, status=PartyAssignment.Status.ACCEPTED):
+        return PartyAssignment.objects.create(
+            party_build=booking,
+            worker=worker or self.worker,
+            status=status,
+            assignment_source=PartyAssignment.Source.OWNER_MANUAL,
+            assigned_by=self.owner,
+        )
+
+    # This test confirms both full-management roles can complete an eligible party and that the
+    # existing audit history records management as the source of the decision.
+    def test_owner_and_administrator_can_complete_eligible_party(self):
+        for actor in (self.owner, self.administrator):
+            with self.subTest(actor=actor.username):
+                booking = self.make_booking()
+                completed = mark_booking_completed(booking=booking, actor=actor)
+                completed.refresh_from_db()
+                self.assertEqual(completed.status, PartyBuild.Status.COMPLETED)
+                self.assertIsNotNone(completed.completed_at)
+                event = AuditEvent.objects.get(
+                    event_type="booking_status_changed",
+                    object_id=str(completed.pk),
+                )
+                self.assertEqual(event.actor, actor)
+                self.assertEqual(event.after_data["completion_source"], "management")
+
+    # This test follows the complete worker-to-customer journey: the accepted worker confirms
+    # delivery, then the customer sees the existing rating action and can verify the same review code.
+    def test_accepted_worker_completion_unlocks_customer_review(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        self.client.force_login(self.worker_user)
+        response = self.client.post(
+            reverse(
+                "operations:operations_worker_assignment_complete",
+                args=[assignment.pk],
+            )
+        )
+        self.assertRedirects(
+            response,
+            reverse(
+                "operations:operations_worker_assignment_detail",
+                args=[assignment.pk],
+            ),
+        )
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.COMPLETED)
+        self.assertIsNotNone(booking.completed_at)
+
+        self.client.force_login(self.customer)
+        dashboard = self.client.get(reverse("accounts:accounts_customer_dashboard"))
+        self.assertContains(dashboard, "Rate this party")
+        self.assertContains(dashboard, booking.review_code)
+        self.assertEqual(
+            verify_review_code(
+                user=self.customer,
+                submitted_code=booking.review_code,
+            ),
+            booking,
+        )
+
+    # This test proves that a worker assignment must be accepted at the moment of completion;
+    # pending, declined, superseded, and cancelled history entries remain non-authorising records.
+    def test_nonaccepted_assignment_states_cannot_complete_party(self):
+        for status in (
+            PartyAssignment.Status.PENDING,
+            PartyAssignment.Status.DECLINED,
+            PartyAssignment.Status.SUPERSEDED,
+            PartyAssignment.Status.CANCELLED,
+        ):
+            with self.subTest(status=status):
+                booking = self.make_booking()
+                assignment = self.make_assignment(booking, status=status)
+                with self.assertRaises(ValidationError):
+                    mark_booking_completed(
+                        booking=booking,
+                        actor=self.worker_user,
+                        assignment=assignment,
+                    )
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test protects assignment ownership at the URL boundary. Another worker receives no
+    # record at all, even when they know the assignment number.
+    def test_other_worker_cannot_complete_assignment_by_url(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        self.client.force_login(self.other_worker_user)
+        response = self.client.post(
+            reverse(
+                "operations:operations_worker_assignment_complete",
+                args=[assignment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test confirms an inactive worker loses operational authority immediately, even when an
+    # accepted assignment remains in history.
+    def test_inactive_assigned_worker_cannot_complete_party(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        self.worker.is_active_worker = False
+        self.worker.save(update_fields=["is_active_worker", "updated_at"])
+        self.client.force_login(self.worker_user)
+        response = self.client.post(
+            reverse(
+                "operations:operations_worker_assignment_complete",
+                args=[assignment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 403)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test keeps the completion endpoint unavailable to customers and signed-out visitors,
+    # while preserving the project’s existing deny-or-login behavior for anonymous worker pages.
+    def test_customer_and_anonymous_user_cannot_complete_party(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        url = reverse(
+            "operations:operations_worker_assignment_complete",
+            args=[assignment.pk],
+        )
+
+        self.client.force_login(self.customer)
+        self.assertEqual(self.client.post(url).status_code, 403)
+        self.client.logout()
+        self.assertIn(self.client.post(url).status_code, (302, 403))
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test ensures the state-changing endpoint cannot be triggered by opening a link or
+    # preloading a page; only a CSRF-protected POST form may request completion.
+    def test_worker_completion_endpoint_rejects_get(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        self.client.force_login(self.worker_user)
+        response = self.client.get(
+            reverse(
+                "operations:operations_worker_assignment_complete",
+                args=[assignment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 405)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test proves the server ignores any status or timestamp invented by the browser and
+    # always applies the single trusted completion result.
+    def test_worker_cannot_submit_arbitrary_status_or_completion_time(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        self.client.force_login(self.worker_user)
+        response = self.client.post(
+            reverse(
+                "operations:operations_worker_assignment_complete",
+                args=[assignment.pk],
+            ),
+            {
+                "status": PartyBuild.Status.CANCELLED,
+                "completed_at": "2000-01-01T00:00:00Z",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.COMPLETED)
+        self.assertGreater(booking.completed_at, timezone.now() - timedelta(minutes=1))
+
+    # This test preserves the real checkout workflow, where an accepted worker assignment may exist
+    # while the booking still says submitted or contacted. Once the party date has arrived, either
+    # earlier label may be completed; future and cancelled parties remain protected.
+    def test_past_submitted_and_contacted_bookings_can_be_completed(self):
+        for status in (PartyBuild.Status.SUBMITTED, PartyBuild.Status.CONTACTED):
+            with self.subTest(status=status):
+                booking = self.make_booking(status=status)
+                assignment = self.make_assignment(booking)
+                completed = mark_booking_completed(
+                    booking=booking,
+                    actor=self.worker_user,
+                    assignment=assignment,
+                )
+                completed.refresh_from_db()
+                self.assertEqual(completed.status, PartyBuild.Status.COMPLETED)
+                self.assertIsNotNone(completed.completed_at)
+
+    # This test keeps future and cancelled parties outside the completion workflow even when an
+    # accepted assignment exists, so customer review access cannot open before delivery or after a
+    # cancellation.
+    def test_future_and_cancelled_bookings_cannot_be_completed(self):
+        cases = (
+            (
+                PartyBuild.Status.SUBMITTED,
+                timezone.localdate() + timedelta(days=1),
+            ),
+            (PartyBuild.Status.CANCELLED, timezone.localdate()),
+        )
+        for status, event_date in cases:
+            with self.subTest(status=status, event_date=event_date):
+                booking = self.make_booking(status=status, event_date=event_date)
+                assignment = self.make_assignment(booking)
+                with self.assertRaises(ValidationError):
+                    mark_booking_completed(
+                        booking=booking,
+                        actor=self.worker_user,
+                        assignment=assignment,
+                    )
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, status)
+                self.assertIsNone(booking.completed_at)
+
+    # This test ensures a repeated request cannot replace the original completion time or create a
+    # second successful history entry after the booking has already become final.
+    def test_repeated_completion_preserves_timestamp_and_single_audit_event(self):
+        booking = self.make_booking()
+        completed = mark_booking_completed(booking=booking, actor=self.owner)
+        original_completed_at = completed.completed_at
+        with self.assertRaises(ValidationError):
+            mark_booking_completed(booking=booking, actor=self.owner)
+        booking.refresh_from_db()
+        self.assertEqual(booking.completed_at, original_completed_at)
+        self.assertEqual(
+            AuditEvent.objects.filter(
+                event_type="booking_status_changed",
+                object_id=str(booking.pk),
+            ).count(),
+            1,
+        )
+
+    # This test confirms the audit event records accountability without copying customer contact,
+    # venue, review-code, or free-text information into management history.
+    def test_completion_audit_contains_only_safe_operational_metadata(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        mark_booking_completed(
+            booking=booking,
+            actor=self.worker_user,
+            assignment=assignment,
+        )
+        event = AuditEvent.objects.get(
+            event_type="booking_status_changed",
+            object_id=str(booking.pk),
+        )
+        self.assertEqual(event.after_data["completion_source"], "assigned_worker")
+        self.assertEqual(event.after_data["assignment_id"], assignment.pk)
+        combined = f"{event.summary} {event.before_data} {event.after_data}"
+        for private_value in (
+            booking.notes,
+            booking.review_code,
+            booking.event_address,
+            booking.contact_phone,
+            booking.contact_email,
+        ):
+            if private_value:
+                self.assertNotIn(private_value, combined)
+
+    # This test confirms the worker page shows the completion button only for an accepted assignment
+    # whose party date has arrived, including the submitted state used by real checkout records,
+    # rather than relying on the template to decide access.
+    def test_worker_detail_shows_completion_action_only_when_eligible(self):
+        eligible_booking = self.make_booking(status=PartyBuild.Status.SUBMITTED)
+        eligible_assignment = self.make_assignment(eligible_booking)
+        future_booking = self.make_booking(
+            event_date=timezone.localdate() + timedelta(days=1)
+        )
+        future_assignment = self.make_assignment(future_booking)
+        pending_booking = self.make_booking()
+        pending_assignment = self.make_assignment(
+            pending_booking,
+            status=PartyAssignment.Status.PENDING,
+        )
+        self.client.force_login(self.worker_user)
+
+        eligible_response = self.client.get(
+            reverse(
+                "operations:operations_worker_assignment_detail",
+                args=[eligible_assignment.pk],
+            )
+        )
+        self.assertContains(eligible_response, "Mark party as done")
+
+        for assignment in (future_assignment, pending_assignment):
+            with self.subTest(assignment=assignment.pk):
+                response = self.client.get(
+                    reverse(
+                        "operations:operations_worker_assignment_detail",
+                        args=[assignment.pk],
+                    )
+                )
+                self.assertNotContains(response, ">Mark party as done<")
+
+    # This test confirms the worker page replaces the active action with the final timestamp and an
+    # explanation that the customer’s existing review access has been enabled.
+    def test_worker_detail_shows_completed_state(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking)
+        mark_booking_completed(
+            booking=booking,
+            actor=self.worker_user,
+            assignment=assignment,
+        )
+        self.client.force_login(self.worker_user)
+        response = self.client.get(
+            reverse(
+                "operations:operations_worker_assignment_detail",
+                args=[assignment.pk],
+            )
+        )
+        self.assertContains(response, "Party completed")
+        self.assertContains(response, "Customer review access is now available")
+        self.assertNotContains(response, ">Mark party as done<")
+
+    # This test calls the service with an assignment owned by somebody else to prove the business
+    # layer remains secure even outside the already restricted worker view.
+    def test_service_rejects_worker_assignment_owned_by_somebody_else(self):
+        booking = self.make_booking()
+        assignment = self.make_assignment(booking, worker=self.other_worker)
+        with self.assertRaises(PermissionDenied):
+            mark_booking_completed(
+                booking=booking,
+                actor=self.worker_user,
+                assignment=assignment,
+            )
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)

@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {# This worker template presents assignment detail for active staff using the operations area. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 {% block title %}
-    Assignment Details | Popadoo Kids Events
+    Assignment Details | P Kids Events
 {% endblock %}
 {% block meta_robots %}
     noindex,nofollow
@@ -73,6 +74,14 @@
                     </div>
                     <div>
                         <dt>
+                            Booking status
+                        </dt>
+                        <dd>
+                            {{ assignment.party_build.get_status_display }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>
                             Phone
                         </dt>
                         <dd>
@@ -126,6 +135,28 @@
                         {% endfor %}
                     </ul>
                 </section>
+                {# This section explains the final delivery step to the accepted worker. The view decides whether the action is eligible, and the service checks the live booking and assignment again after submission. #}
+                {% if assignment.party_build.status == 'completed' %}
+                    <section class="assignment-completion" aria-labelledby="party-completion-heading">
+                        <h2 id="party-completion-heading">Party completion</h2>
+                        <p><strong>Party completed</strong></p>
+                        <p>Completed {{ assignment.party_build.completed_at|date:"j F Y, H:i" }}. Customer review access is now available.</p>
+                    </section>
+                {% elif assignment.status == 'accepted' %}
+                    <section class="assignment-completion" aria-labelledby="party-completion-heading">
+                        <h2 id="party-completion-heading">Party completion</h2>
+                        <p>Use this after the party has taken place. Marking it as done allows the customer to rate the party and leave feedback.</p>
+                        {% if can_mark_party_done %}
+                            {# This POST form contains no booking status or completion time. Django resolves those trusted values from the current assignment when the worker submits the action. #}
+                            <form method="post" action="{% url 'operations:operations_worker_assignment_complete' assignment.pk %}">
+                                {% csrf_token %}
+                                <button class="button" type="submit">Mark party as done</button>
+                            </form>
+                        {% elif completion_block_reason %}
+                            <p>{{ completion_block_reason }}</p>
+                        {% endif %}
+                    </section>
+                {% endif %}
                 {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
                 {% if assignment.status == 'pending' and assignment.worker.user == request.user %}
                     <div class="assignment-actions">

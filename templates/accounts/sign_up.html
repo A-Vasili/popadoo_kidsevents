@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {# This account template presents sign up for sign-in, registration, profile, or the customer dashboard. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
 
-{% block title %}Create Account | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Create a Popadoo account to save your details and view your party bookings.{% endblock %}
+{% block title %}Create Account | P Kids Events{% endblock %}
+{% block meta_description %}Create a P Kids Events account to save your details and view your party bookings.{% endblock %}
 {% block page_name %}accountSignUp{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
@@ -17,7 +18,7 @@
         {# This header introduces the page and gives visitors the main context before they continue. #}
         <header class="account-heading">
             <p class="section-kicker">A faster next booking</p>
-            <h1 id="sign-up-heading">Create your Popadoo account</h1>
+            <h1 id="sign-up-heading">Create your P Kids Events account</h1>
             <p>Save your contact details and keep your party history in one secure place.</p>
         </header>
         {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}

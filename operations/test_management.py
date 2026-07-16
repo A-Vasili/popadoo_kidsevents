@@ -1218,3 +1218,149 @@ class ManagementPanelTests(TestCase):
         self.assertIn('.management-button[aria-disabled="true"]', css)
         self.assertIn(".management-topbar-inner", css)
 
+
+
+# This group of tests protects the dedicated management completion action. It verifies that full
+# managers can find and use the action while customers, future events, and final bookings remain
+# outside the workflow.
+class ManagementPartyCompletionTests(TestCase):
+    # This setup creates the minimum set of roles and catalogue records required to exercise the
+    # management booking page without changing any unrelated management feature.
+    @classmethod
+    def setUpTestData(cls):
+        cls.administrator = User.objects.create_superuser(
+            "done-management-admin",
+            "done-admin@example.test",
+            "Admin-pass-123!",
+        )
+        cls.owner = User.objects.create_user(
+            "done-management-owner",
+            password="Owner-pass-123!",
+        )
+        cls.customer = User.objects.create_user(
+            "done-management-customer",
+            password="Customer-pass-123!",
+        )
+        Group.objects.get(name="Owners").user_set.add(cls.owner)
+        cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
+        cls.tier = GuestPriceTier.objects.filter(package=cls.package).first()
+
+    # This helper creates a booking with a chosen operational state so the page and endpoint can be
+    # checked against past, future, cancelled, and already-completed parties.
+    def make_booking(
+        self,
+        *,
+        status=PartyBuild.Status.CONFIRMED,
+        event_date=None,
+        completed_at=None,
+    ):
+        return PartyBuild.objects.create(
+            customer=self.customer,
+            package=self.package,
+            guest_tier=self.tier,
+            contact_name="Management Completion Parent",
+            contact_email="management-completion@example.test",
+            contact_phone="+306900000000",
+            event_date=event_date or timezone.localdate(),
+            event_time=timezone.datetime.strptime("16:00", "%H:%M").time(),
+            event_address="Athens",
+            postal_code="10558",
+            guest_count=8,
+            guest_tier_label=self.tier.label,
+            package_price=Decimal("180.00"),
+            addon_price=Decimal("0.00"),
+            total_price=Decimal("180.00"),
+            status=status,
+            completed_at=completed_at,
+        )
+
+    # This test confirms the action also appears for the submitted status used by existing checkout
+    # records, so a manager can close a past party without first repairing an older workflow label.
+    def test_booking_detail_shows_completion_action_when_eligible(self):
+        booking = self.make_booking(status=PartyBuild.Status.SUBMITTED)
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse(
+                "management:management_booking_detail",
+                args=[booking.public_id],
+            )
+        )
+        self.assertContains(response, "Complete this party")
+        self.assertContains(response, "Mark party as done")
+        self.assertContains(response, "allows the customer to rate the party")
+
+    # This test keeps the active action off pages where the event is in the future, cancelled, or
+    # already final, while still showing an understandable state explanation.
+    def test_booking_detail_hides_completion_action_when_ineligible(self):
+        bookings = (
+            self.make_booking(event_date=timezone.localdate() + timedelta(days=1)),
+            self.make_booking(status=PartyBuild.Status.CANCELLED),
+            self.make_booking(
+                status=PartyBuild.Status.COMPLETED,
+                completed_at=timezone.now(),
+            ),
+        )
+        self.client.force_login(self.owner)
+        for booking in bookings:
+            with self.subTest(status=booking.status, event_date=booking.event_date):
+                response = self.client.get(
+                    reverse(
+                        "management:management_booking_detail",
+                        args=[booking.public_id],
+                    )
+                )
+                self.assertNotContains(response, ">Mark party as done<")
+
+    # This test verifies both full-management roles can complete the submitted status found in the
+    # current project data and receive the same trusted final status and server timestamp.
+    def test_owner_and_administrator_can_use_completion_endpoint(self):
+        for actor in (self.owner, self.administrator):
+            with self.subTest(actor=actor.username):
+                booking = self.make_booking(status=PartyBuild.Status.SUBMITTED)
+                self.client.force_login(actor)
+                response = self.client.post(
+                    reverse(
+                        "management:management_booking_complete",
+                        args=[booking.public_id],
+                    )
+                )
+                self.assertRedirects(
+                    response,
+                    reverse(
+                        "management:management_booking_detail",
+                        args=[booking.public_id],
+                    ),
+                )
+                booking.refresh_from_db()
+                self.assertEqual(booking.status, PartyBuild.Status.COMPLETED)
+                self.assertIsNotNone(booking.completed_at)
+
+    # This test protects the dedicated endpoint from customer accounts even when they own the
+    # booking, because completion confirms service delivery rather than customer intent.
+    def test_customer_cannot_call_management_completion_endpoint(self):
+        booking = self.make_booking()
+        self.client.force_login(self.customer)
+        response = self.client.post(
+            reverse(
+                "management:management_booking_complete",
+                args=[booking.public_id],
+            )
+        )
+        self.assertEqual(response.status_code, 403)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)
+
+    # This test ensures opening the completion address cannot change a booking; the manager must
+    # submit the protected POST form shown on the detail page.
+    def test_management_completion_endpoint_rejects_get(self):
+        booking = self.make_booking()
+        self.client.force_login(self.owner)
+        response = self.client.get(
+            reverse(
+                "management:management_booking_complete",
+                args=[booking.public_id],
+            )
+        )
+        self.assertEqual(response.status_code, 405)
+        booking.refresh_from_db()
+        self.assertEqual(booking.status, PartyBuild.Status.CONFIRMED)

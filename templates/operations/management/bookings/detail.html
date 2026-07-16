@@ -19,6 +19,24 @@
 
         <section class="management-panel"><h3>Booking and assignment state</h3><p>{% include "operations/management/includes/status_badge.html" with value=booking.status label=booking.get_status_display %} {% include "operations/management/includes/status_badge.html" with value=booking.assignment_state label=booking.get_assignment_state_display %}</p><h4>Assignment history</h4><ul class="management-timeline">{% for assignment in booking.assignments.all %}<li><strong>{{ assignment.worker }} · {{ assignment.get_status_display }}</strong><span>{{ assignment.get_assignment_source_display }} · {{ assignment.assigned_at|date:"d M Y H:i" }}{% if assignment.decline_reason %} · {{ assignment.decline_reason }}{% endif %}</span></li>{% empty %}<li>No assignment attempts yet.</li>{% endfor %}</ul></section>
 
+        {# This dedicated panel makes the final delivery action clear to full managers. The server decides eligibility and repeats the checks after submission before customer feedback is unlocked. #}
+        <section class="management-panel" aria-labelledby="management-completion-heading">
+            <h3 id="management-completion-heading">Complete this party</h3>
+            {% if booking.status == 'completed' %}
+                <p><strong>Party completed</strong></p>
+                <p>Completed {{ booking.completed_at|date:"d M Y H:i" }}. Customer review access is available.</p>
+            {% elif can_mark_party_done %}
+                <p>Use this after the event has taken place. Marking it as done confirms delivery and allows the customer to rate the party and leave feedback.</p>
+                {# This form submits only the manager’s intent. Django supplies the trusted completed status and server time instead of accepting them from the browser. #}
+                <form method="post" action="{% url 'management:management_booking_complete' booking.public_id %}" data-prevent-double-submit>
+                    {% csrf_token %}
+                    <button class="management-button" type="submit">Mark party as done</button>
+                </form>
+            {% elif completion_block_reason %}
+                <p>{{ completion_block_reason }}</p>
+            {% endif %}
+        </section>
+
         <section class="management-panel"><h3>Update booking status</h3>{% if status_form.fields.status.choices %}<form method="post" action="{% url 'management:management_booking_status' booking.public_id %}" data-prevent-double-submit>{% csrf_token %}{% for field in status_form %}{% include "operations/management/includes/form_field.html" with field=field %}{% endfor %}<button class="management-button" type="submit">Update status</button></form>{% else %}<p>No further status transitions are available.</p>{% endif %}</section>
 
         <section class="management-panel"><h3>Send to manual review</h3><p>This stops pending offers and places the booking in the owner attention queue.</p><form method="post" action="{% url 'management:management_booking_manual_review' booking.public_id %}" data-prevent-double-submit>{% csrf_token %}{% for field in manual_review_form %}{% include "operations/management/includes/form_field.html" with field=field %}{% endfor %}<button class="management-button danger" type="submit">Require manual review</button></form></section>

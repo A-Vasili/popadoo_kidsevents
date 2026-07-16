@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {# This public template presents the testimonials page as part of the Popadoo customer website. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
-{% block title %}Testimonials | Popadoo Kids Events{% endblock %}
+{% block title %}Testimonials | P Kids Events{% endblock %}
 {% block page_name %}testimonials{% endblock %}
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/content-pages.css' %}">
@@ -26,7 +27,7 @@
             <div class="section-heading-group">
                 <h2 id="testimonial-list-heading" data-i18n="testimonials.listHeading">Shared family experiences</h2>
                 <p data-i18n="testimonials.intro">
-                    Ratings help Popadoo improve every celebration. Written comments appear here only when the customer chooses Public testimonial.
+                    Ratings help P Kids Events improve every celebration. Written comments appear here only when the customer chooses Public testimonial.
                 </p>
             </div>
 

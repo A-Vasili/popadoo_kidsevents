@@ -139,6 +139,136 @@ class PartyIdeasTests(TestCase):
             reverse("party_ideas:category_detail", args=[self.child_category.slug]),
         )
 
+    # This test confirms that a category page offers only tabs that can display records from that
+    # category. It prevents customers from being sent to an empty experience or package view.
+    def test_category_pages_offer_only_idea_types_that_can_return_results(self):
+        package_category = Category.objects.create(
+            name="Package Only Test", slug="package-only-test", is_active=True
+        )
+        PartyPackage.objects.create(
+            name="Package Only Party Test",
+            slug="package-only-party-test",
+            category=package_category,
+            short_description="A package-only category",
+            base_price=Decimal("190.00"),
+            duration_minutes=120,
+            included_guest_count=10,
+            included_experiences="Games",
+            is_active=True,
+        )
+        experience_category = Category.objects.create(
+            name="Experience Only Test", slug="experience-only-test", is_active=True
+        )
+        AddonExperience.objects.create(
+            name="Experience Only Addon Test",
+            slug="experience-only-addon-test",
+            category=experience_category,
+            short_description="An experience-only category",
+            price=Decimal("45.00"),
+            is_active=True,
+        )
+
+        package_response = self.client.get(
+            reverse("party_ideas:category_detail", args=[package_category.slug]),
+            {"type": "experience"},
+        )
+        experience_response = self.client.get(
+            reverse("party_ideas:category_detail", args=[experience_category.slug]),
+            {"type": "package"},
+        )
+
+        self.assertEqual(
+            [tab["value"] for tab in package_response.context["type_tabs"]],
+            ["package"],
+        )
+        self.assertEqual(package_response.context["filters"]["type"], "package")
+        self.assertEqual(
+            [tab["value"] for tab in experience_response.context["type_tabs"]],
+            ["experience"],
+        )
+        self.assertEqual(experience_response.context["filters"]["type"], "experience")
+
+    # This test checks the normal list-page tabs when a category filter is active. Moving from a
+    # package-only category to Experiences clears the incompatible category instead of showing a
+    # result page that can only be empty.
+    def test_type_tab_removes_an_incompatible_selected_category(self):
+        package_category = Category.objects.create(
+            name="Tab Package Test", slug="tab-package-test", is_active=True
+        )
+        PartyPackage.objects.create(
+            name="Tab Package Party Test",
+            slug="tab-package-party-test",
+            category=package_category,
+            short_description="A package used to verify tab links",
+            base_price=Decimal("195.00"),
+            duration_minutes=120,
+            included_guest_count=10,
+            included_experiences="Games",
+            is_active=True,
+        )
+
+        response = self.client.get(
+            reverse("party_ideas:list"),
+            {"type": "package", "category": package_category.slug},
+        )
+        tabs = {tab["value"]: tab for tab in response.context["type_tabs"]}
+
+        self.assertIn(f"category={package_category.slug}", tabs["package"]["query"])
+        self.assertNotIn("category=", tabs["experience"]["query"])
+
+    # This test protects customers from empty category choices left behind by older catalogue
+    # organisation. Categories without active packages or experiences are not shown in browsing or
+    # advanced filters.
+    def test_empty_categories_are_not_offered_to_customers(self):
+        empty_category = Category.objects.create(
+            name="Empty Public Test", slug="empty-public-test", is_active=True
+        )
+
+        response = self.client.get(reverse("party_ideas:list"))
+        filter_slugs = {
+            category.slug
+            for category in response.context["filter_form"].fields["category"].queryset
+        }
+        browser_slugs = {category.slug for category in response.context["main_categories"]}
+
+        self.assertNotIn(empty_category.slug, filter_slugs)
+        self.assertNotIn(empty_category.slug, browser_slugs)
+
+    # This test verifies the builder's category controls. It keeps package-only and empty choices
+    # out of the experience filter while giving each card both its detailed and parent category.
+    def test_builder_category_filters_match_parent_and_child_experiences(self):
+        empty_category = Category.objects.create(
+            name="Empty Builder Test", slug="empty-builder-test", is_active=True
+        )
+        package_category = Category.objects.create(
+            name="Builder Package Test", slug="builder-package-test", is_active=True
+        )
+        PartyPackage.objects.create(
+            name="Builder Package Only Test",
+            slug="builder-package-only-test",
+            category=package_category,
+            short_description="Not an optional experience",
+            base_price=Decimal("200.00"),
+            duration_minutes=120,
+            included_guest_count=10,
+            included_experiences="Games",
+            is_active=True,
+        )
+
+        response = self.client.get(
+            reverse("party_builder:party_builder_package_options")
+        )
+        category_slugs = {category.slug for category in response.context["addon_categories"]}
+
+        self.assertIn(self.main_category.slug, category_slugs)
+        self.assertIn(self.child_category.slug, category_slugs)
+        self.assertNotIn(empty_category.slug, category_slugs)
+        self.assertNotIn(package_category.slug, category_slugs)
+        self.assertContains(
+            response,
+            f'data-addon-categories="{self.child_category.slug} {self.main_category.slug}"',
+        )
+
     # This test protects the business rule described by “child of inactive parent is not public”.
     # It guards against a future change silently weakening the expected customer, staff, or data
     # behaviour.
@@ -686,9 +816,9 @@ class PartyIdeasTests(TestCase):
             reverse("party_ideas:list"),
             {"type": "package", "capacity": "15"},
         )
-        self.assertNotContains(response, "Basic Popadoo Party")
-        self.assertContains(response, "Popadoo Plus Party")
-        self.assertContains(response, "Popadoo Festival Party")
+        self.assertNotContains(response, "Basic P Kids Events Party")
+        self.assertContains(response, "P Kids Events Plus Party")
+        self.assertContains(response, "P Kids Events Festival Party")
 
     # This test protects the business rule described by “capacity sorting orders packages by
     # size”.
@@ -710,12 +840,12 @@ class PartyIdeasTests(TestCase):
             card["name"] for card in descending.context["page_obj"].object_list
         ]
         self.assertLess(
-            ascending_names.index("Basic Popadoo Party"),
-            ascending_names.index("Popadoo Festival Party"),
+            ascending_names.index("Basic P Kids Events Party"),
+            ascending_names.index("P Kids Events Festival Party"),
         )
         self.assertLess(
-            descending_names.index("Popadoo Festival Party"),
-            descending_names.index("Basic Popadoo Party"),
+            descending_names.index("P Kids Events Festival Party"),
+            descending_names.index("Basic P Kids Events Party"),
         )
 
     # This test protects the business rule described by “seeded catalogue contains eight packages
@@ -1015,7 +1145,7 @@ class PartyIdeasTests(TestCase):
         catalog = (settings.BASE_DIR / "static/js/translations.js").read_text()
         self.assertIn('"builder.partyTotal": "Σύνολο πάρτι"', catalog)
         self.assertIn(
-            '"catalogue.package.basic-popadoo-party.name": "Βασικό Πάρτι Popadoo"',
+            '"catalogue.package.basic-popadoo-party.name": "Βασικό Πάρτι P Kids Events"',
             catalog,
         )
         self.assertIn(

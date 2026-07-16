@@ -1,5 +1,6 @@
 {# This template presents package card within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{% load static %}
 <article class="package-option" data-package-option>
     <input
         class="package-radio"
@@ -17,8 +18,11 @@
         aria-describedby="package-{{ package.pk }}-description package-{{ package.pk }}-capacity package-{{ package.pk }}-price"
     >
     <label class="package-card" for="package-{{ package.pk }}">
-        {% if package.image %}
-            <img class="package-card-image" src="{{ package.image.url }}" alt="{{ package.image_alt_text }}">
+        {# A manager-uploaded image stays in control; otherwise seeded packages use artwork shipped with the website. #}
+        {% if package.has_custom_image %}
+            <img class="package-card-image" src="{{ package.image.url }}" alt="{{ package.display_image_alt_text }}">
+        {% elif package.default_static_image_path %}
+            <img class="package-card-image" src="{% static package.default_static_image_path %}" alt="{{ package.display_image_alt_text }}">
         {% else %}
             <span class="package-card-placeholder" aria-hidden="true">✦</span>
         {% endif %}

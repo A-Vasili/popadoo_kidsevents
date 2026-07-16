@@ -1,10 +1,12 @@
 {# This template presents addon card within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# Each card names both its specific category and its broader parent so either filter can reveal it. #}
 <article
     class="addon-option{% if addon.is_featured %} addon-option-featured{% endif %}"
     data-addon-option
     data-addon-search="{{ addon.name|lower }} {{ addon.short_description|lower }} {{ addon.category.name|lower }} {% if addon.category.parent %}{{ addon.category.parent.name|lower }}{% endif %}"
     data-addon-category="{{ addon.category.slug }}"
+    data-addon-categories="{{ addon.category.slug }}{% if addon.category.parent %} {{ addon.category.parent.slug }}{% endif %}"
 >
     <input
         class="addon-checkbox"

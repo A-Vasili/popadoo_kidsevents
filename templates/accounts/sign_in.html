@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {# This account template presents sign in for sign-in, registration, profile, or the customer dashboard. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
 
-{% block title %}Sign In | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Sign in to view saved Popadoo bookings and account details.{% endblock %}
+{% block title %}Sign In | P Kids Events{% endblock %}
+{% block meta_description %}Sign in to view saved P Kids Events bookings and account details.{% endblock %}
 {% block page_name %}accountSignIn{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
@@ -29,7 +30,7 @@
                         {% for field in form %}{% include "accounts/form_field.html" with field=field %}{% endfor %}
             {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
             <button class="button" type="submit">Sign in</button>
-            <p class="account-switch">New to Popadoo? <a href="{% url 'accounts:accounts_sign_up' %}">Create an account</a>.</p>
+            <p class="account-switch">New to P Kids Events? <a href="{% url 'accounts:accounts_sign_up' %}">Create an account</a>.</p>
         </form>
     </div>
 </section>

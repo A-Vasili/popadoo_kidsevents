@@ -132,10 +132,11 @@ class Command(BaseCommand):
 
         credentials = []
 
+        # Demonstration accounts now use the hosted project identity so generated profiles do not display the original company name.
         owner, password = self._create_or_update_user(
             username="owner_demo",
-            email="owner@popadoo.test",
-            first_name="Popadoo",
+            email="owner@pkidsevents.test",
+            first_name="P Kids Events",
             last_name="Owner",
             reset_passwords=reset_passwords,
         )
@@ -148,7 +149,7 @@ class Command(BaseCommand):
             username = f"worker{number:02d}"
             worker, password = self._create_or_update_user(
                 username=username,
-                email=f"{username}@popadoo.test",
+                email=f"{username}@pkidsevents.test",
                 first_name="Worker",
                 last_name=f"{number:02d}",
                 reset_passwords=reset_passwords,

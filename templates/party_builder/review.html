@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {# This template presents review within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
-{% block title %}Review Your Party | Popadoo Kids Events{% endblock %}
+{% block title %}Review Your Party | P Kids Events{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/reviews.css' %}">{% endblock %}
 
@@ -17,7 +18,7 @@
             <h1 id="review-heading">Rate your {{ booking.package.name }}</h1>
             <p>{{ booking.event_date|date:"j F Y" }} · Booking {{ booking.public_id }}</p>
             <p class="review-privacy-intro">
-                Star ratings contribute to Popadoo's overall statistics. Your written
+                Star ratings contribute to the overall P Kids Events statistics. Your written
                 comment stays private unless you explicitly choose to publish it as a testimonial.
             </p>
         </header>
@@ -102,9 +103,9 @@
                             <span class="review-choice-copy">
                                 <strong>{{ choice.choice_label }}</strong>
                                 {% if choice.data.value == "private" %}
-                                    <span>Only Popadoo staff can view this written comment.</span>
+                                    <span>Only P Kids Events staff can view this written comment.</span>
                                 {% else %}
-                                    <span>I give Popadoo permission to publish this comment on the public Testimonials page.</span>
+                                    <span>I give P Kids Events permission to publish this comment on the public Testimonials page.</span>
                                 {% endif %}
                             </span>
                         </label>

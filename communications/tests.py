@@ -162,7 +162,7 @@ class CustomerChatTests(ChatTestBase):
     def test_anonymous_page_prompts_for_sign_in(self):
         response = self.client.get(reverse("communications:customer_chat"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Sign in to chat with Popadoo")
+        self.assertContains(response, "Sign in to chat with P Kids Events")
         self.assertContains(response, reverse("accounts:accounts_sign_in"))
 
     # This test protects the business rule described by “anonymous user cannot send”.

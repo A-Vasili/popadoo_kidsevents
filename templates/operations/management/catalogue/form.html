@@ -1,6 +1,7 @@
 {% extends "operations/management/base.html" %}
 {# This management template presents the form screen to authorised staff inside the custom Popadoo management area. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{% load static %}
 
 {% block management_content %}
 {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
@@ -26,8 +27,11 @@
         {% if form.image %}
             <div class="management-form-image-layout">
                 <div class="management-image-preview" data-image-preview>
-                    {% if object and object.image %}
-                        <img src="{{ object.image.url }}" alt="{{ object.image_alt_text|default:'Current catalogue image' }}" data-image-preview-output>
+                    {# The preview shows the owner’s upload first, then the bundled catalogue default that customers currently see. #}
+                    {% if object and object.has_custom_image %}
+                        <img src="{{ object.image.url }}" alt="{{ object.display_image_alt_text|default:'Current catalogue image' }}" data-image-preview-output>
+                    {% elif object and object.default_static_image_path %}
+                        <img src="{% static object.default_static_image_path %}" alt="{{ object.display_image_alt_text|default:'Current catalogue image' }}" data-image-preview-output>
                     {% else %}
                         <div class="management-image-placeholder" data-image-preview-placeholder>No image uploaded</div>
                         <img src="" alt="New image preview" hidden data-image-preview-output>

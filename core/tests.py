@@ -67,6 +67,22 @@ class PublicPageTests(TestCase):
                     fetch_redirect_response=False,
                 )
 
+    # This test protects the hosted project from showing the original company name on its main public page.
+    # The logo artwork may stay the same, but visible branding must identify P Kids Events.
+    def test_homepage_uses_hosted_company_name(self):
+        response = self.client.get(reverse("core:core_home"))
+        self.assertContains(response, "P Kids Events")
+        self.assertNotContains(response, "Popadoo Kids Events")
+
+    # This test confirms that public pages no longer direct visitors to the real company’s social
+    # account or branded email address after the hosting rebrand.
+    def test_public_pages_do_not_include_original_instagram_or_email(self):
+        for route_name in ("core:core_home", "core:core_about"):
+            with self.subTest(route=route_name):
+                response = self.client.get(reverse(route_name))
+                self.assertNotContains(response, "instagram.com/popadoo_kidsevents")
+                self.assertNotContains(response, "hello@popadookidsevents.gr")
+
 
 # This group of tests protects the navigation and security tests behaviour as one related customer
 # or staff workflow.

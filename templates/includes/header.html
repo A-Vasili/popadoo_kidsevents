@@ -8,6 +8,7 @@ The shared header has two clear levels:
 2. The main navigation for public pages, Party Ideas, the builder, and the theme switch.
 Keeping these areas separate makes the header easier to understand and update.
 {% endcomment %}
+{# The header presents the fictional hosted brand while continuing to use the same approved logo image. #}
 <header class="site-header">
     {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "includes/header_utility_stripe.html" %}
@@ -16,9 +17,9 @@ Keeping these areas separate makes the header easier to understand and update.
         <div class="container">
             {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
             <nav class="site-navigation" aria-label="Primary navigation" data-i18n-aria-label="nav.primaryLabel">
-                <a class="site-logo" href="{% url 'core:core_home' %}" aria-label="Popadoo Kids Events home" data-i18n-aria-label="nav.logoLabel">
+                <a class="site-logo" href="{% url 'core:core_home' %}" aria-label="P Kids Events home" data-i18n-aria-label="nav.logoLabel">
                     <img class="site-logo-mark" src="{% static 'assets/svg/popadoo-logo.svg' %}" alt="" width="128" height="128">
-                    <span class="site-logo-text">Popadoo Kids Events</span>
+                    <span class="site-logo-text">P Kids Events</span>
                 </a>
 
                 <button class="site-navigation-toggle" type="button" aria-controls="primary-navigation" aria-expanded="false" aria-label="Open primary navigation">

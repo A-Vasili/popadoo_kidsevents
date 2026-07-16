@@ -176,7 +176,8 @@ class CustomerSendView(CustomerOnlyMixin, View):
             except ValidationError as error:
                 form.add_error("message", error)
             else:
-                messages.success(request, "Your message was sent to the Popadoo team.")
+                # The confirmation names the hosted support team while the message is still stored and routed exactly as before.
+                messages.success(request, "Your message was sent to the P Kids Events team.")
                 return redirect("communications:customer_chat")
         return render(
             request,

@@ -3,6 +3,7 @@
 {% load static %}
 
 {# This shared footer provides contact details and the site closing information on every page. #}
+{# The footer now identifies P Kids Events and keeps contact inside the website rather than linking to the original company. #}
 
 <footer class="site-footer">
     <div class="container site-footer-grid">
@@ -10,7 +11,7 @@
             <a
                 class="site-footer-logo"
                 href="{% url 'core:core_home' %}"
-                aria-label="Popadoo Kids Events home"
+                aria-label="P Kids Events home"
             >
                 <img
                     src="{% static 'assets/svg/popadoo-logo.svg' %}"
@@ -18,7 +19,7 @@
                     width="96"
                     height="96"
                 >
-                <strong>Popadoo Kids Events</strong>
+                <strong>P Kids Events</strong>
             </a>
 
             <p data-i18n="footer.tagline">
@@ -29,7 +30,7 @@
                 class="site-footer-copyright"
                 data-i18n="footer.copyright"
             >
-                © 2026 Popadoo Kids Events
+                © 2026 P Kids Events
             </p>
         </div>
 
@@ -45,25 +46,9 @@
                 Contact
             </h2>
 
-            <a href="mailto:hello@popadookidsevents.gr">
-                hello@popadookidsevents.gr
-            </a>
-
-            <a
-                class="site-footer-social-link"
-                href="https://www.instagram.com/popadoo_kidsevents/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Visit Popadoo on Instagram"
-            >
-                <img
-                    class="site-footer-social-icon"
-                    src="{% static 'assets/svg/instagram-icon.svg' %}"
-                    alt=""
-                    width="28"
-                    height="28"
-                >
-                <span class="visually-hidden">Instagram</span>
+            {# The hosted project uses its private message area instead of sending visitors to the real company’s email or Instagram account. #}
+            <a href="{% url 'communications:customer_chat' %}" data-i18n="chat.messages">
+                Messages
             </a>
         </div>
     </div>

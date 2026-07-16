@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -31,6 +31,11 @@ from .forms import (
 )
 from .models import PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, decline_assignment
+from .services.bookings import (
+    booking_completion_block_reason,
+    can_mark_booking_completed,
+    mark_booking_completed,
+)
 
 
 # This class groups the information and behaviour needed for operations access mixin.
@@ -140,11 +145,20 @@ class WorkerAssignmentDetailView(WorkerRequiredMixin, DetailView):
             "party_build__package", "party_build__guest_tier", "worker__user"
         ).prefetch_related("party_build__addon_items__addon")
 
-    # This step gathers the additional labels, forms, and summary information the template needs
-    # to explain the page clearly.
+    # This step prepares the decline form and a server-checked completion decision for this exact
+    # assignment. The template can explain the available action, while the completion service still
+    # repeats every safeguard when the worker submits it.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["decline_form"] = DeclineAssignmentForm()
+        context["can_mark_party_done"] = can_mark_booking_completed(
+            booking=self.object.party_build,
+            actor=self.request.user,
+            assignment=self.object,
+        )
+        context["completion_block_reason"] = booking_completion_block_reason(
+            self.object.party_build
+        )
         return context
 
 
@@ -167,6 +181,42 @@ class WorkerAssignmentAcceptView(WorkerRequiredMixin, View):
             return redirect("operations:operations_worker_assignment_detail", pk=pk)
         messages.success(request, "The party is now confirmed in your schedule.")
         return redirect("operations:operations_worker_assignment_detail", pk=assignment.pk)
+
+
+# This POST-only view lets the signed-in assigned worker confirm delivery of their own party. The
+# assignment is selected through that worker’s restricted queryset, and the service checks it again
+# so changing the URL cannot complete somebody else’s booking.
+class WorkerAssignmentCompleteView(WorkerRequiredMixin, View):
+    http_method_names = ["post"]
+
+    # This request records completion through the shared booking service, then returns the worker to
+    # the assignment page with a plain-language explanation of the result.
+    def post(self, request, pk):
+        assignment = get_object_or_404(
+            PartyAssignment.objects.select_related("party_build", "worker__user"),
+            pk=pk,
+            worker=self.get_worker_profile(),
+        )
+        try:
+            completed = mark_booking_completed(
+                booking=assignment.party_build,
+                actor=request.user,
+                assignment=assignment,
+            )
+        except (PermissionDenied, ValidationError) as error:
+            messages.error(request, "; ".join(getattr(error, "messages", [str(error)])))
+            return redirect(
+                "operations:operations_worker_assignment_detail",
+                pk=assignment.pk,
+            )
+        messages.success(
+            request,
+            "The party was marked as done. The customer can now leave a review.",
+        )
+        return redirect(
+            "operations:operations_worker_assignment_detail",
+            pk=assignment.pk,
+        )
 
 
 # This view coordinates the worker assignment decline view page or action.

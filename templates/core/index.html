@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {# This public template presents the index page as part of the Popadoo customer website. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
-{% block title %}Home | Popadoo Kids Events{% endblock %}
+{% block title %}Home | P Kids Events{% endblock %}
 {% block page_name %}index{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/index.css' %}">{% endblock %}
 
@@ -28,7 +29,7 @@
     <div class="hero-carousel-overlay">
         <div class="container">
             <div class="hero-carousel-content">
-                <h1 id="welcome-heading" data-i18n="home.welcomeHeading">Welcome to Popadoo Kids Events</h1>
+                <h1 id="welcome-heading" data-i18n="home.welcomeHeading">Welcome to P Kids Events</h1>
                 <p data-i18n="home.welcomeText">Creative children’s parties planned around your family, your theme, and the venue you choose.</p>
                 <div class="hero-primary-actions" aria-label="Choose how to begin">
                     <a class="party-booking-button" href="{% url 'party_builder:party_builder_package_options' %}" data-i18n="nav.bookNow">Make Your Own Party</a>

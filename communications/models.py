@@ -29,7 +29,8 @@ class CustomerChat(models.Model):
     # These named choices keep the allowed status values consistent in the database, forms, and
     # page labels.
     class Status(models.TextChoices):
-        WAITING_STAFF = "waiting_staff", "Waiting for Popadoo"
+        # This label names the hosted team while preserving the same stored status value and workflow meaning.
+        WAITING_STAFF = "waiting_staff", "Waiting for P Kids Events"
         WAITING_CUSTOMER = "waiting_customer", "Waiting for customer"
 
     public_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)

@@ -299,20 +299,25 @@
         const filterStatus = optionsForm.querySelector("[data-addon-filter-status]");
         const filterEmpty = optionsForm.querySelector("[data-addon-filter-empty]");
         let activeCategory = "all";
-        // This helper updates addon filter while keeping the underlying server-owned data unchanged.
+        // This helper compares each experience with both its specific subcategory and its broader
+        // parent. A broad choice such as Creative Activities therefore reveals all matching child
+        // experiences instead of incorrectly reporting an empty result.
         const applyAddonFilter = () => {
             const term = (searchInput?.value || "").trim().toLocaleLowerCase();
             let visibleCount = 0;
             addonOptions.forEach((option) => {
                 const slug = option.querySelector("[data-addon-checkbox]")?.dataset.addonSlug || "";
+                const categorySlugs = (option.dataset.addonCategories || option.dataset.addonCategory || "")
+                    .split(/\s+/)
+                    .filter(Boolean);
                 const translatedSearch = [
                     option.dataset.addonSearch,
                     catalogueText("addon", slug, "name"),
                     catalogueText("addon", slug, "description"),
-                    optionalTranslation(`catalogue.category.${option.dataset.addonCategory}`),
+                    ...categorySlugs.map((categorySlug) => optionalTranslation(`catalogue.category.${categorySlug}`)),
                 ].filter(Boolean).join(" ").toLocaleLowerCase();
                 const matchesText = !term || translatedSearch.includes(term);
-                const matchesCategory = activeCategory === "all" || option.dataset.addonCategory === activeCategory;
+                const matchesCategory = activeCategory === "all" || categorySlugs.includes(activeCategory);
                 option.hidden = !(matchesText && matchesCategory);
                 if (!option.hidden) visibleCount += 1;
             });

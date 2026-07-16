@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {# This template presents options within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
-{% block title %}Make Your Own Party | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Choose a capacity-based package and optional experiences for a personalised Popadoo party.{% endblock %}
-{% block og_title %}Make Your Own Party | Popadoo Kids Events{% endblock %}
+{% block title %}Make Your Own Party | P Kids Events{% endblock %}
+{% block meta_description %}Choose a capacity-based package and optional experiences for a personalised P Kids Events party.{% endblock %}
+{% block og_title %}Make Your Own Party | P Kids Events{% endblock %}
 {% block og_description %}Choose the package size that fits your celebration, then add experiences to make it your own.{% endblock %}
 {% block page_name %}partyBuilder{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/party-builder.css' %}?v=20260715-package-rows">{% endblock %}
@@ -108,4 +109,5 @@
     </div>
 </form>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/party-builder.js' %}?v=20260715-builder-el" defer></script>{% endblock %}
+{# This version marker makes browsers load the corrected parent-and-subcategory filtering script. #}
+{% block extra_js %}<script src="{% static 'js/party-builder.js' %}?v=20260716-category-filters" defer></script>{% endblock %}

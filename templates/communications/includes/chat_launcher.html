@@ -1,5 +1,6 @@
 {# This reusable chat template presents chat launcher consistently in the floating panel and full-page conversation. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The chat keeps its existing behaviour but presents the hosted P Kids Events identity to customers. #}
 <div
     class="popadoo-chat-widget"
     data-chat-widget
@@ -11,7 +12,7 @@
     <a
         class="popadoo-chat-launcher"
         href="{% url 'communications:customer_chat' %}"
-        aria-label="Open Popadoo chat"
+        aria-label="Open P Kids Events chat"
         data-i18n-aria-label="chat.open"
         aria-controls="popadoo-chat-panel"
         aria-expanded="false"
@@ -34,8 +35,8 @@
     >
         <header class="popadoo-chat-header">
             <div>
-                <strong id="popadoo-chat-title" data-i18n="chat.heading">Chat with Popadoo</strong>
-                <span data-i18n="chat.shortHelp">Ask us anything about your Popadoo experience.</span>
+                <strong id="popadoo-chat-title" data-i18n="chat.heading">Chat with P Kids Events</strong>
+                <span data-i18n="chat.shortHelp">Ask us anything about your P Kids Events experience.</span>
             </div>
             <button type="button" class="popadoo-chat-close" aria-label="Close chat" data-i18n-aria-label="chat.close" data-chat-close>×</button>
         </header>
@@ -46,7 +47,7 @@
                 <p data-i18n="chat.loading">Loading your messages…</p>
             {% else %}
                 <div class="popadoo-chat-auth-prompt">
-                    <p data-i18n="chat.signInPrompt">Sign in to chat with Popadoo.</p>
+                    <p data-i18n="chat.signInPrompt">Sign in to chat with P Kids Events.</p>
                     <a class="button" href="{% url 'accounts:accounts_sign_in' %}?next={% url 'communications:customer_chat' %}" data-i18n="account.signIn">Sign in</a>
                     <a class="button secondary" href="{% url 'accounts:accounts_sign_up' %}?next={% url 'communications:customer_chat' %}" data-i18n="chat.createAccount">Create an account</a>
                 </div>

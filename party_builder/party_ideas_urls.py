@@ -14,6 +14,8 @@ app_name = "party_ideas"
 # These named routes connect stable website addresses to the views that handle each customer or
 # staff request.
 # Permission checks remain inside the views, so knowing an address never grants access by itself.
+# Django needs this to remain a real list of routes; pointing it at the imported view module would
+# stop the whole website during startup before any Party Ideas page could be opened.
 urlpatterns = [
     path("", party_ideas.PartyIdeasListView.as_view(), name="list"),
     path(

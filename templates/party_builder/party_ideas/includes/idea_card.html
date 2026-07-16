@@ -1,11 +1,19 @@
 {# This template presents idea card within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{% load static %}
 <article class="party-idea-card">
     <div class="party-idea-card-media">
-        {% if card.object.image %}
+        {# Uploaded catalogue images take priority, while the original seeded items fall back to their bundled artwork. #}
+        {% if card.object.has_custom_image %}
             <img
                 src="{{ card.object.image.url }}"
-                alt="{{ card.object.image_alt_text }}"
+                alt="{{ card.object.display_image_alt_text }}"
+                loading="lazy"
+            >
+        {% elif card.object.default_static_image_path %}
+            <img
+                src="{% static card.object.default_static_image_path %}"
+                alt="{{ card.object.display_image_alt_text }}"
                 loading="lazy"
             >
         {% else %}

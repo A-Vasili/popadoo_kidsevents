@@ -44,6 +44,23 @@ def _apply_accessible_attributes(form: forms.BaseForm) -> None:
                 form.fields[field_name].widget.attrs["aria-invalid"] = "true"
 
 
+# This helper keeps category choices aligned with the kind of idea a visitor is browsing.
+# Categories that contain no active matching records are left out, preventing filters that can
+# only lead to an empty result page.
+def _public_category_content_filter(idea_type: str) -> Q:
+    package_content = Q(packages__is_active=True) | Q(
+        children__is_active=True, children__packages__is_active=True
+    )
+    experience_content = Q(addons__is_active=True) | Q(
+        children__is_active=True, children__addons__is_active=True
+    )
+    if idea_type == "package":
+        return package_content
+    if idea_type == "experience":
+        return experience_content
+    return package_content | experience_content
+
+
 # This form collects and validates the information needed for party ideas filter form.
 # It accepts only the fields shown to the person using the page and leaves trusted identities,
 # prices, and permissions to the server.
@@ -159,14 +176,25 @@ class PartyIdeasFilterForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 
-    # This method handles init for the surrounding party ideas filter form.
-    # It keeps that responsibility close to the object while relying on the existing validation
-    # and permission boundaries.
-    def __init__(self, *args, **kwargs):
+    # This setup shows only categories that can produce the selected kind of idea. It prevents a
+    # visitor from choosing a package-only category while browsing experiences, or an empty
+    # category that cannot return anything.
+    def __init__(self, *args, idea_type: str | None = None, allowed_types=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["category"].queryset = Category.objects.filter(
-            is_active=True
-        ).filter(Q(parent__isnull=True) | Q(parent__is_active=True))
+        selected_type = idea_type or (self.data.get("type") if self.is_bound else None) or "all"
+        if selected_type not in {value for value, _label in self.TYPE_CHOICES}:
+            selected_type = "all"
+        if allowed_types is not None:
+            allowed_type_values = set(allowed_types)
+            self.fields["type"].choices = [
+                choice for choice in self.TYPE_CHOICES if choice[0] in allowed_type_values
+            ]
+        self.fields["category"].queryset = (
+            Category.objects.filter(is_active=True)
+            .filter(Q(parent__isnull=True) | Q(parent__is_active=True))
+            .filter(_public_category_content_filter(selected_type))
+            .distinct()
+        )
         _apply_accessible_attributes(self)
 
     # This validation prepares the submitted q and rejects values that would make the form
@@ -598,6 +626,7 @@ class PartyReviewForm(forms.Form):
         coerce=int,
         widget=forms.RadioSelect(attrs={"class": "review-star-input"}),
     )
+    # These review labels use the hosted company name while preserving the same privacy and publication choices.
     comment = forms.CharField(
         required=False,
         max_length=1500,
@@ -607,7 +636,7 @@ class PartyReviewForm(forms.Form):
             attrs={
                 "class": "form-control",
                 "rows": 6,
-                "placeholder": "Tell Popadoo about the overall party experience.",
+                "placeholder": "Tell P Kids Events about the overall party experience.",
             }
         ),
     )
@@ -617,7 +646,7 @@ class PartyReviewForm(forms.Form):
         initial=PartyReview.Visibility.PRIVATE,
         widget=forms.RadioSelect(attrs={"class": "review-visibility-input"}),
         help_text=(
-            "Private feedback is visible only to Popadoo. A public testimonial "
+            "Private feedback is visible only to P Kids Events. A public testimonial "
             "is published immediately with your explicit permission."
         ),
     )

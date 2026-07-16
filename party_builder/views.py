@@ -31,7 +31,7 @@ from .forms import (
     SimulatedPaymentForm,
 )
 from .models import AddonExperience, PartyBuild, PartyPackage
-from .party_ideas import public_package_queryset, visible_categories
+from .party_ideas import public_package_queryset, visible_addon_categories
 from .review_services import (
     authorize_review_session,
     get_reviewable_booking,
@@ -151,12 +151,15 @@ class PartyOptionsView(CheckoutStateMixin, FormView):
             self.package,
         )
         popularity = addon_popularity(days=365)
+        # The filter row includes only categories that can reveal at least one active experience.
+        # Broader categories remain available when their experiences live in subcategories.
+        addon_categories = list(visible_addon_categories())
         context.update(
             {
                 "package": displayed_package,
                 "package_options": package_options,
                 "selected_package_id": selected_package_id,
-                "addon_categories": list(visible_categories()),
+                "addon_categories": addon_categories,
                 "addon_options": [
                     {
                         "addon": addon,

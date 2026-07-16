@@ -24,8 +24,11 @@
 
         <div class="party-detail-grid">
             <div class="party-detail-media">
-                {% if package.image %}
-                    <img src="{{ package.image.url }}" alt="{{ package.image_alt_text }}">
+                {# Custom uploads remain the owner’s choice; the bundled image fills the page only when no upload exists. #}
+                {% if package.has_custom_image %}
+                    <img src="{{ package.image.url }}" alt="{{ package.display_image_alt_text }}">
+                {% elif package.default_static_image_path %}
+                    <img src="{% static package.default_static_image_path %}" alt="{{ package.display_image_alt_text }}">
                 {% else %}
                     <span aria-hidden="true">✦</span>
                 {% endif %}

@@ -59,7 +59,13 @@ from .forms import (
 from .models import AuditEvent, PartyAssignment, WorkerAvailability
 from .services.assignment import assign_manually
 from .services.audit import model_snapshot, record_audit
-from .services.bookings import change_booking_status, send_to_manual_review
+from .services.bookings import (
+    booking_completion_block_reason,
+    can_mark_booking_completed,
+    change_booking_status,
+    mark_booking_completed,
+    send_to_manual_review,
+)
 from .services.catalogue import (
     remove_addon,
     remove_category,
@@ -1248,18 +1254,52 @@ class BookingDetailView(FullManagementAccessMixin, ManagementContextMixin, Detai
             "review__addon_ratings__build_addon__addon",
         )
 
-    # This step gathers the additional labels, forms, and summary information the template needs
-    # to explain the page clearly.
+    # This step prepares the existing status and manual-review tools together with a clear,
+    # server-checked completion action. The dedicated button is easier to understand, while the
+    # shared service remains the final authority when it is submitted.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context.update(
             {
                 "status_form": BookingStatusForm(booking=self.object),
                 "manual_review_form": ManualReviewForm(),
+                "can_mark_party_done": can_mark_booking_completed(
+                    booking=self.object,
+                    actor=self.request.user,
+                ),
+                "completion_block_reason": booking_completion_block_reason(self.object),
                 "audit_events": AuditEvent.objects.filter(object_type="PartyBuild", object_id=str(self.object.pk)).select_related("actor")[:15],
             }
         )
         return context
+
+
+# This POST-only management action gives Administrators and Owners an obvious way to confirm that
+# an eligible party took place. It uses the same trusted service as the worker portal so completion
+# time, review access, and audit history stay consistent.
+class BookingCompleteView(FullManagementAccessMixin, View):
+    http_method_names = ["post"]
+
+    # This request resolves the booking by its public identifier, applies the completion safeguards,
+    # and returns to the detail page with a clear explanation instead of accepting a posted status.
+    def post(self, request, public_id):
+        booking = get_object_or_404(PartyBuild, public_id=public_id)
+        try:
+            mark_booking_completed(
+                booking=booking,
+                actor=request.user,
+            )
+        except ValidationError as error:
+            messages.error(request, "; ".join(error.messages))
+        else:
+            messages.success(
+                request,
+                "The party was marked as done. The customer can now leave a review.",
+            )
+        return redirect(
+            "management:management_booking_detail",
+            public_id=booking.public_id,
+        )
 
 
 # This view coordinates the booking status update view page or action.

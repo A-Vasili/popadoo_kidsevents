@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {# This template presents build success within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
 {# This template confirms that the simulated checkout was completed and summarizes the booking. #}
 
-{% block title %}Simulated Purchase Complete | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Your customised Popadoo party request and simulated checkout have been completed.{% endblock %}
+{% block title %}Simulated Purchase Complete | P Kids Events{% endblock %}
+{% block meta_description %}Your customised P Kids Events party request and simulated checkout have been completed.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}partyBuilderSuccess{% endblock %}
 
@@ -24,7 +25,7 @@
             <h1 id="success-heading">Your party request has been saved</h1>
             <p class="lead">
                 Thank you, {{ party_build.contact_name }}. No money was charged.
-                Popadoo can now review the date, location, and final availability with you.
+                P Kids Events can now review the date, location, and final availability with you.
             </p>
 
             {# This article represents one self-contained item that can be understood on its own. #}

@@ -274,7 +274,8 @@ def save_party_review(
             "Your review was updated and removed from the public Testimonials page."
         )
     else:
-        message = "Your review was saved as private feedback for Popadoo."
+        # This response confirms that private feedback went only to the hosted P Kids Events team; visibility rules are unchanged.
+        message = "Your review was saved as private feedback for P Kids Events."
 
     return review, created, stats, {
         "message": message,

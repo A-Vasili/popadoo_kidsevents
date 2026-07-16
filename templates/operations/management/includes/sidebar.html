@@ -1,10 +1,11 @@
 {# This reusable management sidebar reveals only the sections allowed by the visitor’s current full or delegated permissions. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
+{# The sidebar keeps the existing logo but labels the hosted management area as P Kids Events. #}
 <aside id="management-sidebar" class="management-sidebar" data-management-sidebar>
     <div class="management-brand">
         <img src="{% static 'assets/svg/popadoo-logo.svg' %}" alt="" width="48" height="48">
-        <div><strong>Popadoo</strong><span>Management panel</span></div>
+        <div><strong>P Kids Events</strong><span>Management panel</span></div>
     </div>
 
     {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}

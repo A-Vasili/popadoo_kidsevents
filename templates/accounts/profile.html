@@ -1,11 +1,12 @@
 {% extends "base.html" %}
 {# This account template presents profile for sign-in, registration, profile, or the customer dashboard. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
 
-{% block title %}My Profile | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Manage your saved Popadoo contact and booking details.{% endblock %}
+{% block title %}My Profile | P Kids Events{% endblock %}
+{% block meta_description %}Manage your saved P Kids Events contact and booking details.{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block page_name %}accountProfile{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}

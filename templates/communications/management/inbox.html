@@ -1,6 +1,7 @@
 {% extends "operations/management/base.html" %}
 {# This management template presents the inbox screen to authorised staff inside the custom Popadoo management area. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The management filter uses the same rebranded status wording shown elsewhere in the chat workflow. #}
 {% load static %}
 
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/chat.css' %}?v=1">{% endblock %}
@@ -18,7 +19,7 @@
     {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form class="management-filter-toolbar" method="get" role="search">
         <label><span>Search</span><input class="form-control" type="search" name="search" value="{{ request.GET.search }}" placeholder="Customer, email, or message text"></label>
-        <label><span>Status</span><select class="form-select" name="status"><option value="">All statuses</option><option value="waiting_staff" {% if request.GET.status == 'waiting_staff' %}selected{% endif %}>Waiting for Popadoo</option><option value="waiting_customer" {% if request.GET.status == 'waiting_customer' %}selected{% endif %}>Waiting for customer</option></select></label>
+        <label><span>Status</span><select class="form-select" name="status"><option value="">All statuses</option><option value="waiting_staff" {% if request.GET.status == 'waiting_staff' %}selected{% endif %}>Waiting for P Kids Events</option><option value="waiting_customer" {% if request.GET.status == 'waiting_customer' %}selected{% endif %}>Waiting for customer</option></select></label>
         <label><span>Sort</span><select class="form-select" name="ordering"><option value="recent">Most recent</option><option value="oldest" {% if request.GET.ordering == 'oldest' %}selected{% endif %}>Oldest activity</option><option value="customer" {% if request.GET.ordering == 'customer' %}selected{% endif %}>Customer name</option></select></label>
         <label class="management-checkbox-label"><input type="checkbox" name="unread_only" value="1" {% if request.GET.unread_only %}checked{% endif %}> <span>Unread only</span></label>
         <button class="management-button" type="submit">Apply</button>

@@ -3,13 +3,14 @@
 {% load static %}
 
 {# This base template provides the shared page structure, metadata, header, footer, styles, and scripts used across the site. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Popadoo Kids Events">
+    <meta name="author" content="P Kids Events">
     <meta name="theme-color" content="#fff9fc">
     <meta name="robots" content="{% block meta_robots %}index,follow{% endblock %}">
     <meta
@@ -18,8 +19,8 @@
     >
 
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Popadoo Kids Events">
-    <meta property="og:title" content="{% block og_title %}Popadoo Kids Events{% endblock %}">
+    <meta property="og:site_name" content="P Kids Events">
+    <meta property="og:title" content="{% block og_title %}P Kids Events{% endblock %}">
     <meta
         property="og:description"
         content="{% block og_description %}Creative children’s parties designed around your family and venue.{% endblock %}"
@@ -30,7 +31,7 @@
     >
     <meta property="og:url" content="{{ request.build_absolute_uri }}">
 
-    <title>{% block title %}Popadoo Kids Events{% endblock %}</title>
+    <title>{% block title %}P Kids Events{% endblock %}</title>
     <link rel="canonical" href="{{ request.build_absolute_uri }}">
 
     <script src="{% static 'js/theme-init.js' %}"></script>

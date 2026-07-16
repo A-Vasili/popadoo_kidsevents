@@ -31,6 +31,47 @@ from .validators import (
 )
 
 
+# These slug lists identify the seeded catalogue records that have matching artwork bundled with
+# the website. Custom records are deliberately excluded so a missing upload still uses the existing
+# placeholder instead of pointing visitors to a file that does not exist.
+DEFAULT_PACKAGE_STATIC_IMAGE_SLUGS = frozenset(
+    {
+        "basic-popadoo-party",
+        "popadoo-plus-party",
+        "popadoo-classic-party",
+        "popadoo-big-party",
+        "popadoo-xl-party",
+        "popadoo-mega-party",
+        "popadoo-super-party",
+        "popadoo-festival-party",
+    }
+)
+DEFAULT_ADDON_STATIC_IMAGE_SLUGS = frozenset(
+    {
+        "face-painting",
+        "balloon-modelling",
+        "treasure-hunt",
+        "creative-craft-workshop",
+        "mini-magic-show",
+        "themed-balloon-decoration",
+        "extra-entertainer",
+        "party-favour-pack",
+        "bubble-show",
+        "kids-disco-dance-games",
+        "slime-laboratory",
+        "junior-science-experiments",
+        "character-visit",
+        "superhero-training",
+        "puppet-show",
+        "karaoke-party",
+        "party-photo-booth",
+        "glitter-tattoos",
+        "cupcake-decorating",
+        "pinata-game",
+    }
+)
+
+
 # This safeguard verifies constraints except before the surrounding workflow continues.
 # When the rule is not met, it stops the action with a controlled error rather than allowing an
 # inconsistent record.
@@ -251,6 +292,30 @@ class PartyPackage(models.Model):
             if item.strip()
         ]
 
+    # This property distinguishes an Owner's uploaded replacement from the earlier seeded media
+    # link. It lets the new static artwork take over without hiding a genuine custom image.
+    @property
+    def has_custom_image(self) -> bool:
+        if not self.image:
+            return False
+        if self.slug not in DEFAULT_PACKAGE_STATIC_IMAGE_SLUGS:
+            return True
+        return self.image.name != f"catalogue/packages/{self.slug}.png"
+
+    # This property gives seeded packages a reliable image that travels with the website while
+    # leaving manager-uploaded images in the media library as the first choice on every page.
+    @property
+    def default_static_image_path(self) -> str:
+        if self.slug not in DEFAULT_PACKAGE_STATIC_IMAGE_SLUGS:
+            return ""
+        return f"assets/catalogue/packages/{self.slug}.png"
+
+    # This property keeps every displayed package image understandable to visitors who use screen
+    # readers, including the bundled defaults that do not store separate database descriptions.
+    @property
+    def display_image_alt_text(self) -> str:
+        return self.image_alt_text or f"Illustration for {self.name}"
+
     # This helper retrieves absolute url for the page or service that called it.
     # It returns a consistent, permission-aware result so callers do not need to repeat the same
     # selection rules.
@@ -436,6 +501,30 @@ class AddonExperience(models.Model):
     # and permission boundaries.
     def __str__(self) -> str:
         return self.name
+
+    # This property distinguishes an Owner's uploaded replacement from the earlier seeded media
+    # link. It lets the new static artwork take over without hiding a genuine custom image.
+    @property
+    def has_custom_image(self) -> bool:
+        if not self.image:
+            return False
+        if self.slug not in DEFAULT_ADDON_STATIC_IMAGE_SLUGS:
+            return True
+        return self.image.name != f"catalogue/addons/{self.slug}.png"
+
+    # This property gives seeded add-ons a reliable image that travels with the website while
+    # leaving manager-uploaded images in the media library as the first choice on every page.
+    @property
+    def default_static_image_path(self) -> str:
+        if self.slug not in DEFAULT_ADDON_STATIC_IMAGE_SLUGS:
+            return ""
+        return f"assets/catalogue/addons/{self.slug}.png"
+
+    # This property keeps every displayed add-on image understandable to visitors who use screen
+    # readers, including the bundled defaults that do not store separate database descriptions.
+    @property
+    def display_image_alt_text(self) -> str:
+        return self.image_alt_text or f"Illustration for {self.name}"
 
     # This helper retrieves absolute url for the page or service that called it.
     # It returns a consistent, permission-aware result so callers do not need to repeat the same

@@ -1,6 +1,7 @@
 {% extends "operations/management/base.html" %}
 {# This management template presents the list screen to authorised staff inside the custom Popadoo management area. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{% load static %}
 
 {% block management_content %}
 {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
@@ -25,7 +26,8 @@
         {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
         {% for package in packages %}
             <tr>
-                <td data-label="Package"><div class="management-record-cell">{% if package.image %}<img src="{{ package.image.url }}" alt="" width="54" height="54">{% else %}<span class="management-thumbnail-placeholder" aria-hidden="true">★</span>{% endif %}<span><a href="{% url 'management:management_package_detail' package.pk %}"><strong>{{ package.name }}</strong></a><small>{{ package.slug }} {% if package.is_default %}· Default{% endif %}</small></span></div></td>
+                {# Table thumbnails use the same upload-first fallback without repeating the package name to screen readers. #}
+                <td data-label="Package"><div class="management-record-cell">{% if package.has_custom_image %}<img src="{{ package.image.url }}" alt="" width="54" height="54">{% elif package.default_static_image_path %}<img src="{% static package.default_static_image_path %}" alt="" width="54" height="54">{% else %}<span class="management-thumbnail-placeholder" aria-hidden="true">★</span>{% endif %}<span><a href="{% url 'management:management_package_detail' package.pk %}"><strong>{{ package.name }}</strong></a><small>{{ package.slug }} {% if package.is_default %}· Default{% endif %}</small></span></div></td>
                 <td data-label="Category">{{ package.category|default:"Uncategorised" }}</td>
                 <td data-label="Fixed price">€{{ package.base_price }}</td>
                 <td data-label="Capacity">Up to {{ package.included_guest_count }} children</td>

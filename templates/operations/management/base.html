@@ -1,15 +1,16 @@
 {# This is the shared frame for the custom management area. It combines the authorised sidebar, page header, feedback messages, and per-page content without using Django Admin. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static management_tags %}
+{# The private management shell now displays the hosted P Kids Events name without changing any access rules. #}
 <!doctype html>
 <html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Secure Popadoo management panel for catalogue, bookings, users, schedules, and audit history.">
+    <meta name="description" content="Secure P Kids Events management panel for catalogue, bookings, users, schedules, and audit history.">
     <meta name="robots" content="noindex,nofollow">
     <meta name="theme-color" content="#fff9fc">
-    <title>{{ management_page_title|default:"Management" }} | Popadoo</title>
+    <title>{{ management_page_title|default:"Management" }} | P Kids Events</title>
     <script src="{% static 'js/theme-init.js' %}"></script>
     <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">

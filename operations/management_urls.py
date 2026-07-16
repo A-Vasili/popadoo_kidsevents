@@ -52,6 +52,9 @@ urlpatterns = [
     path("bookings/", views.BookingListView.as_view(), name="management_booking_list"),
     path("bookings/<uuid:public_id>/", views.BookingDetailView.as_view(), name="management_booking_detail"),
     path("bookings/<uuid:public_id>/status/", views.BookingStatusUpdateView.as_view(), name="management_booking_status"),
+    # This dedicated POST route makes party completion easy to find while keeping the existing
+    # general status workflow available for every other management transition.
+    path("bookings/<uuid:public_id>/complete/", views.BookingCompleteView.as_view(), name="management_booking_complete"),
     path("bookings/<uuid:public_id>/manual-review/", views.BookingManualReviewView.as_view(), name="management_booking_manual_review"),
     path("bookings/<uuid:public_id>/assign/", views.BookingAssignView.as_view(), name="management_booking_assign"),
 

@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {# This template presents list within the customer party-building, checkout, ideas, or review journey. #}
 {# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
+{# The visible brand name is now P Kids Events; the existing logo artwork and internal route names stay unchanged. #}
 {% load static %}
 
-{% block title %}{% if current_category %}{{ current_category.name }} Party Ideas{% else %}Party Ideas{% endif %} | Popadoo Kids Events{% endblock %}
-{% block meta_description %}Browse, search and filter Popadoo starting packages and party experiences, then make the celebration your own.{% endblock %}
+{% block title %}{% if current_category %}{{ current_category.name }} Party Ideas{% else %}Party Ideas{% endif %} | P Kids Events{% endblock %}
+{% block meta_description %}Browse, search and filter P Kids Events starting packages and party experiences, then make the celebration your own.{% endblock %}
 {% block page_name %}partyIdeas{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/party-ideas.css' %}">{% endblock %}
 

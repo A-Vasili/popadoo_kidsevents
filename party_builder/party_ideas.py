@@ -30,18 +30,42 @@ from .services import add_addon_to_session, resolve_active_package, select_packa
 
 
 VISIBLE_CATEGORY_FILTER = Q(parent__isnull=True) | Q(parent__is_active=True)
+PUBLIC_PACKAGE_CATEGORY_CONTENT = Q(packages__is_active=True) | Q(
+    children__is_active=True, children__packages__is_active=True
+)
+PUBLIC_ADDON_CATEGORY_CONTENT = Q(addons__is_active=True) | Q(
+    children__is_active=True, children__addons__is_active=True
+)
 
 
-# This helper prepares visible categories for the page or service that called it.
-# It returns a consistent, permission-aware result so callers do not need to repeat the same
-# selection rules.
+# This helper returns only public categories that lead to at least one active package or
+# experience. Empty catalogue headings are hidden so customers are not offered routes or filters
+# that can never show a result.
 def visible_categories():
-    """Return categories customers may browse, including safe parent details."""
+    """Return non-empty categories customers may browse, with safe parent details."""
 
     return (
         Category.objects.filter(is_active=True)
         .filter(VISIBLE_CATEGORY_FILTER)
+        .filter(PUBLIC_PACKAGE_CATEGORY_CONTENT | PUBLIC_ADDON_CATEGORY_CONTENT)
         .select_related("parent")
+        .distinct()
+        .order_by("display_order", "name")
+    )
+
+
+# This helper supplies the builder with categories that contain active optional experiences. It
+# excludes package-only and empty categories while retaining broader parent categories whose
+# experiences are organised in subcategories.
+def visible_addon_categories():
+    """Return non-empty experience categories for the builder's filter buttons."""
+
+    return (
+        Category.objects.filter(is_active=True)
+        .filter(VISIBLE_CATEGORY_FILTER)
+        .filter(PUBLIC_ADDON_CATEGORY_CONTENT)
+        .select_related("parent")
+        .distinct()
         .order_by("display_order", "name")
     )
 
@@ -116,18 +140,41 @@ def _duration_filter(value: str) -> Q:
     return Q()
 
 
-# This function handles category ids as part of this module’s workflow.
-# It keeps the repeated decision in one place so callers receive the same result and controlled
-# failure behaviour.
+# This helper gathers the selected category and every active subcategory beneath it. Walking the
+# hierarchy means a broad category continues to include its organised experiences even if Owners
+# add another level later.
 def _category_ids(category: Category | None) -> list[int]:
     if category is None:
         return []
-    if category.parent_id:
-        return [category.pk]
-    return [
-        category.pk,
-        *category.children.filter(is_active=True).values_list("pk", flat=True),
-    ]
+    category_ids = [category.pk]
+    pending_parent_ids = [category.pk]
+    while pending_parent_ids:
+        child_ids = list(
+            Category.objects.filter(
+                is_active=True, parent_id__in=pending_parent_ids
+            ).values_list("pk", flat=True)
+        )
+        category_ids.extend(child_ids)
+        pending_parent_ids = child_ids
+    return category_ids
+
+
+# This helper identifies which catalogue tabs are meaningful inside one category. Package-only
+# categories no longer offer an Experiences tab, and experience-only categories do not offer a
+# package tab that would always be empty.
+def _available_idea_types(category: Category | None) -> tuple[str, ...]:
+    if category is None:
+        return ("all", "package", "experience")
+    category_ids = _category_ids(category)
+    has_packages = public_package_queryset().filter(category_id__in=category_ids).exists()
+    has_experiences = public_addon_queryset().filter(category_id__in=category_ids).exists()
+    if has_packages and has_experiences:
+        return ("all", "package", "experience")
+    if has_packages:
+        return ("package",)
+    if has_experiences:
+        return ("experience",)
+    return ()
 
 
 # This function handles normalise card as part of this module’s workflow.
@@ -267,15 +314,23 @@ class PartyIdeasListView(TemplateView):
     def get_forced_category(self):
         return self.forced_category
 
-    # This method handles validated filters for the surrounding party ideas list view.
-    # It keeps that responsibility close to the object while relying on the existing validation
-    # and permission boundaries.
+    # This method validates filters after aligning them with the current category. A category page
+    # automatically keeps the only meaningful idea type, so stale or manually edited URLs cannot
+    # recreate an impossible package/experience combination.
     def _validated_filters(self):
         data = self.request.GET.copy()
         category = self.get_forced_category()
+        allowed_types = _available_idea_types(category)
         if category:
             data["category"] = category.slug
-        form = PartyIdeasFilterForm(data or None)
+            requested_type = data.get("type") or "all"
+            if requested_type not in allowed_types and allowed_types:
+                data["type"] = "all" if "all" in allowed_types else allowed_types[0]
+        form = PartyIdeasFilterForm(
+            data or None,
+            idea_type=data.get("type") or "all",
+            allowed_types=allowed_types,
+        )
         if form.is_valid():
             return form, form.cleaned_data
         # Invalid URL values stay visible with field errors but cannot reach ORM
@@ -372,9 +427,7 @@ class PartyIdeasListView(TemplateView):
             .prefetch_related(
                 Prefetch(
                     "children",
-                    queryset=Category.objects.filter(is_active=True).order_by(
-                        "display_order", "name"
-                    ),
+                    queryset=visible_categories().order_by("display_order", "name"),
                     to_attr="active_children",
                 )
             )
@@ -409,13 +462,39 @@ class PartyIdeasListView(TemplateView):
         current_category = self.get_forced_category()
         current_category_children = (
             list(
-                current_category.children.filter(is_active=True).order_by(
+                visible_categories().filter(parent=current_category).order_by(
                     "display_order", "name"
                 )
             )
             if current_category and current_category.parent_id is None
             else []
         )
+        available_type_values = _available_idea_types(current_category)
+        selected_category_types = _available_idea_types(category) if category else ()
+
+        # A type tab removes a selected category when that category cannot contain the requested
+        # kind of idea. This lets customers move from packages to experiences without landing on
+        # a logically empty combination.
+        type_tabs = []
+        for value, label in PartyIdeasFilterForm.TYPE_CHOICES:
+            if value not in available_type_values:
+                continue
+            query_changes = {"type": value}
+            if category and value not in selected_category_types:
+                query_changes["category"] = None
+            type_tabs.append(
+                {
+                    "value": value,
+                    "label": label,
+                    "translation_key": {
+                        "all": "partyIdeas.all",
+                        "package": "partyIdeas.startingPackages",
+                        "experience": "partyIdeas.experiences",
+                    }[value],
+                    "active": idea_type == value,
+                    "query": _query_string(self.request.GET, **query_changes),
+                }
+            )
 
         context.update(
             {
@@ -429,20 +508,7 @@ class PartyIdeasListView(TemplateView):
                 "active_filters": active_filters,
                 "current_category": current_category,
                 "current_category_children": current_category_children,
-                "type_tabs": [
-                    {
-                        "value": value,
-                        "label": label,
-                        "translation_key": {
-                            "all": "partyIdeas.all",
-                            "package": "partyIdeas.startingPackages",
-                            "experience": "partyIdeas.experiences",
-                        }[value],
-                        "active": idea_type == value,
-                        "query": _query_string(self.request.GET, type=value),
-                    }
-                    for value, label in PartyIdeasFilterForm.TYPE_CHOICES
-                ],
+                "type_tabs": type_tabs,
             }
         )
         return context

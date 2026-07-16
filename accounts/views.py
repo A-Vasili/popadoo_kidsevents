@@ -45,7 +45,8 @@ class SignUpView(FormView):
     def form_valid(self, form):
         user = form.save()
         login(self.request, user)
-        messages.success(self.request, "Your account is ready. Welcome to Popadoo.")
+        # The success message welcomes the new customer using the hosted company name without changing registration behaviour.
+        messages.success(self.request, "Your account is ready. Welcome to P Kids Events.")
         return super().form_valid(form)
 
 

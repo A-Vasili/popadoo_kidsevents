@@ -50,9 +50,10 @@ class SignUpForm(UserCreationForm):
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
     phone = forms.CharField(max_length=30, required=False)
+    # This consent wording identifies the hosted company while keeping the same privacy choice and validation.
     privacy_consent = forms.BooleanField(
         required=True,
-        label="I agree that Popadoo may store these details for account and booking use.",
+        label="I agree that P Kids Events may store these details for account and booking use.",
     )
 
     # This inner configuration tells Django how the surrounding record should be ordered,
