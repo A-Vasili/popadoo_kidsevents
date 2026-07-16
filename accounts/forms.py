@@ -3,6 +3,11 @@
 These forms validate customer-entered identity and contact details.  Role and
 permission changes stay in the operations services rather than public forms.
 """
+# This file defines the information people may submit through Popadoo forms and the checks applied
+# before it is accepted.
+# The forms keep browser input separate from trusted database values and return clear errors when
+# information is incomplete or unsafe.
+# Views use these forms so the same validation applies to normal pages and enhanced interactions.
 
 from __future__ import annotations
 
@@ -17,6 +22,9 @@ from .models import CustomerProfile
 User = get_user_model()
 
 
+# This function handles apply form control classes as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def apply_form_control_classes(form: forms.BaseForm) -> None:
     """Apply consistent classes and accessible error/help relationships."""
 
@@ -32,6 +40,9 @@ def apply_form_control_classes(form: forms.BaseForm) -> None:
             field.widget.attrs["aria-invalid"] = "true"
 
 
+# This form collects and validates the information needed for sign up form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class SignUpForm(UserCreationForm):
     """Public registration form; every new account starts as a normal customer."""
 
@@ -44,6 +55,8 @@ class SignUpForm(UserCreationForm):
         label="I agree that Popadoo may store these details for account and booking use.",
     )
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
@@ -57,6 +70,9 @@ class SignUpForm(UserCreationForm):
             "privacy_consent",
         )
 
+    # This method handles init for the surrounding sign up form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].help_text = "Used to sign in. It must be unique."
@@ -64,12 +80,16 @@ class SignUpForm(UserCreationForm):
         self.fields["phone"].widget.attrs["autocomplete"] = "tel"
         apply_form_control_classes(self)
 
+    # This validation prepares the submitted email and rejects values that would make the form
+    # misleading or unsafe.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account already uses this email address.")
         return email
 
+    # This save step preserves the model’s business rules whenever the record is written, not only
+    # when it comes from one particular form.
     @transaction.atomic
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -84,9 +104,15 @@ class SignUpForm(UserCreationForm):
         return user
 
 
+# This form collects and validates the information needed for popadoo authentication form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PopadooAuthenticationForm(AuthenticationForm):
     """Django authentication with project styling and safe generic errors."""
 
+    # This method handles init for the surrounding popadoo authentication form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].widget.attrs["autocomplete"] = "username"
@@ -94,6 +120,9 @@ class PopadooAuthenticationForm(AuthenticationForm):
         apply_form_control_classes(self)
 
 
+# This form collects and validates the information needed for profile form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ProfileForm(forms.ModelForm):
     """Edit the account identity and saved booking-autofill fields together."""
 
@@ -101,6 +130,8 @@ class ProfileForm(forms.ModelForm):
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = CustomerProfile
         fields = (
@@ -117,6 +148,9 @@ class ProfileForm(forms.ModelForm):
             "default_postal_code": forms.TextInput(attrs={"autocomplete": "postal-code"}),
         }
 
+    # This method handles init for the surrounding profile form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, user, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
@@ -126,12 +160,16 @@ class ProfileForm(forms.ModelForm):
             self.fields["email"].initial = user.email
         apply_form_control_classes(self)
 
+    # This validation prepares the submitted email and rejects values that would make the form
+    # misleading or unsafe.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exclude(pk=self.user.pk).exists():
             raise forms.ValidationError("Another account already uses this email address.")
         return email
 
+    # This save step preserves the model’s business rules whenever the record is written, not only
+    # when it comes from one particular form.
     @transaction.atomic
     def save(self, commit=True):
         profile = super().save(commit=False)

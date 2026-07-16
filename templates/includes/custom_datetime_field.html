@@ -1,3 +1,5 @@
+{# This reusable template presents custom datetime field wherever the shared site layout includes it. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% comment %}
 Reusable date-and-time control for worker availability.
   The two custom controls combine their values into the single hidden
@@ -87,6 +89,7 @@ Reusable date-and-time control for worker availability.
 
     <p class="form-help" id="{{ field.id_for_label }}_help">{{ field.help_text }}</p>
     <div class="form-error" id="{{ field.id_for_label }}_error" aria-live="polite">
+        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
         {% for error in field.errors %}<p role="alert">{{ error }}</p>{% endfor %}
     </div>
 </div>

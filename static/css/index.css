@@ -1,4 +1,9 @@
 /*
+ * This stylesheet shapes the home page’s introductory content, pathways, and promotional cards without affecting internal staff pages.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * This stylesheet controls the appearance of the index page or component.
  * The comments explain visual sections without changing the styles applied by the browser.
  */
@@ -112,6 +117,9 @@
     color: #ffffff;
 }
 
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .party-booking-button:hover, .party-booking-button:focus-visible {
     background: var(--color-button-background-hover);
     color: var(--color-button-text);
@@ -119,11 +127,17 @@
 }
 
 /* These reusable values define the colours and measurements used by the selected theme. */
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .hero-carousel-slide img {
     filter: brightness(0.78) saturate(0.9);
 }
 
 /* This animation describes how the visual effect changes over time. */
+/*
+ * This named motion supports a small visual transition; reduced-motion rules elsewhere keep the interface comfortable when animation is disabled.
+ */
 @keyframes hero-slide-cycle {
     /* These rules style this group of related page elements. */
     0%, 20% {
@@ -143,6 +157,9 @@ html[data-theme="dark"] .hero-carousel-slide img {
 }
 
 /* The following rules adjust the layout for this screen size. */
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 42rem) {
     /* These rules style the page introduction and its main heading. */
     .hero-carousel-overlay {

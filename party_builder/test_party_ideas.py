@@ -1,4 +1,9 @@
 """Public catalogue tests for discovery, privacy and builder hand-off."""
+# This file protects party packages, add-ons, checkout, reviews, recommendations, and customer
+# booking records with automated regression checks.
+# The scenarios describe what customers and staff should be allowed to do, and what must remain
+# inaccessible or unchanged.
+# Temporary test data is discarded after the checks, so real Popadoo records are not affected.
 
 from datetime import timedelta
 from decimal import Decimal
@@ -26,7 +31,12 @@ from .models import (
 from .services import CHECKOUT_SESSION_KEY
 
 
+# This group of tests protects the party ideas tests behaviour as one related customer or staff
+# workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class PartyIdeasTests(TestCase):
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.main_category = Category.objects.create(
@@ -82,6 +92,10 @@ class PartyIdeasTests(TestCase):
             is_active=False,
         )
 
+    # This test protects the business rule described by “list is public and contains both
+    # catalogue types”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_list_is_public_and_contains_both_catalogue_types(self):
         response = self.client.get(reverse("party_ideas:list"))
         self.assertEqual(response.status_code, 200)
@@ -89,12 +103,20 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, self.addon.name)
         self.assertNotContains(response, self.hidden_addon.name)
 
+    # This test protects the business rule described by “normal search finds name description and
+    # parent category”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_normal_search_finds_name_description_and_parent_category(self):
         for query in ("Magic Workshop", "simple magic", "Creative Activities"):
             with self.subTest(query=query):
                 response = self.client.get(reverse("party_ideas:list"), {"q": query})
                 self.assertContains(response, self.addon.name)
 
+    # This test protects the business rule described by “type price duration and featured
+    # filters”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_type_price_duration_and_featured_filters(self):
         response = self.client.get(
             reverse("party_ideas:list"),
@@ -103,6 +125,9 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, self.addon.name)
         self.assertNotContains(response, self.package.name)
 
+    # This test protects the business rule described by “parent category includes child items”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_parent_category_includes_child_items(self):
         response = self.client.get(
             reverse("party_ideas:category_detail", args=[self.main_category.slug])
@@ -114,6 +139,9 @@ class PartyIdeasTests(TestCase):
             reverse("party_ideas:category_detail", args=[self.child_category.slug]),
         )
 
+    # This test protects the business rule described by “child of inactive parent is not public”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_child_of_inactive_parent_is_not_public(self):
         inactive_parent = Category.objects.create(
             name="Inactive Parent Test", slug="inactive-parent-test", is_active=False
@@ -143,6 +171,10 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(detail_response.status_code, 404)
         self.assertEqual(action_response.status_code, 404)
 
+    # This test protects the business rule described by “stale session choices from hidden
+    # categories are removed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_stale_session_choices_from_hidden_categories_are_removed(self):
         hidden_parent = Category.objects.create(
             name="Session Hidden Parent", slug="session-hidden-parent", is_active=False
@@ -193,6 +225,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(package_response, hidden_addon.name)
         self.assertEqual(self.client.session[CHECKOUT_SESSION_KEY]["addon_ids"], [])
 
+    # This test protects the business rule described by “malformed and duplicate session addons
+    # are normalized”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_malformed_and_duplicate_session_addons_are_normalized(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
@@ -219,6 +255,9 @@ class PartyIdeasTests(TestCase):
         self.assertNotIn("guest_tier_id", state)
         self.assertEqual(state["addon_ids"], [self.addon.pk])
 
+    # This test protects the business rule described by “legacy tier session key is removed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_tier_session_key_is_removed(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
@@ -238,6 +277,10 @@ class PartyIdeasTests(TestCase):
             self.client.session[CHECKOUT_SESSION_KEY],
         )
 
+    # This test protects the business rule described by “package fallback preserves saved contact
+    # details”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_fallback_preserves_saved_contact_details(self):
         hidden_package = PartyPackage.objects.create(
             name="Archived Checkout Package",
@@ -280,6 +323,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotIn("guest_tier_id", state)
         self.assertNotIn("details_need_review", state)
 
+    # This test protects the business rule described by “malformed saved details return to the
+    # details form”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_malformed_saved_details_return_to_the_details_form(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
@@ -303,16 +350,27 @@ class PartyIdeasTests(TestCase):
             "details", self.client.session[CHECKOUT_SESSION_KEY]
         )
 
+    # This test protects the business rule described by “public cards include csrf tokens for
+    # session actions”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_public_cards_include_csrf_tokens_for_session_actions(self):
         response = self.client.get(reverse("party_ideas:list"))
         self.assertContains(response, 'name="csrfmiddlewaretoken"')
 
+    # This test protects the business rule described by “inactive detail records return 404”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_inactive_detail_records_return_404(self):
         response = self.client.get(
             reverse("party_ideas:addon_detail", args=[self.hidden_addon.slug])
         )
         self.assertEqual(response.status_code, 404)
 
+    # This test protects the business rule described by “package and experience detail pages
+    # load”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_and_experience_detail_pages_load(self):
         package_response = self.client.get(
             reverse("party_ideas:package_detail", args=[self.package.slug])
@@ -323,6 +381,9 @@ class PartyIdeasTests(TestCase):
         self.assertContains(package_response, "Use this as my starting package")
         self.assertContains(addon_response, "Add to my party")
 
+    # This test protects the business rule described by “session actions require post”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_session_actions_require_post(self):
         self.assertEqual(
             self.client.get(reverse("party_ideas:start_package", args=[self.package.slug])).status_code,
@@ -333,6 +394,10 @@ class PartyIdeasTests(TestCase):
             405,
         )
 
+    # This test protects the business rule described by “starting package sets package without a
+    # tier”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_starting_package_sets_package_without_a_tier(self):
         response = self.client.post(
             reverse("party_ideas:start_package", args=[self.package.slug])
@@ -342,6 +407,10 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(state["package_id"], self.package.pk)
         self.assertNotIn("guest_tier_id", state)
 
+    # This test protects the business rule described by “add experience is idempotent and
+    # preserves package”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_add_experience_is_idempotent_and_preserves_package(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "addon_ids": []}
@@ -353,6 +422,10 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(state["package_id"], self.package.pk)
         self.assertEqual(state["addon_ids"], [self.addon.pk])
 
+    # This test protects the business rule described by “builder uses session package and shows
+    # multiple packages”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_builder_uses_session_package_and_shows_multiple_packages(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {"package_id": self.package.pk, "addon_ids": []}
@@ -362,17 +435,28 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, f'value="{self.package.pk}"')
         self.assertEqual(response.context["package"], self.package)
 
+    # This test protects the business rule described by “package form has no guest tier field”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_form_has_no_guest_tier_field(self):
         form = PackageOptionsForm(package=self.package)
         self.assertNotIn("guest_tier", form.fields)
         self.assertIn("package", form.fields)
         self.assertIn("addons", form.fields)
 
+    # This test protects the business rule described by “package form requires an explicit public
+    # package”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_form_requires_an_explicit_public_package(self):
         form = PackageOptionsForm({"addons": []}, package=self.package)
         self.assertFalse(form.is_valid())
         self.assertIn("package", form.errors)
 
+    # This test protects the business rule described by “invalid builder submission keeps the
+    # submitted package visible”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_invalid_builder_submission_keeps_the_submitted_package_visible(self):
         response = self.client.post(
             reverse("party_builder:party_builder_package_options"),
@@ -390,6 +474,10 @@ class PartyIdeasTests(TestCase):
         )
         self.assertIn("addons", response.context["form"].errors)
 
+    # This test protects the business rule described by “private review comment is not exposed on
+    # public pages”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_private_review_comment_is_not_exposed_on_public_pages(self):
         user = get_user_model().objects.create_user(
             username="party-ideas-reviewer", email="reviewer@example.com", password="StrongPass123!"
@@ -424,6 +512,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(response, "This private sentence")
 
 
+    # This test protects the business rule described by “search is case insensitive and can find a
+    # slug”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_search_is_case_insensitive_and_can_find_a_slug(self):
         lowercase = self.client.get(reverse("party_ideas:list"), {"q": "magic workshop"})
         slug = self.client.get(
@@ -432,6 +524,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(lowercase, self.addon.name)
         self.assertContains(slug, self.addon.name)
 
+    # This test protects the business rule described by “category and subcategory filters keep the
+    # expected scope”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_category_and_subcategory_filters_keep_the_expected_scope(self):
         parent_response = self.client.get(
             reverse("party_ideas:list"), {"category": self.main_category.slug}
@@ -444,6 +540,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(child_response, self.package.name)
         self.assertContains(child_response, self.addon.name)
 
+    # This test protects the business rule described by “maximum price and invalid sort values are
+    # handled safely”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_maximum_price_and_invalid_sort_values_are_handled_safely(self):
         price_response = self.client.get(
             reverse("party_ideas:list"), {"max_price": "60"}
@@ -456,6 +556,10 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(invalid_sort_response.status_code, 200)
         self.assertIn("sort", invalid_sort_response.context["filter_form"].errors)
 
+    # This test protects the business rule described by “minimum rating filter uses completed
+    # verified feedback”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_minimum_rating_filter_uses_completed_verified_feedback(self):
         user = get_user_model().objects.create_user(
             username="rating-filter-reviewer",
@@ -490,6 +594,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, self.package.name)
         self.assertNotContains(response, self.addon.name)
 
+    # This test protects the business rule described by “package detail uses fixed package price
+    # and capacity”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_detail_uses_fixed_package_price_and_capacity(self):
         GuestPriceTier.objects.create(
             package=self.package,
@@ -508,6 +616,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(response, "Legacy 11–20 children")
         self.assertNotContains(response, "From €")
 
+    # This test protects the business rule described by “inactive catalogue records cannot be
+    # added through post actions”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_inactive_catalogue_records_cannot_be_added_through_post_actions(self):
         self.package.is_active = False
         self.package.save(update_fields=["is_active"])
@@ -520,6 +632,9 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(package_response.status_code, 404)
         self.assertEqual(addon_response.status_code, 404)
 
+    # This test protects the business rule described by “form rejects inactive experiences”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_form_rejects_inactive_experiences(self):
         form = PackageOptionsForm(
             {
@@ -531,6 +646,10 @@ class PartyIdeasTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("addons", form.errors)
 
+    # This test protects the business rule described by “switching package preserves existing
+    # contact details”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_switching_package_preserves_existing_contact_details(self):
         other_package = (
             PartyPackage.objects.filter(is_active=True)
@@ -558,6 +677,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotIn("details_need_review", state)
 
 
+    # This test protects the business rule described by “capacity filter returns packages large
+    # enough for the party”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_capacity_filter_returns_packages_large_enough_for_the_party(self):
         response = self.client.get(
             reverse("party_ideas:list"),
@@ -567,6 +690,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, "Popadoo Plus Party")
         self.assertContains(response, "Popadoo Festival Party")
 
+    # This test protects the business rule described by “capacity sorting orders packages by
+    # size”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_capacity_sorting_orders_packages_by_size(self):
         ascending = self.client.get(
             reverse("party_ideas:list"),
@@ -591,6 +718,10 @@ class PartyIdeasTests(TestCase):
             descending_names.index("Basic Popadoo Party"),
         )
 
+    # This test protects the business rule described by “seeded catalogue contains eight packages
+    # and twenty experiences”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_seeded_catalogue_contains_eight_packages_and_twenty_experiences(self):
         package_slugs = {
             "basic-popadoo-party",
@@ -647,6 +778,10 @@ class PartyIdeasTests(TestCase):
             1,
         )
 
+    # This test protects the business rule described by “catalogue seed is idempotent and
+    # preserves legacy booking snapshots”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_catalogue_seed_is_idempotent_and_preserves_legacy_booking_snapshots(self):
         user = get_user_model().objects.create_user(
             username="migration-history-user",
@@ -685,6 +820,9 @@ class PartyIdeasTests(TestCase):
         self.assertEqual(legacy.package_price, Decimal("205.00"))
         self.assertEqual(legacy.total_price, Decimal("205.00"))
 
+    # This test protects the business rule described by “pagination preserves filters”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_pagination_preserves_filters(self):
         for index in range(13):
             AddonExperience.objects.create(
@@ -704,6 +842,9 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, "q=Extra+Search")
         self.assertContains(response, "type=experience")
 
+    # This test protects the business rule described by “list query count does not grow per card”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_list_query_count_does_not_grow_per_card(self):
         for index in range(8):
             AddonExperience.objects.create(
@@ -719,6 +860,10 @@ class PartyIdeasTests(TestCase):
             self.assertEqual(response.status_code, 200)
         self.assertLessEqual(len(captured), 16)
 
+    # This test protects the business rule described by “package detail does not render legacy
+    # tiers”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_detail_does_not_render_legacy_tiers(self):
         GuestPriceTier.objects.create(
             package=self.package,
@@ -734,6 +879,10 @@ class PartyIdeasTests(TestCase):
         self.assertNotContains(response, "Archived tier")
         self.assertNotContains(response, "Guest-price tiers")
 
+    # This test protects the business rule described by “incomplete review does not change public
+    # rating”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_incomplete_review_does_not_change_public_rating(self):
         user = get_user_model().objects.create_user(
             username="incomplete-reviewer",
@@ -765,6 +914,10 @@ class PartyIdeasTests(TestCase):
         )
         self.assertContains(response, "No ratings yet")
 
+    # This test protects the business rule described by “completed addon rating contributes to
+    # public average”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_completed_addon_rating_contributes_to_public_average(self):
         user = get_user_model().objects.create_user(
             username="addon-reviewer", email="addon@example.com", password="StrongPass123!"
@@ -792,6 +945,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, "5.0")
         self.assertNotContains(response, "Private add-on note")
 
+    # This test protects the business rule described by “recommendation cards use aligned content
+    # and footer structure”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_recommendation_cards_use_aligned_content_and_footer_structure(self):
         response = self.client.get(
             reverse("party_builder:party_builder_package_options")
@@ -801,6 +958,10 @@ class PartyIdeasTests(TestCase):
         self.assertContains(response, 'class="recommendation-price"')
         self.assertContains(response, "recommendation-action")
 
+    # This test protects the business rule described by “recommendation css uses one canonical
+    # card layout”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_recommendation_css_uses_one_canonical_card_layout(self):
         from django.conf import settings
 
@@ -812,6 +973,10 @@ class PartyIdeasTests(TestCase):
         self.assertIn("flex: 1 1 auto", css)
         self.assertIn("min-height: 4.5rem", css)
 
+    # This test protects the business rule described by “javascript recommendations use the same
+    # alignment classes”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_javascript_recommendations_use_the_same_alignment_classes(self):
         from django.conf import settings
 
@@ -820,6 +985,10 @@ class PartyIdeasTests(TestCase):
         self.assertIn('footer.className = "recommendation-card-footer"', script)
         self.assertIn('price.className = "recommendation-price"', script)
         self.assertIn('button.className = "button button-outline recommendation-action"', script)
+    # This test protects the business rule described by “builder copy and catalogue cards have
+    # translation hooks”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_builder_copy_and_catalogue_cards_have_translation_hooks(self):
         response = self.client.get(
             reverse("party_builder:party_builder_package_options")
@@ -836,6 +1005,10 @@ class PartyIdeasTests(TestCase):
             f'data-catalogue-i18n="catalogue.addon.{self.addon.slug}.name"',
         )
 
+    # This test protects the business rule described by “greek builder catalogue translations are
+    # present”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_greek_builder_catalogue_translations_are_present(self):
         from django.conf import settings
 
@@ -850,6 +1023,10 @@ class PartyIdeasTests(TestCase):
             catalog,
         )
 
+    # This test protects the business rule described by “recommendation json contains translation
+    # metadata”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_recommendation_json_contains_translation_metadata(self):
         response = self.client.get(
             reverse("party_builder:party_builder_recommendations"),

@@ -1,11 +1,15 @@
 {% extends "base.html" %}
+{# This template presents review within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {% block title %}Review Your Party | Popadoo Kids Events{% endblock %}
 {% block meta_robots %}noindex,nofollow{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/reviews.css' %}">{% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="review-page" aria-labelledby="review-heading">
     <div class="container review-shell">
         <header class="review-heading">
@@ -18,6 +22,7 @@
             </p>
         </header>
 
+        {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
         <form
             method="post"
             action="{% url 'party_builder:party_builder_review_submit' booking.public_id %}"
@@ -36,6 +41,7 @@
                 <p id="id_package_score_help" class="visually-hidden">Choose one to five stars.</p>
                 <p>{{ booking.package.short_description }}</p>
                 <div class="star-rating" role="radiogroup" aria-label="Package score">
+                    {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                     {% for choice in review_form.package_score %}
                         <label class="star-choice">
                             {{ choice.tag }}

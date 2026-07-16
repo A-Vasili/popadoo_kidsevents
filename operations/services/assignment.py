@@ -3,6 +3,10 @@
 This module keeps conflict checks and status transitions out of views so every
 entry point applies the same safety rules and audit behaviour.
 """
+# This service manages which worker is responsible for a completed party booking.
+# It checks availability and role eligibility before changing an assignment, and preserves a clear
+# history for staff and management users.
+# Related database updates are treated as one action so an assignment is never left half-complete.
 
 from __future__ import annotations
 
@@ -26,6 +30,9 @@ from .scheduling import (
 )
 
 
+# This helper prepares find eligible workers for the page or service that called it.
+# It returns a consistent, permission-aware result so callers do not need to repeat the same
+# selection rules.
 def find_eligible_workers(party_build: PartyBuild, excluded_worker_ids=None):
     """Return active workers who are available, conflict-free, and below capacity."""
 
@@ -58,6 +65,9 @@ def find_eligible_workers(party_build: PartyBuild, excluded_worker_ids=None):
     return eligible
 
 
+# This function handles rank workers as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def rank_workers(workers, party_build: PartyBuild):
     """Use daily load, pending workload, and oldest recent assignment for fairness."""
 
@@ -80,6 +90,9 @@ def rank_workers(workers, party_build: PartyBuild):
     return [item[-1] for item in ranked]
 
 
+# This function handles offer assignment as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def offer_assignment(party_build_id: int) -> PartyAssignment | None:
     """Offer a completed booking to the best available worker or flag owner review."""
@@ -120,6 +133,9 @@ def offer_assignment(party_build_id: int) -> PartyAssignment | None:
     return assignment
 
 
+# This function handles accept assignment as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def accept_assignment(*, assignment_id: int, worker: WorkerProfile, actor=None) -> PartyAssignment:
     """Accept safely after rechecking conflicts under database row locks."""
@@ -162,6 +178,9 @@ def accept_assignment(*, assignment_id: int, worker: WorkerProfile, actor=None) 
     return assignment
 
 
+# This function handles decline assignment as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def decline_assignment(*, assignment_id: int, worker: WorkerProfile, reason: str, actor=None):
     """Preserve the decline and offer the booking to the next eligible worker."""
@@ -191,6 +210,9 @@ def decline_assignment(*, assignment_id: int, worker: WorkerProfile, reason: str
     return assignment
 
 
+# This business action carries out assign manually.
+# It validates the live records and permissions before changing anything, then keeps related
+# updates together so partial results are not left behind.
 @transaction.atomic
 def assign_manually(
     *,

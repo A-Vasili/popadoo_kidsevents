@@ -1,3 +1,8 @@
+/*
+ * This script coordinates shared public-page behaviour, including language choice, theme preference, responsive navigation, and common form enhancements.
+ * Django remains responsible for permissions, trusted prices, identities, and saved records; this file only improves the browser experience.
+ * The comments describe the interaction without changing any statement, selector, translation key, or request address.
+ */
 "use strict";
 
 /*
@@ -10,6 +15,7 @@
  * Handles language switching, theme toggling, responsive navigation, and the
  * booking-form workflow shared across the Popadoo pages.
  */
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
     /* Global configuration, storage keys, and frequently used DOM references. */
     const translations = window.popadooTranslations;
@@ -44,6 +50,7 @@
     let currentLanguage = "en";
 
     /* Safe localStorage wrappers keep preferences optional when browser storage is blocked. */
+    // This helper reads stored value so later screen updates use the same fallback rules.
     const getStoredValue = (key) => {
         try {
             return window.localStorage.getItem(key);
@@ -53,6 +60,7 @@
     };
 
     // This function handles the store value part of the browser interaction.
+    // This helper carries out store value for the visitor-facing interaction managed by this script.
     const storeValue = (key, value) => {
         try {
             window.localStorage.setItem(key, value);
@@ -62,21 +70,25 @@
     };
 
     /* Small validation helpers for language and package values. */
+    // This helper checks supported language before the interface continues with the related action.
     const isSupportedLanguage = (language) => supportedLanguages.includes(language);
 
     // This function handles the has select option part of the browser interaction.
+    // This helper checks select option before the interface continues with the related action.
     const hasSelectOption = (selectElement, value) => {
         return Boolean(selectElement)
             && Array.from(selectElement.options).some((option) => option.value === value);
     };
 
     // This function reads or prepares url language for the next step.
+    // This helper reads url language so later screen updates use the same fallback rules.
     const getUrlLanguage = () => {
         const language = new URLSearchParams(window.location.search).get("lang");
         return isSupportedLanguage(language) ? language : null;
     };
 
     // This function reads or prepares url package for the next step.
+    // This helper reads url package so later screen updates use the same fallback rules.
     const getUrlPackage = () => {
         const packageId = new URLSearchParams(window.location.search).get("package");
         return packageId && hasSelectOption(bookingPackage, packageId)
@@ -85,6 +97,7 @@
     };
 
     /* Translate a key in the active language, falling back to English and then the key. */
+    // This helper carries out translate for the visitor-facing interaction managed by this script.
     const translate = (key) => {
         return translations?.[currentLanguage]?.[key]
             ?? translations?.en?.[key]
@@ -92,6 +105,7 @@
     };
 
     /* Keep navigation toggle labels accurate for screen-reader users. */
+    // This helper updates navigation toggle label while keeping the underlying server-owned data unchanged.
     const updateNavigationToggleLabel = () => {
         if (!navigationToggle) {
             return;
@@ -105,6 +119,7 @@
     };
 
     /* Synchronize theme controls, status text, and browser theme-color metadata. */
+    // This helper updates theme control while keeping the underlying server-owned data unchanged.
     const updateThemeControl = () => {
         if (!themeToggle) {
             return;
@@ -127,6 +142,7 @@
     };
 
     // This function handles the should localize href part of the browser interaction.
+    // This helper checks localize href before the interface continues with the related action.
     const shouldLocalizeHref = (href) => {
         return href
             && !href.startsWith("#")
@@ -136,6 +152,7 @@
     };
 
     // This function reads or prepares relative localized href for the next step.
+    // This helper reads relative localized href so later screen updates use the same fallback rules.
     const getRelativeLocalizedHref = (url) => {
         return `${url.pathname}${url.search}${url.hash}`;
     };
@@ -146,6 +163,7 @@
      * parameter is added to internal links as a fallback for browsers that block
      * storage or users who open pages directly from a translated URL.
      */
+    // This helper updates internal language links while keeping the underlying server-owned data unchanged.
     const updateInternalLanguageLinks = () => {
         document.querySelectorAll("a[href]").forEach((link) => {
             const originalHref = link.getAttribute("href");
@@ -166,6 +184,7 @@
     };
 
     // This function refreshes current url language so the page matches the latest user choice.
+    // This helper updates current url language while keeping the underlying server-owned data unchanged.
     const updateCurrentUrlLanguage = () => {
         const url = new URL(window.location.href);
         url.searchParams.set("lang", currentLanguage);
@@ -173,12 +192,14 @@
     };
 
     /* Convert a Date to the yyyy-mm-dd format expected by date inputs. */
+    // This helper carries out format date for input for the visitor-facing interaction managed by this script.
     const formatDateForInput = (date) => {
         const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
         return localDate.toISOString().slice(0, 10);
     };
 
     // This function applies default booking values in one consistent place.
+    // This helper updates default booking values while keeping the underlying server-owned data unchanged.
     const setDefaultBookingValues = () => {
         /* A late-afternoon default makes the time field useful without forcing a choice. */
         if (bookingTime && !bookingTime.value) {
@@ -191,6 +212,7 @@
     };
 
     /* Read the custom package built on packages.html, ignoring malformed stored data. */
+    // This helper reads custom package so later screen updates use the same fallback rules.
     const getCustomPackage = () => {
         try {
             const customPackage = JSON.parse(getStoredValue(customPackageStorageKey) ?? "null");
@@ -203,6 +225,7 @@
     };
 
     /* Format custom-package characteristics as booking-form notes. */
+    // This helper carries out build custom package details for the visitor-facing interaction managed by this script.
     const buildCustomPackageDetails = (customPackage) => {
         const characteristics = customPackage?.characteristics
             ?.map((characteristic) => translate(characteristic.labelKey))
@@ -219,6 +242,7 @@
     };
 
     // This function applies custom package details to the current page.
+    // This helper updates custom package details while keeping the underlying server-owned data unchanged.
     const applyCustomPackageDetails = () => {
         if (!bookingDetails || bookingPackage?.value !== customPackageId) {
             return;
@@ -242,6 +266,7 @@
     };
 
     // This function applies selected package to booking form to the current page.
+    // This helper updates selected package to booking form while keeping the underlying server-owned data unchanged.
     const applySelectedPackageToBookingForm = () => {
         if (!bookingPackage) {
             return;
@@ -262,6 +287,7 @@
     };
 
     // This function handles the hide booking confirmation part of the browser interaction.
+    // This helper updates booking confirmation while keeping the underlying server-owned data unchanged.
     const hideBookingConfirmation = () => {
         if (bookingConfirmation && !bookingConfirmation.hidden) {
             bookingConfirmation.hidden = true;
@@ -269,6 +295,7 @@
     };
 
     // This function returns booking form to its starting state.
+    // This helper carries out clear booking form for the visitor-facing interaction managed by this script.
     const clearBookingForm = ({ preserveConfirmation = false } = {}) => {
         if (!bookingForm) {
             return;
@@ -298,6 +325,7 @@
     };
 
     /* Apply localized custom validity messages before native form validation runs. */
+    // This helper checks booking fields before the interface continues with the related action.
     const validateBookingFields = () => {
         const validators = [
             {
@@ -352,6 +380,7 @@
     };
 
     /* Apply translations to text, attributes, metadata, form errors, and page links. */
+    // This helper updates language while keeping the underlying server-owned data unchanged.
     const applyLanguage = (language) => {
         currentLanguage = isSupportedLanguage(language) ? language : "en";
         document.documentElement.lang = currentLanguage;
@@ -403,6 +432,7 @@
     };
 
     /* Responsive navigation helpers maintain aria-expanded and focus restoration. */
+    // This helper changes navigation while keeping keyboard focus and visible state in step for accessibility.
     const closeNavigation = (returnFocus = false) => {
         if (!navigationToggle || !navigationMenu) {
             return;
@@ -418,6 +448,7 @@
     };
 
     // This function changes whether navigation is visible.
+    // This helper changes navigation while keeping keyboard focus and visible state in step for accessibility.
     const openNavigation = () => {
         if (!navigationToggle || !navigationMenu) {
             return;
@@ -430,17 +461,20 @@
 
     /* Bind responsive navigation interactions only when the header is present. */
     if (navigationToggle && navigationMenu) {
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         navigationToggle.addEventListener("click", () => {
             const isOpen = navigationToggle.getAttribute("aria-expanded") === "true";
             isOpen ? closeNavigation() : openNavigation();
         });
 
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         navigationMenu.addEventListener("click", (event) => {
             if (event.target.closest("a") && navigationBreakpoint.matches) {
                 closeNavigation();
             }
         });
 
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         document.addEventListener("click", (event) => {
             if (
                 navigationBreakpoint.matches
@@ -451,12 +485,14 @@
             }
         });
 
+        // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" && navigationMenu.classList.contains("is-open")) {
                 closeNavigation(true);
             }
         });
 
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         navigationBreakpoint.addEventListener("change", (event) => {
             if (!event.matches) {
                 closeNavigation();
@@ -465,6 +501,7 @@
     }
 
     /* Event delegation keeps the language dropdown working even if the header is re-rendered. */
+    // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
     document.addEventListener("change", (event) => {
         if (event.target.matches("#language-selector")) {
             applyLanguage(event.target.value);
@@ -473,6 +510,7 @@
 
     /* Persist the visitor-selected theme and update accessible control text. */
     if (themeToggle) {
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         themeToggle.addEventListener("click", () => {
             const currentTheme = document.documentElement.getAttribute("data-theme");
             const nextTheme = currentTheme === "dark" ? "light" : "dark";
@@ -497,6 +535,7 @@
         applySelectedPackageToBookingForm();
         validateBookingFields();
 
+        // This listener responds to the submit event and keeps the enhanced interface aligned with the visitor’s action.
         bookingForm.addEventListener("submit", (event) => {
             event.preventDefault();
             event.stopPropagation();
@@ -522,6 +561,7 @@
             }
         });
 
+        // This listener responds to the input event and keeps the enhanced interface aligned with the visitor’s action.
         bookingForm.addEventListener("input", (event) => {
             if (event.target === bookingDetails) {
                 bookingDetails.dataset.autoCustomPackage = "false";
@@ -531,14 +571,17 @@
             hideBookingConfirmation();
         });
 
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         bookingPackage?.addEventListener("change", () => {
             if (bookingPackage.value === customPackageId) {
                 applyCustomPackageDetails();
             }
         });
 
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         bookingForm.addEventListener("change", validateBookingFields);
 
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         bookingClearButton?.addEventListener("click", () => {
             clearBookingForm();
             bookingForm.querySelector("input, select, textarea")?.focus();
@@ -560,7 +603,9 @@
  * The same controller works for guest and signed-in menus. It supports mouse,
  * touch, arrow keys, Home/End, Escape, and normal Tab navigation.
  */
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
+    // This helper carries out account menu for the visitor-facing interaction managed by this script.
     class AccountMenu {
         constructor(root) {
             this.root = root;
@@ -578,7 +623,9 @@
         }
 
         bindEvents() {
+            // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
             this.button.addEventListener("click", () => this.toggle());
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.button.addEventListener("keydown", (event) => {
                 if (["Enter", " ", "ArrowDown", "ArrowUp"].includes(event.key)) {
                     event.preventDefault();
@@ -588,10 +635,12 @@
                 }
             });
 
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.panel.addEventListener("keydown", (event) => {
                 this.handlePanelKeyboard(event);
             });
 
+            // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
             document.addEventListener("click", (event) => {
                 if (!this.root.contains(event.target)) {
                     this.close();

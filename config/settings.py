@@ -10,6 +10,11 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+# This file gathers the project-wide settings that control how Popadoo starts and behaves.
+# It connects the installed applications, templates, database, security rules, static files, and
+# environment-specific values.
+# Sensitive deployment choices remain outside page code so every feature uses one consistent
+# source of configuration.
 
 import os
 from pathlib import Path
@@ -20,6 +25,9 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+# This function handles env flag as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def env_flag(name: str, default: bool = False) -> bool:
     """Read a conventional true/false environment value."""
 
@@ -76,6 +84,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'party_builder.apps.PartyBuilderConfig',
     'operations.apps.OperationsConfig',
+    'communications.apps.CommunicationsConfig',
 ]
 
 # Middleware runs around each request to provide security, sessions, authentication, and other shared behaviour.
@@ -103,6 +112,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "accounts.permissions.role_context",
+                "communications.context_processors.chat_navigation_context",
             ],
         },
     },

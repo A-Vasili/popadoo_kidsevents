@@ -1,4 +1,9 @@
 /*
+ * This stylesheet defines the custom management shell, navigation, tables, forms, cards, and responsive behaviour used by authorised staff.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * Popadoo custom management panel
  *
  * The private interface uses the public site's colour tokens but has a compact,
@@ -34,6 +39,9 @@ html[data-theme="light"] {
     --management-shadow: 0 0.75rem 2rem rgba(43, 27, 53, 0.09);
 }
 
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] {
     --management-sidebar-bg: #17111e;
     --management-sidebar-text: #fffaff;
@@ -89,6 +97,9 @@ html[data-theme="dark"] {
     grid-template-columns: 17rem minmax(0, 1fr);
 }
 
+/*
+ * This section presents the management navigation while allowing the main working area to resize independently.
+ */
 .management-sidebar {
     position: sticky;
     top: 0;
@@ -127,6 +138,9 @@ html[data-theme="dark"] {
     font-size: 0.82rem;
 }
 
+/*
+ * This section arranges the shared navigation controls and adapts them when the available width changes.
+ */
 .management-navigation {
     display: grid;
     gap: 0.35rem;
@@ -165,6 +179,9 @@ html[data-theme="dark"] {
     min-width: 0;
 }
 
+/*
+ * This section aligns the management page title and actions so staff can understand the current area before acting.
+ */
 .management-topbar {
     position: sticky;
     top: 0;
@@ -225,6 +242,9 @@ html[data-theme="dark"] {
     gap: 0.6rem;
 }
 
+/*
+ * This section keeps labels, fields, help text, errors, and actions visually connected so forms remain understandable.
+ */
 .management-topbar-actions form {
     margin: 0;
 }
@@ -298,6 +318,9 @@ html[data-theme="dark"] {
 }
 
 .management-page-header,
+/*
+ * This section shapes the chat panel and keeps its header, history, and composer usable within the available screen height.
+ */
 .management-panel-header {
     display: flex;
     align-items: flex-start;
@@ -442,6 +465,9 @@ html[data-theme="dark"] .management-button.danger {
 .management-panel,
 .management-form-card,
 .management-confirm-card,
+/*
+ * This section presents summary figures as distinct cards that remain readable when the grid wraps.
+ */
 .management-empty-state {
     padding: clamp(1rem, 2.4vw, 1.5rem);
     color: var(--management-text);
@@ -481,6 +507,9 @@ html[data-theme="dark"] .management-button.danger {
 
 .management-compact-list small,
 .management-timeline span,
+/*
+ * This section keeps structured staff information scannable while providing a smaller-screen alternative where needed.
+ */
 .management-table-subtext {
     display: block;
     color: var(--management-muted);
@@ -547,6 +576,9 @@ html[data-theme="dark"] .management-button.danger {
 .management-body .form-select:focus,
 .management-body textarea:focus,
 .management-body input:focus,
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .management-body select:focus {
     color: var(--management-text);
     background-color: var(--management-panel-bg);
@@ -779,6 +811,9 @@ html[data-theme="dark"] .management-button.danger {
     align-items: start;
 }
 
+/*
+ * This section presents ratings and testimonial choices with visible labels, feedback, and keyboard focus.
+ */
 .management-image-preview {
     position: sticky;
     top: 6.5rem;
@@ -873,6 +908,9 @@ html[data-theme="dark"] .management-button.danger {
     display: none;
 }
 
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 76rem) {
     .management-shell {
         grid-template-columns: 1fr;

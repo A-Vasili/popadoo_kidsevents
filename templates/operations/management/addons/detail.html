@@ -1,6 +1,9 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the detail screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Add-on details</p><h2>{{ addon.name }}</h2><p>{{ addon.short_description }}</p></div>

@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents options within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {% block title %}Make Your Own Party | Popadoo Kids Events{% endblock %}
@@ -8,28 +10,33 @@
 {% block page_name %}partyBuilder{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/party-builder.css' %}?v=20260715-package-rows">{% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
 <header class="checkout-hero" aria-labelledby="party-options-heading">
     <div class="container narrow-content">
         <p class="section-kicker" data-i18n="builder.browseIntro">Browse for inspiration, then make it your own</p>
         <h1 id="party-options-heading" data-i18n="builder.makeOwn">Make your party your own</h1>
         <p class="lead" data-i18n="builder.optionsLead">Choose a package that fits your group, then add the experiences you love.</p>
+        {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
         {% include "party_builder/includes/progress.html" %}
     </div>
 </header>
 
+{# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
 <form class="checkout-form" id="party-options-form" method="post" action="{% url 'party_builder:party_builder_package_options' %}" data-party-options-form novalidate>
     {% csrf_token %}
     <div class="container checkout-layout">
         <div class="checkout-main-column">
             {% if form.non_field_errors %}<section class="form-alert" role="alert" aria-labelledby="options-error-heading"><h2 id="options-error-heading" data-i18n="builder.reviewSelections">Please review your selections</h2>{{ form.non_field_errors }}</section>{% endif %}
 
+            {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
             <section class="checkout-panel" aria-labelledby="base-package-heading">
                 <div class="panel-heading"><span class="panel-step" aria-hidden="true">1A</span><div><p class="section-kicker" data-i18n="builder.choosePackage">Choose a package that fits your party</p><h2 id="base-package-heading" data-i18n="builder.packageChoiceHeading">Package size and price in one choice</h2><p id="package-help" data-i18n="builder.packageChoiceHelp">Each package has a fixed capacity and price. Choose the closest fit, then personalise it with optional experiences.</p></div></div>
                 <fieldset class="choice-fieldset" aria-describedby="package-help id_package_error">
                     <legend class="visually-hidden" data-i18n="builder.packageChoiceLegend">Package and party size</legend>
                     {% if form.package.errors %}<ul class="field-errors" id="id_package_error" role="alert">{% for error in form.package.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% else %}<span class="visually-hidden" id="id_package_error"></span>{% endif %}
                     <div class="package-grid" data-package-grid>
+                        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                         {% for option in package_options %}{% include "party_builder/includes/package_card.html" with package=option selected_package_id=selected_package_id only %}{% empty %}<p data-i18n="builder.noPackages">No starting packages are currently available.</p>{% endfor %}
                     </div>
                 </fieldset>

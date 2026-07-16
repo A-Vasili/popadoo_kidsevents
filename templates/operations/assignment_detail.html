@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This worker template presents assignment detail for active staff using the operations area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 {% block title %}
     Assignment Details | Popadoo Kids Events
@@ -12,9 +14,12 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+        {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
         <section class="operations-page" aria-labelledby="assignment-heading">
         <div class="container">
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "operations/includes/nav.html" %}
             {# This article represents one self-contained item that can be understood on its own. #}
             <article class="operations-panel assignment-detail">
@@ -109,6 +114,7 @@
                         Optional experiences
                     </h2>
                     <ul>
+                        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                         {% for item in assignment.party_build.addon_items.all %}
                             <li>
                                 {{ item.addon.name }}
@@ -120,9 +126,11 @@
                         {% endfor %}
                     </ul>
                 </section>
+                {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
                 {% if assignment.status == 'pending' and assignment.worker.user == request.user %}
                     <div class="assignment-actions">
                         {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
+                        {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
                         <form method="post" action="{% url 'operations:operations_worker_assignment_accept' assignment.pk %}">
                             {% csrf_token %}
                             <button class="button" type="submit">

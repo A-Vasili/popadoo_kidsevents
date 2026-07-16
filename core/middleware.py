@@ -5,18 +5,29 @@ uses parameterised database queries through its ORM. This middleware adds a
 browser-side boundary that limits where scripts, styles, images, and forms may
 come from if unsafe content ever reaches a page.
 """
+# This file handles request-wide behaviour that must run consistently around many pages.
+# Middleware can inspect or adjust a request before a view runs and can shape the response
+# afterwards, avoiding repeated code in every page.
 
 from __future__ import annotations
 
 from django.conf import settings
 
 
+# This class groups the information and behaviour needed for popadoo security headers middleware.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class PopadooSecurityHeadersMiddleware:
     """Add a strict content policy without changing page content."""
 
+    # This method handles init for the surrounding popadoo security headers middleware.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, get_response):
         self.get_response = get_response
 
+    # This method handles call for the surrounding popadoo security headers middleware.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __call__(self, request):
         response = self.get_response(request)
 

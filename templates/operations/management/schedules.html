@@ -1,8 +1,12 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the schedules screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header"><div><p class="management-eyebrow">Staff operations</p><h2>Worker schedules</h2><p>Pending offers remain separate from accepted schedule entries. Filter by worker or date range to resolve conflicts.</p></div></div>
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form class="management-filter-toolbar" method="get">
         <label><span>Worker</span><select class="form-select" name="worker"><option value="">All workers</option>{% for worker in workers %}<option value="{{ worker.pk }}" {% if request.GET.worker == worker.pk|stringformat:'s' %}selected{% endif %}>{{ worker }}</option>{% endfor %}</select></label>
         <label><span>From</span><input class="form-control" type="date" name="date_from" value="{{ date_from }}"></label>

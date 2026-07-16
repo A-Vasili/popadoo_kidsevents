@@ -1,3 +1,5 @@
+{# This is the shared public-page frame. It provides document metadata, navigation, messages, the main content area, footer, and the progressively enhanced customer chat launcher. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {# This base template provides the shared page structure, metadata, header, footer, styles, and scripts used across the site. #}
@@ -45,6 +47,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/custom-controls.css' %}">
     <link rel="stylesheet" href="{% static 'css/navigation.css' %}">
+    <link rel="stylesheet" href="{% static 'css/chat.css' %}?v=1">
 
     {% block extra_css %}{% endblock %}
 </head>
@@ -58,24 +61,32 @@
         Skip to main content
     </a>
 
+    {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "includes/header.html" %}
 
         {% if messages %}
         <div class="site-messages" aria-live="polite">
+                        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                         {% for message in messages %}<p class="site-message {{ message.tags }}">{{ message }}</p>{% endfor %}
         </div>
     {% endif %}
 
     <main id="main-content">
+        {# This block supplies the page-specific content inside the shared site or management frame. #}
         {% block content %}{% endblock %}
     </main>
 
     {% include "includes/footer.html" %}
 
+    {% if show_customer_chat_launcher and not hide_chat_launcher %}
+        {% include "communications/includes/chat_launcher.html" %}
+    {% endif %}
+
     <script src="{% static 'vendor/bootstrap/bootstrap.js' %}" defer></script>
     <script src="{% static 'js/translations.js' %}?v=20260715-builder-el" defer></script>
     <script src="{% static 'js/custom-controls.js' %}" defer></script>
     <script src="{% static 'js/main.js' %}" defer></script>
+    {% if show_customer_chat_launcher and not hide_chat_launcher %}<script src="{% static 'js/chat-widget.js' %}?v=1" defer></script>{% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

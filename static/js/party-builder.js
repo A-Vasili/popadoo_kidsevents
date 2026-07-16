@@ -1,37 +1,50 @@
+/*
+ * This script updates the Make Your Own Party page as customers select packages and experiences, while all final prices and eligibility checks are recalculated by Django.
+ * Django remains responsible for permissions, trusted prices, identities, and saved records; this file only improves the browser experience.
+ * The comments describe the interaction without changing any statement, selector, translation key, or request address.
+ */
 "use strict";
 
 /*
  * The server remains responsible for validation and pricing. This file only
  * makes the builder faster to explore by updating visible choices and totals.
  */
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
     const currencyFormatter = new Intl.NumberFormat("en-IE", {
         style: "currency",
         currency: "EUR",
         minimumFractionDigits: 2,
     });
+    // This helper carries out to number for the visitor-facing interaction managed by this script.
     const toNumber = (value) => Number.parseFloat(value || "0") || 0;
+    // This helper carries out active language for the visitor-facing interaction managed by this script.
     const activeLanguage = () => document.documentElement.lang || "en";
+    // This helper carries out translate for the visitor-facing interaction managed by this script.
     const translate = (key) => {
         const language = activeLanguage();
         return window.popadooTranslations?.[language]?.[key]
             ?? window.popadooTranslations?.en?.[key]
             ?? key;
     };
+    // This helper carries out optional translation for the visitor-facing interaction managed by this script.
     const optionalTranslation = (key) => {
         const language = activeLanguage();
         return window.popadooTranslations?.[language]?.[key]
             ?? window.popadooTranslations?.en?.[key]
             ?? null;
     };
+    // This helper carries out interpolate for the visitor-facing interaction managed by this script.
     const interpolate = (template, values = {}) => Object.entries(values).reduce(
         (text, [name, value]) => text.replaceAll(`{${name}}`, String(value ?? "")),
         template
     );
+    // This helper carries out catalogue text for the visitor-facing interaction managed by this script.
     const catalogueText = (kind, slug, field, fallback = "") => {
         if (!slug) return fallback;
         return optionalTranslation(`catalogue.${kind}.${slug}.${field}`) ?? fallback;
     };
+    // This helper carries out recommendation reason text for the visitor-facing interaction managed by this script.
     const recommendationReasonText = (element) => {
         const key = element.dataset.recommendationReasonKey;
         if (!key) return element.textContent;
@@ -53,6 +66,7 @@
             count: element.dataset.recommendationCount,
         });
     };
+    // This helper updates builder translations while keeping the underlying server-owned data unchanged.
     const applyBuilderTranslations = (root = document) => {
         root.querySelectorAll("[data-catalogue-i18n]").forEach((element) => {
             if (!element.dataset.catalogueOriginal) {
@@ -88,9 +102,12 @@
         const liveStatus = document.querySelector("#builder-live-status");
         let recommendationController = null;
 
+        // This helper carries out selected package for the visitor-facing interaction managed by this script.
         const selectedPackage = () => packageRadios.find((radio) => radio.checked);
+        // This helper carries out selected package id for the visitor-facing interaction managed by this script.
         const selectedPackageId = () => selectedPackage()?.value || "";
 
+        // This helper updates choice labels while keeping the underlying server-owned data unchanged.
         const updateChoiceLabels = () => {
             packageRadios.forEach((radio) => {
                 const action = radio.closest(".package-option")?.querySelector("[data-package-action]");
@@ -110,8 +127,10 @@
             });
         };
 
+        // This helper updates cart while keeping the underlying server-owned data unchanged.
         const renderCart = ({ announce = false } = {}) => {
             const packageChoice = selectedPackage();
+            // This helper carries out selected addons for the visitor-facing interaction managed by this script.
             const selectedAddons = addonCheckboxes.filter((checkbox) => checkbox.checked);
             const packagePrice = toNumber(packageChoice?.dataset.packagePrice);
             const addonTotal = selectedAddons.reduce(
@@ -167,8 +186,11 @@
             }
         };
 
+        // This helper carries out add keyboard navigation for the visitor-facing interaction managed by this script.
         const addKeyboardNavigation = (container, controls) => {
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             container?.addEventListener("keydown", (event) => {
+                // This helper carries out visible controls for the visitor-facing interaction managed by this script.
                 const visibleControls = controls.filter((control) => !control.closest("[hidden]"));
                 const currentIndex = visibleControls.indexOf(event.target);
                 if (currentIndex === -1) return;
@@ -184,6 +206,7 @@
             });
         };
 
+        // This helper updates recommendations while keeping the underlying server-owned data unchanged.
         const renderRecommendations = (items) => {
             if (!recommendationList) return;
             recommendationList.replaceChildren();
@@ -225,6 +248,7 @@
                 button.className = "button button-outline recommendation-action";
                 button.dataset.i18n = "builder.selectExperience";
                 button.textContent = translate("builder.selectExperience");
+                // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
                 button.addEventListener("click", () => {
                     const checkbox = optionsForm.querySelector(`[data-addon-checkbox][value='${CSS.escape(String(item.id))}']`);
                     if (checkbox && !checkbox.checked) {
@@ -241,6 +265,7 @@
             });
         };
 
+        // This helper requests or submits recommendations and reports failure without pretending the server accepted the action.
         const refreshRecommendations = async () => {
             if (!recommendationSection || !recommendationList) return;
             recommendationController?.abort();
@@ -258,10 +283,12 @@
             }
         };
 
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         packageRadios.forEach((radio) => radio.addEventListener("change", () => {
             renderCart({ announce: true });
             refreshRecommendations();
         }));
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         addonCheckboxes.forEach((checkbox) => checkbox.addEventListener("change", () => {
             renderCart({ announce: true });
             refreshRecommendations();
@@ -272,6 +299,7 @@
         const filterStatus = optionsForm.querySelector("[data-addon-filter-status]");
         const filterEmpty = optionsForm.querySelector("[data-addon-filter-empty]");
         let activeCategory = "all";
+        // This helper updates addon filter while keeping the underlying server-owned data unchanged.
         const applyAddonFilter = () => {
             const term = (searchInput?.value || "").trim().toLocaleLowerCase();
             let visibleCount = 0;
@@ -294,7 +322,9 @@
             }
             if (filterEmpty) filterEmpty.hidden = visibleCount > 0;
         };
+        // This listener responds to the input event and keeps the enhanced interface aligned with the visitor’s action.
         searchInput?.addEventListener("input", applyAddonFilter);
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         filterButtons.forEach((button) => button.addEventListener("click", () => {
             activeCategory = button.dataset.addonFilter;
             filterButtons.forEach((item) => {
@@ -307,6 +337,7 @@
 
         addKeyboardNavigation(optionsForm.querySelector("[data-package-grid]"), packageRadios);
         addKeyboardNavigation(optionsForm.querySelector("[data-addon-grid]"), addonCheckboxes);
+        // This listener responds to the popadoo:language-applied event and keeps the enhanced interface aligned with the visitor’s action.
         document.addEventListener("popadoo:language-applied", () => {
             applyBuilderTranslations();
             applyAddonFilter();
@@ -318,12 +349,14 @@
     }
 
     const cardNumberInput = document.querySelector("[data-card-number]");
+    // This listener responds to the input event and keeps the enhanced interface aligned with the visitor’s action.
     cardNumberInput?.addEventListener("input", () => {
         const digits = cardNumberInput.value.replace(/\D/g, "").slice(0, 19);
         cardNumberInput.value = digits.replace(/(.{4})/g, "$1 ").trim();
     });
 
     const paymentForm = document.querySelector("[data-payment-form]");
+    // This listener responds to the submit event and keeps the enhanced interface aligned with the visitor’s action.
     paymentForm?.addEventListener("submit", () => {
         const submitButton = paymentForm.querySelector("[data-checkout-submit]");
         if (submitButton) {

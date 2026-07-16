@@ -4,6 +4,10 @@ The helpers live outside the models so packages, add-ons, and categories share
 one security policy. Uploaded names are replaced with generated names, which
 prevents user-controlled paths from reaching the media folder.
 """
+# This file contains reusable checks for values that must follow the same rule in several forms or
+# models.
+# Central validation prevents one screen from accepting information that another part of the site
+# would reject.
 
 from __future__ import annotations
 
@@ -18,6 +22,9 @@ ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 
+# This function handles safe image path as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _safe_image_path(folder: str, filename: str) -> str:
     """Return a generated media path while preserving only a safe extension."""
 
@@ -27,18 +34,30 @@ def _safe_image_path(folder: str, filename: str) -> str:
     return f"catalogue/{folder}/{uuid.uuid4().hex}{extension}"
 
 
+# This function handles category image upload to as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def category_image_upload_to(instance, filename: str) -> str:
     return _safe_image_path("categories", filename)
 
 
+# This function handles package image upload to as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def package_image_upload_to(instance, filename: str) -> str:
     return _safe_image_path("packages", filename)
 
 
+# This function handles addon image upload to as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def addon_image_upload_to(instance, filename: str) -> str:
     return _safe_image_path("addons", filename)
 
 
+# This safeguard verifies catalogue image before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 def validate_catalogue_image(uploaded_file) -> None:
     """Accept only genuine JPEG, PNG, or WebP images no larger than 5 MB.
 

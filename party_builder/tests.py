@@ -1,4 +1,9 @@
 """Checkout tests for capacity-based packages and simulated payment."""
+# This file protects party packages, add-ons, checkout, reviews, recommendations, and customer
+# booking records with automated regression checks.
+# The scenarios describe what customers and staff should be allowed to do, and what must remain
+# inaccessible or unchanged.
+# Temporary test data is discarded after the checks, so real Popadoo records are not affected.
 
 from datetime import timedelta
 from decimal import Decimal
@@ -12,13 +17,21 @@ from .models import AddonExperience, PartyBuild, PartyPackage
 from .services import CHECKOUT_SESSION_KEY, calculate_party_quote
 
 
+# This group of tests protects the party checkout tests behaviour as one related customer or staff
+# workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class PartyCheckoutTests(TestCase):
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
         cls.larger_package = PartyPackage.objects.get(slug="popadoo-plus-party")
         cls.addon = AddonExperience.objects.get(slug="face-painting")
 
+    # This method handles select options for the surrounding party checkout tests.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def select_options(self, package=None, addons=None):
         selected_package = package or self.package
         return self.client.post(
@@ -29,6 +42,9 @@ class PartyCheckoutTests(TestCase):
             },
         )
 
+    # This business action carries out submit details.
+    # It validates the live records and permissions before changing anything, then keeps related
+    # updates together so partial results are not left behind.
     def submit_details(self):
         return self.client.post(
             reverse("party_builder:party_builder_customer_details"),
@@ -46,6 +62,9 @@ class PartyCheckoutTests(TestCase):
             },
         )
 
+    # This test protects the business rule described by “descriptive namespaced urls”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_descriptive_namespaced_urls(self):
         self.assertEqual(
             reverse("party_builder:party_builder_package_options"),
@@ -60,6 +79,10 @@ class PartyCheckoutTests(TestCase):
             "/party-builder/checkout/",
         )
 
+    # This test protects the business rule described by “options page contains capacity packages
+    # addons and status”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_options_page_contains_capacity_packages_addons_and_status(self):
         response = self.client.get(
             reverse("party_builder:party_builder_package_options")
@@ -71,10 +94,18 @@ class PartyCheckoutTests(TestCase):
         self.assertContains(response, 'aria-live="polite"')
         self.assertNotContains(response, 'name="guest_tier"')
 
+    # This test protects the business rule described by “forms no longer collect a tier or exact
+    # child count”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_forms_no_longer_collect_a_tier_or_exact_child_count(self):
         self.assertNotIn("guest_tier", PackageOptionsForm().fields)
         self.assertNotIn("guest_count", PartyDetailsForm().fields)
 
+    # This test protects the business rule described by “quote uses package and database addon
+    # prices”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_quote_uses_package_and_database_addon_prices(self):
         quote = calculate_party_quote(self.larger_package, [self.addon])
         self.assertEqual(quote.package_price, Decimal("255.00"))
@@ -84,6 +115,10 @@ class PartyCheckoutTests(TestCase):
             Decimal("255.00") + self.addon.price,
         )
 
+    # This test protects the business rule described by “later steps redirect when cart is
+    # missing”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_later_steps_redirect_when_cart_is_missing(self):
         details_response = self.client.get(
             reverse("party_builder:party_builder_customer_details")
@@ -95,6 +130,9 @@ class PartyCheckoutTests(TestCase):
         self.assertRedirects(details_response, target)
         self.assertRedirects(checkout_response, target)
 
+    # This test protects the business rule described by “legacy tier session key is removed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_tier_session_key_is_removed(self):
         session = self.client.session
         session[CHECKOUT_SESSION_KEY] = {
@@ -114,6 +152,10 @@ class PartyCheckoutTests(TestCase):
             self.client.session[CHECKOUT_SESSION_KEY],
         )
 
+    # This test protects the business rule described by “complete checkout saves capacity snapshot
+    # and safe card metadata”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_complete_checkout_saves_capacity_snapshot_and_safe_card_metadata(self):
         self.assertRedirects(
             self.select_options(package=self.larger_package, addons=[self.addon]),
@@ -151,6 +193,9 @@ class PartyCheckoutTests(TestCase):
         self.assertNotIn("4242424242424242", str(build.__dict__))
         self.assertFalse(hasattr(build, "security_code"))
 
+    # This test protects the business rule described by “invalid test card is rejected”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_invalid_test_card_is_rejected(self):
         self.select_options()
         self.submit_details()
@@ -173,6 +218,10 @@ class PartyCheckoutTests(TestCase):
         )
         self.assertFalse(PartyBuild.objects.exists())
 
+    # This test protects the business rule described by “details step uses custom date and time
+    # controls”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_details_step_uses_custom_date_and_time_controls(self):
         self.select_options()
         response = self.client.get(

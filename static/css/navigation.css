@@ -1,3 +1,8 @@
+/*
+ * This stylesheet controls the shared public header, account menu, language and theme controls, and responsive primary navigation.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
 /* Shared public header, utility stripe, and account navigation. */
 
 /*
@@ -38,12 +43,18 @@
 }
 
 /* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .account-menu-button:focus-visible {
     outline: .2rem solid #7b2869;
     outline-offset: .2rem;
 }
 
 /* These rules present each item as a clear, reusable content card. */
+/*
+ * This section shapes the chat panel and keeps its header, history, and composer usable within the available screen height.
+ */
 .account-menu-panel {
     position: absolute;
     z-index: 40;
@@ -106,6 +117,9 @@
 }
 
 /* The following rules adjust the layout for this screen size. */
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 72rem) {
     .account-menu-panel {
         position: static;
@@ -137,6 +151,9 @@
 html[data-theme="dark"] .account-menu-panel a:hover,
 html[data-theme="dark"] .account-menu-panel button:hover,
 html[data-theme="dark"] .account-menu-panel a:focus-visible,
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .account-menu-panel button:focus-visible {
     background: var(--color-primary-soft);
     color: var(--color-primary-strong);
@@ -350,6 +367,9 @@ html[data-theme="dark"] .header-utility-stripe {
     gap: 0.15rem;
 }
 
+/*
+ * This section keeps labels, fields, help text, errors, and actions visually connected so forms remain understandable.
+ */
 .header-account-signout-form {
     margin: 0.35rem 0 0;
     padding-top: 0.35rem;
@@ -366,6 +386,9 @@ html[data-theme="dark"] .header-account-signout-form button {
 }
 
 /* The lower row uses the existing navigation layout and tokens. */
+/*
+ * This section arranges the shared navigation controls and adapts them when the available width changes.
+ */
 .header-main-row .site-navigation {
     min-height: 4.9rem;
 }

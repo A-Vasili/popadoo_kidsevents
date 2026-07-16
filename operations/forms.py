@@ -3,6 +3,11 @@
 Field-level validation and accessible widget configuration live here. Business
 transactions such as role changes, archiving, and assignments stay in services.
 """
+# This file defines the information people may submit through Popadoo forms and the checks applied
+# before it is accepted.
+# The forms keep browser input separate from trusted database values and return clear errors when
+# information is incomplete or unsafe.
+# Views use these forms so the same validation applies to normal pages and enhanced interactions.
 
 from __future__ import annotations
 
@@ -27,6 +32,9 @@ from .models import WorkerAvailability
 User = get_user_model()
 
 
+# This function handles apply form accessibility as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def apply_form_accessibility(form: forms.BaseForm) -> None:
     """Apply consistent classes and ARIA relationships to every form control."""
 
@@ -51,9 +59,14 @@ def apply_form_accessibility(form: forms.BaseForm) -> None:
             widget.attrs["aria-describedby"] = " ".join(described_by)
 
 
+# This class groups the information and behaviour needed for accessible fields mixin.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class AccessibleFieldsMixin:
     """Add ARIA error state after Django has validated the bound form."""
 
+    # This method handles full clean for the surrounding accessible fields mixin.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def full_clean(self):
         super().full_clean()
         for name in self.errors:
@@ -61,13 +74,25 @@ class AccessibleFieldsMixin:
                 self.fields[name].widget.attrs["aria-invalid"] = "true"
 
 
+# This form collects and validates the information needed for accessible model form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class AccessibleModelForm(AccessibleFieldsMixin, forms.ModelForm):
+    # This method handles init for the surrounding accessible model form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_form_accessibility(self)
 
 
+# This form collects and validates the information needed for accessible form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class AccessibleForm(AccessibleFieldsMixin, forms.Form):
+    # This method handles init for the surrounding accessible form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         apply_form_accessibility(self)
@@ -75,6 +100,9 @@ class AccessibleForm(AccessibleFieldsMixin, forms.Form):
 
 # Worker portal forms -------------------------------------------------------
 
+# This form collects and validates the information needed for owner worker creation form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
     """Create a worker through the protected owner workflow."""
 
@@ -83,6 +111,8 @@ class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
     email = forms.EmailField(required=True)
     phone = forms.CharField(max_length=30, required=False, validators=[phone_validator])
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
@@ -90,6 +120,9 @@ class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
             "password1", "password2",
         )
 
+    # This method handles init for the surrounding owner worker creation form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].help_text = "This is the name the worker will use to sign in."
@@ -102,12 +135,16 @@ class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
         self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
         apply_form_accessibility(self)
 
+    # This validation prepares the submitted email and rejects values that would make the form
+    # misleading or unsafe.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account already uses this email address.")
         return email
 
+    # This save step preserves the model’s business rules whenever the record is written, not only
+    # when it comes from one particular form.
     @transaction.atomic
     def save(self, *, actor, commit=True):
         from .services.users import promote_to_worker
@@ -130,13 +167,23 @@ class OwnerWorkerCreationForm(AccessibleFieldsMixin, UserCreationForm):
         return user
 
 
+# This form collects and validates the information needed for worker profile form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class WorkerProfileForm(AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = WorkerProfile
         fields = ("display_name", "phone")
 
 
+# This form collects and validates the information needed for worker availability form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class WorkerAvailabilityForm(AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = WorkerAvailability
         fields = ("start_at", "end_at", "availability_type", "notes")
@@ -155,6 +202,9 @@ class WorkerAvailabilityForm(AccessibleModelForm):
 
 # Assignment forms ---------------------------------------------------------
 
+# This form collects and validates the information needed for decline assignment form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class DeclineAssignmentForm(AccessibleForm):
     reason = forms.CharField(
         max_length=500,
@@ -164,6 +214,9 @@ class DeclineAssignmentForm(AccessibleForm):
     )
 
 
+# This form collects and validates the information needed for manual assignment form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ManualAssignmentForm(AccessibleForm):
     worker = forms.ModelChoiceField(queryset=WorkerProfile.objects.none())
     already_agreed = forms.BooleanField(
@@ -178,6 +231,9 @@ class ManualAssignmentForm(AccessibleForm):
         widget=forms.Textarea(attrs={"rows": 3}),
     )
 
+    # This method handles init for the surrounding manual assignment form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["worker"].queryset = WorkerProfile.objects.filter(
@@ -189,6 +245,8 @@ class ManualAssignmentForm(AccessibleForm):
 
 # Catalogue management forms ---------------------------------------------
 
+# This class groups the information and behaviour needed for catalogue image mixin.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class CatalogueImageMixin:
     remove_image = forms.BooleanField(
         required=False,
@@ -196,6 +254,8 @@ class CatalogueImageMixin:
         help_text="The existing file is removed only after the record saves successfully.",
     )
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned = super().clean()
         image = cleaned.get("image") or getattr(self.instance, "image", None)
@@ -208,7 +268,12 @@ class CatalogueImageMixin:
         return cleaned
 
 
+# This form collects and validates the information needed for category form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class CategoryForm(CatalogueImageMixin, AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = Category
         fields = (
@@ -217,6 +282,9 @@ class CategoryForm(CatalogueImageMixin, AccessibleModelForm):
         )
         widgets = {"description": forms.Textarea(attrs={"rows": 4})}
 
+    # This method handles init for the surrounding category form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         queryset = Category.objects.order_by("display_order", "name")
@@ -241,6 +309,8 @@ class CategoryForm(CatalogueImageMixin, AccessibleModelForm):
         self.fields["parent"].queryset = queryset.distinct()
         self.fields["parent"].empty_label = "Main category (no parent)"
 
+    # This validation prepares the submitted name and rejects values that would make the form
+    # misleading or unsafe.
     def clean_name(self) -> str:
         name = self.cleaned_data["name"].strip()
         if not name:
@@ -248,7 +318,12 @@ class CategoryForm(CatalogueImageMixin, AccessibleModelForm):
         return name
 
 
+# This form collects and validates the information needed for package form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PackageForm(CatalogueImageMixin, AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = PartyPackage
         fields = (
@@ -258,6 +333,9 @@ class PackageForm(CatalogueImageMixin, AccessibleModelForm):
         )
         widgets = {"included_experiences": forms.Textarea(attrs={"rows": 6})}
 
+    # This method handles init for the surrounding package form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         category_filter = Q(is_active=True)
@@ -284,7 +362,12 @@ class PackageForm(CatalogueImageMixin, AccessibleModelForm):
         )
 
 
+# This form collects and validates the information needed for guest price tier form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class GuestPriceTierForm(AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = GuestPriceTier
         fields = (
@@ -292,6 +375,9 @@ class GuestPriceTierForm(AccessibleModelForm):
             "is_default", "is_active", "display_order",
         )
 
+    # This method handles init for the surrounding guest price tier form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, package=None, **kwargs):
         super().__init__(*args, **kwargs)
         package_filter = Q(is_active=True)
@@ -305,6 +391,8 @@ class GuestPriceTierForm(AccessibleModelForm):
             self.fields["package"].disabled = True
             self.instance.package = package
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned = super().clean()
         package = cleaned.get("package") or self.instance.package
@@ -331,7 +419,12 @@ class GuestPriceTierForm(AccessibleModelForm):
         return cleaned
 
 
+# This form collects and validates the information needed for addon form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class AddonForm(CatalogueImageMixin, AccessibleModelForm):
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = AddonExperience
         fields = (
@@ -340,6 +433,9 @@ class AddonForm(CatalogueImageMixin, AccessibleModelForm):
             "display_order", "image", "image_alt_text",
         )
 
+    # This method handles init for the surrounding addon form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         category_filter = Q(is_active=True)
@@ -356,6 +452,9 @@ class AddonForm(CatalogueImageMixin, AccessibleModelForm):
 
 # User management forms ----------------------------------------------------
 
+# This form collects and validates the information needed for owner creation form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
     """Collect a new Owner's sign-in details for the Administrator-only flow."""
 
@@ -363,6 +462,8 @@ class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
     last_name = forms.CharField(max_length=150, required=True)
     email = forms.EmailField(required=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta(UserCreationForm.Meta):
         model = User
         fields = (
@@ -370,6 +471,9 @@ class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
             "password1", "password2",
         )
 
+    # This method handles init for the surrounding owner creation form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["username"].help_text = "This is the name the Owner will use to sign in."
@@ -381,12 +485,16 @@ class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
         self.fields["password2"].widget.attrs["autocomplete"] = "new-password"
         apply_form_accessibility(self)
 
+    # This validation prepares the submitted email and rejects values that would make the form
+    # misleading or unsafe.
     def clean_email(self) -> str:
         email = self.cleaned_data["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError("An account already uses this email address.")
         return email
 
+    # This save step preserves the model’s business rules whenever the record is written, not only
+    # when it comes from one particular form.
     def save(self, *, actor, commit=True):
         if not commit:
             raise ValueError("Owner accounts must be saved in one protected transaction.")
@@ -402,9 +510,14 @@ class OwnerCreationForm(AccessibleFieldsMixin, UserCreationForm):
         )
 
 
+# This form collects and validates the information needed for managed worker form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ManagedWorkerForm(AccessibleModelForm):
     """Edit operational worker settings without touching customer profile data."""
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         model = WorkerProfile
         fields = ("display_name", "phone", "max_daily_parties", "notes_for_owner")
@@ -413,6 +526,9 @@ class ManagedWorkerForm(AccessibleModelForm):
 
 # Booking management forms -------------------------------------------------
 
+# This form collects and validates the information needed for booking status form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class BookingStatusForm(AccessibleForm):
     status = forms.ChoiceField(choices=PartyBuild.Status.choices)
     note = forms.CharField(
@@ -422,6 +538,9 @@ class BookingStatusForm(AccessibleForm):
         help_text="Optional internal reason recorded in the audit history.",
     )
 
+    # This method handles init for the surrounding booking status form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, booking: PartyBuild, **kwargs):
         self.booking = booking
         super().__init__(*args, **kwargs)
@@ -439,6 +558,8 @@ class BookingStatusForm(AccessibleForm):
         ]
         apply_form_accessibility(self)
 
+    # This validation prepares the submitted status and rejects values that would make the form
+    # misleading or unsafe.
     def clean_status(self) -> str:
         status = self.cleaned_data["status"]
         valid_values = {value for value, _label in self.fields["status"].choices}
@@ -447,6 +568,9 @@ class BookingStatusForm(AccessibleForm):
         return status
 
 
+# This form collects and validates the information needed for manual review form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ManualReviewForm(AccessibleForm):
     reason = forms.CharField(
         max_length=500,
@@ -457,6 +581,9 @@ class ManualReviewForm(AccessibleForm):
 
 # Confirmation forms -------------------------------------------------------
 
+# This form collects and validates the information needed for action confirmation form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ActionConfirmationForm(AccessibleForm):
     confirmation = forms.BooleanField(
         required=True,

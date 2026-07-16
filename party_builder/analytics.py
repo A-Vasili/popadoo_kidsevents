@@ -3,6 +3,10 @@
 This module derives statistics from completed booking records. Nothing here is
 stored permanently, so badges and suggestions always reflect current data.
 """
+# This file turns stored business records into summary figures used by the management analytics
+# screens.
+# It keeps reporting calculations separate from page rendering and avoids exposing private review
+# or customer details unnecessarily.
 
 from __future__ import annotations
 
@@ -34,6 +38,9 @@ PUBLIC_ADDON_CATEGORY_FILTER = Q(category__is_active=True) & (
 )
 
 
+# This helper prepares resolve period for the page or service that called it.
+# It returns a consistent, permission-aware result so callers do not need to repeat the same
+# selection rules.
 def resolve_period(value: str | None) -> tuple[str, int | None]:
     """Return a validated reporting-period key and its number of days."""
 
@@ -41,10 +48,16 @@ def resolve_period(value: str | None) -> tuple[str, int | None]:
     return key, REPORTING_PERIODS[key]
 
 
+# This function handles period start as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _period_start(days: int | None):
     return None if days is None else timezone.localdate() - timedelta(days=days)
 
 
+# This function handles completed filter as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _completed_filter(prefix: str, days: int | None) -> Q:
     query = Q(**{f"{prefix}status": PartyBuild.Status.COMPLETED})
     start = _period_start(days)
@@ -53,6 +66,9 @@ def _completed_filter(prefix: str, days: int | None) -> Q:
     return query
 
 
+# This function handles addon popularity as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def addon_popularity(*, days: int | None = 365) -> dict:
     """Return active add-on usage and verified rating statistics.
 
@@ -137,6 +153,9 @@ def addon_popularity(*, days: int | None = 365) -> dict:
     }
 
 
+# This function handles completed addon sets as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _completed_addon_sets(*, days: int | None, package_id: int | None = None):
     queryset = PartyBuildAddon.objects.filter(
         build__status=PartyBuild.Status.COMPLETED,
@@ -158,6 +177,9 @@ def _completed_addon_sets(*, days: int | None, package_id: int | None = None):
     return booking_addons
 
 
+# This function handles common addon pairs as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def common_addon_pairs(
     *,
     days: int | None = 365,
@@ -224,6 +246,9 @@ def common_addon_pairs(
     return rows[:limit]
 
 
+# This function handles fallback recommendations as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _fallback_recommendations(
     *,
     selected: list[AddonExperience],
@@ -260,6 +285,9 @@ def _fallback_recommendations(
     ]
 
 
+# This function handles recommend addons as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def recommend_addons(
     *,
     selected_ids: Iterable[int],
@@ -387,6 +415,9 @@ def recommend_addons(
     return _fallback_recommendations(selected=[], excluded_ids=set(), limit=limit)
 
 
+# This function handles review score updates as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def review_score_updates(*, package_id: int, addon_ids: Iterable[int]) -> dict:
     """Return current average/count values for an AJAX success response."""
 
@@ -423,6 +454,9 @@ def review_score_updates(*, package_id: int, addon_ids: Iterable[int]) -> dict:
     }
 
 
+# This function handles analytics report as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def analytics_report(*, days: int | None = 365) -> dict:
     """Build the owner analytics report without exposing payment information."""
 

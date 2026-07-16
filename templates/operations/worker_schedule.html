@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This worker template presents worker schedule for active staff using the operations area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 {% block title %}
     My Schedule | Popadoo Kids Events
@@ -12,9 +14,12 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+    {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
     <section class="operations-page" aria-labelledby="schedule-heading">
         <div class="container">
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "operations/includes/nav.html" %}
             <header class="operations-heading">
                 <h1 id="schedule-heading">
@@ -25,6 +30,7 @@
                 </p>
             </header>
             <div class="operations-list">
+                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                 {% for assignment in assignments %}
                     <article class="operations-row">
                         <div>

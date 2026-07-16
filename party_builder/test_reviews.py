@@ -1,3 +1,8 @@
+# This file protects party packages, add-ons, checkout, reviews, recommendations, and customer
+# booking records with automated regression checks.
+# The scenarios describe what customers and staff should be allowed to do, and what must remain
+# inaccessible or unchanged.
+# Temporary test data is discarded after the checks, so real Popadoo records are not affected.
 from __future__ import annotations
 
 from datetime import timedelta
@@ -31,7 +36,11 @@ from .review_services import REVIEW_AUTH_SESSION_KEY
 User = get_user_model()
 
 
+# This class groups the information and behaviour needed for review feature test mixin.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class ReviewFeatureTestMixin:
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user("reviewer", password="SafePass!234")
@@ -42,6 +51,9 @@ class ReviewFeatureTestMixin:
         cls.tier = GuestPriceTier.objects.filter(package=cls.package, is_active=True).first()
         cls.addons = list(AddonExperience.objects.filter(is_active=True)[:3])
 
+    # This method handles make booking for the surrounding review feature test mixin.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def make_booking(self, *, customer=None, status=PartyBuild.Status.COMPLETED, addons=None, event_date=None):
         booking = PartyBuild.objects.create(
             customer=customer,
@@ -67,13 +79,24 @@ class ReviewFeatureTestMixin:
         return booking
 
 
+# This group of tests protects the review model and status tests behaviour as one related customer
+# or staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
+    # This test protects the business rule described by “new bookings receive human readable
+    # unique codes”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_new_bookings_receive_human_readable_unique_codes(self):
         first = self.make_booking(customer=self.user)
         second = self.make_booking(customer=self.user)
         self.assertRegex(first.review_code, r"^POP-[A-HJ-KM-NP-Z2-9]{4}-[A-HJ-KM-NP-Z2-9]{4}$")
         self.assertNotEqual(first.review_code, second.review_code)
 
+    # This test protects the business rule described by “review code is normalized before
+    # storage”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_review_code_is_normalized_before_storage(self):
         booking = self.make_booking(customer=self.user)
         compact = booking.review_code.replace("-", " ").lower()
@@ -82,6 +105,9 @@ class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
         booking.refresh_from_db()
         self.assertRegex(booking.review_code, r"^POP-[A-Z2-9]{4}-[A-Z2-9]{4}$")
 
+    # This test protects the business rule described by “review score constraints and uniqueness”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_review_score_constraints_and_uniqueness(self):
         booking = self.make_booking(customer=self.user, addons=[self.addons[0]])
         review = PartyReview(booking=booking, reviewer=self.user, package_score=0)
@@ -98,6 +124,10 @@ class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
         with self.assertRaises(IntegrityError), transaction.atomic():
             AddonRating.objects.create(review=valid, build_addon=item, score=4)
 
+    # This test protects the business rule described by “confirmed booking can be completed on or
+    # after event date”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_confirmed_booking_can_be_completed_on_or_after_event_date(self):
         booking = self.make_booking(customer=self.user, status=PartyBuild.Status.CONFIRMED)
         changed = change_booking_status(
@@ -109,6 +139,10 @@ class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
         self.assertIsNotNone(changed.completed_at)
         self.assertTrue(AuditEvent.objects.filter(event_type="booking_status_changed").exists())
 
+    # This test protects the business rule described by “future booking status form does not offer
+    # completed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_future_booking_status_form_does_not_offer_completed(self):
         booking = self.make_booking(
             customer=self.user,
@@ -118,12 +152,19 @@ class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
         choices = {value for value, _label in BookingStatusForm(booking=booking).fields["status"].choices}
         self.assertNotIn(PartyBuild.Status.COMPLETED, choices)
 
+    # This test protects the business rule described by “non owner cannot change booking status”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_non_owner_cannot_change_booking_status(self):
         booking = self.make_booking(customer=self.user, status=PartyBuild.Status.CONFIRMED)
         from django.core.exceptions import PermissionDenied
         with self.assertRaises(PermissionDenied):
             change_booking_status(booking=booking, status=PartyBuild.Status.COMPLETED, actor=self.user)
 
+    # This test protects the business rule described by “future cancelled and completed bookings
+    # cannot be completed or reversed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_future_cancelled_and_completed_bookings_cannot_be_completed_or_reversed(self):
         future = self.make_booking(
             customer=self.user,
@@ -140,12 +181,20 @@ class ReviewModelAndStatusTests(ReviewFeatureTestMixin, TestCase):
             change_booking_status(booking=completed, status=PartyBuild.Status.CANCELLED, actor=self.owner)
 
 
+# This group of tests protects the review workflow tests behaviour as one related customer or
+# staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     def setUp(self):
         self.booking = self.make_booking(customer=self.user, addons=self.addons[:2])
         self.review_url = reverse("party_builder:party_builder_review", args=[self.booking.public_id])
         self.submit_url = reverse("party_builder:party_builder_review_submit", args=[self.booking.public_id])
 
+    # This method handles verify for the surrounding review workflow tests.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def verify(self, user=None, code=None):
         self.client.force_login(user or self.user)
         return self.client.post(
@@ -153,18 +202,28 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
             {"review_code": code or self.booking.review_code},
         )
 
+    # This method handles valid payload for the surrounding review workflow tests.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def valid_payload(self, package_score="5"):
         data = {"package_score": package_score, "comment": "A lovely party."}
         for item in self.booking.addon_items.all():
             data[f"addon_score_{item.pk}"] = "4"
         return data
 
+    # This test protects the business rule described by “anonymous and direct access are blocked”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_anonymous_and_direct_access_are_blocked(self):
         response = self.client.get(self.review_url)
         self.assertEqual(response.status_code, 302)
         self.client.force_login(self.user)
         self.assertEqual(self.client.get(self.review_url).status_code, 403)
 
+    # This test protects the business rule described by “code verification requires owner and
+    # completed booking”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_code_verification_requires_owner_and_completed_booking(self):
         response = self.verify(user=self.other)
         self.assertEqual(response.status_code, 200)
@@ -177,11 +236,19 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         response = self.verify(code=guest.review_code)
         self.assertContains(response, "That party code is not valid for an eligible booking.")
 
+    # This test protects the business rule described by “code normalization accepts spacing and
+    # case”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_code_normalization_accepts_spacing_and_case(self):
         submitted = self.booking.review_code.lower().replace("-", " ")
         response = self.verify(code=submitted)
         self.assertRedirects(response, self.review_url)
 
+    # This test protects the business rule described by “expired session marker and unauthorized
+    # ajax are denied”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_expired_session_marker_and_unauthorized_ajax_are_denied(self):
         self.client.force_login(self.user)
         session = self.client.session
@@ -196,6 +263,10 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(response.json()["ok"])
 
+    # This test protects the business rule described by “review code visibility is limited to
+    # booking owner”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_review_code_visibility_is_limited_to_booking_owner(self):
         self.client.force_login(self.user)
         response = self.client.get(self.booking.get_absolute_url())
@@ -213,6 +284,10 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, guest_booking.review_code)
 
+    # This test protects the business rule described by “verified form contains exact booked
+    # addons”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_verified_form_contains_exact_booked_addons(self):
         self.assertRedirects(self.verify(), self.review_url)
         response = self.client.get(self.review_url)
@@ -221,6 +296,10 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
             self.assertContains(response, addon.name)
         self.assertNotContains(response, self.addons[2].name)
 
+    # This test protects the business rule described by “valid ajax submission creates then
+    # updates one review”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_valid_ajax_submission_creates_then_updates_one_review(self):
         self.verify()
         response = self.client.post(
@@ -243,6 +322,10 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(PartyReview.objects.count(), 1)
         self.assertEqual(PartyReview.objects.get().package_score, 3)
 
+    # This test protects the business rule described by “invalid and manipulated ajax submissions
+    # are rejected”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_invalid_and_manipulated_ajax_submissions_are_rejected(self):
         self.verify()
         invalid = self.valid_payload(package_score="0")
@@ -263,6 +346,10 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(PartyReview.objects.exists())
 
+    # This test protects the business rule described by “no addon booking and normal post fallback
+    # work”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_no_addon_booking_and_normal_post_fallback_work(self):
         booking = self.make_booking(customer=self.user, addons=[])
         self.client.force_login(self.user)
@@ -274,6 +361,9 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(PartyReview.objects.filter(booking=booking).exists())
 
+    # This test protects the business rule described by “comments are escaped”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_comments_are_escaped(self):
         self.verify()
         data = self.valid_payload()
@@ -283,6 +373,9 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertContains(response, "&lt;script&gt;", html=False)
         self.assertNotContains(response, "<script>alert")
 
+    # This test protects the business rule described by “csrf protection remains active”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_csrf_protection_remains_active(self):
         client = Client(enforce_csrf_checks=True)
         client.force_login(self.user)
@@ -290,7 +383,13 @@ class ReviewWorkflowTests(ReviewFeatureTestMixin, TestCase):
         self.assertEqual(response.status_code, 403)
 
 
+# This group of tests protects the popularity and recommendation tests behaviour as one related
+# customer or staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
+    # This business action carries out create history.
+    # It validates the live records and permissions before changing anything, then keeps related
+    # updates together so partial results are not left behind.
     def create_history(self, addon_list, *, status=PartyBuild.Status.COMPLETED, customer=None, score=5):
         customer = customer or self.user
         booking = self.make_booking(customer=customer, status=status, addons=addon_list)
@@ -300,6 +399,10 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
                 AddonRating.objects.create(review=review, build_addon=item, score=score)
         return booking
 
+    # This test protects the business rule described by “popularity uses completed distinct active
+    # bookings and threshold”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_popularity_uses_completed_distinct_active_bookings_and_threshold(self):
         first, second = self.addons[:2]
         for _ in range(3):
@@ -312,11 +415,19 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
         first.save(update_fields=["is_active"])
         self.assertNotIn(first.pk, addon_popularity(days=365)["by_id"])
 
+    # This test protects the business rule described by “no popular badge below three completed
+    # bookings”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_no_popular_badge_below_three_completed_bookings(self):
         self.create_history([self.addons[0]])
         self.create_history([self.addons[0]])
         self.assertIsNone(addon_popularity(days=365)["most_popular_id"])
 
+    # This test protects the business rule described by “popularity tie uses verified average
+    # rating”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_popularity_tie_uses_verified_average_rating(self):
         first, second = self.addons[:2]
         for _ in range(3):
@@ -324,6 +435,10 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
             self.create_history([second], score=5)
         self.assertEqual(addon_popularity(days=365)["most_popular_id"], second.pk)
 
+    # This test protects the business rule described by “pair recommendations exclude selected
+    # inactive and uncompleted”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_pair_recommendations_exclude_selected_inactive_and_uncompleted(self):
         first, second, third = self.addons
         self.create_history([first, second])
@@ -338,6 +453,10 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
         second.save(update_fields=["is_active"])
         self.assertNotIn(second.pk, [row["addon"].pk for row in recommend_addons(selected_ids=[first.pk], package=self.package)])
 
+    # This test protects the business rule described by “builder displays data driven popular
+    # badge and ratings”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_builder_displays_data_driven_popular_badge_and_ratings(self):
         for _ in range(3):
             self.create_history([self.addons[0]], score=5)
@@ -345,6 +464,10 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
         self.assertContains(response, "Most popular")
         self.assertContains(response, "5.0 (3)")
 
+    # This test protects the business rule described by “featured fallback is general and results
+    # are limited”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_featured_fallback_is_general_and_results_are_limited(self):
         rows = recommend_addons(
             selected_ids=[self.addons[0].pk],
@@ -355,6 +478,10 @@ class PopularityAndRecommendationTests(ReviewFeatureTestMixin, TestCase):
             self.assertEqual(row["kind"], "general")
             self.assertIn("suggestion", row["reason"].lower())
 
+    # This test protects the business rule described by “package recommendations and public json
+    # are minimal”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_recommendations_and_public_json_are_minimal(self):
         self.create_history([self.addons[0]])
         rows = recommend_addons(selected_ids=[], package=self.package)

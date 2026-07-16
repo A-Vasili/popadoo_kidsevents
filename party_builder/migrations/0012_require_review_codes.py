@@ -1,7 +1,14 @@
+# This historical migration records the database change identified as 0012_require_review_codes.
+# It allows new and existing installations to reach the same stored structure or seed data in a
+# repeatable order.
+# Only explanatory comments belong here because changing a past migration could make databases
+# disagree.
 import party_builder.models
 from django.db import migrations, models
 
 
+# This class groups the information and behaviour needed for migration.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class Migration(migrations.Migration):
     dependencies = [("party_builder", "0011_populate_review_codes")]
     operations = [

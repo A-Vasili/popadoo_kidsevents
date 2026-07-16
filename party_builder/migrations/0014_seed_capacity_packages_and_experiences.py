@@ -1,8 +1,16 @@
+# This historical migration records the database change identified as
+# 0014_seed_capacity_packages_and_experiences.
+# It allows new and existing installations to reach the same stored structure or seed data in a
+# repeatable order.
+# Only explanatory comments belong here because changing a past migration could make databases
+# disagree.
 from decimal import Decimal
 
 from django.db import migrations
 
 
+# This forward migration prepares the historical records required by this release while preserving
+# existing customised data where the migration allows it.
 def seed_capacity_packages_and_experiences(apps, schema_editor):
     """Add the new public catalogue without changing historical bookings."""
 
@@ -214,10 +222,13 @@ def seed_capacity_packages_and_experiences(apps, schema_editor):
         )
 
 
+# This migration helper performs the data part of the historical change recorded in this file.
 def keep_catalogue_on_reverse(apps, schema_editor):
     """Catalogue records may be referenced by bookings, so reversal is a safe no-op."""
 
 
+# This class groups the information and behaviour needed for migration.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class Migration(migrations.Migration):
     dependencies = [("party_builder", "0013_testimonial_visibility")]
     operations = [

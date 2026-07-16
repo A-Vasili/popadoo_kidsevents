@@ -1,3 +1,8 @@
+/*
+ * This script connects the project’s custom date and time controls to their real form fields so the accessible Django form remains the source of submitted values.
+ * Django remains responsible for permissions, trusted prices, identities, and saved records; this file only improves the browser experience.
+ * The comments describe the interaction without changing any statement, selector, translation key, or request address.
+ */
 "use strict";
 
 /*
@@ -8,21 +13,26 @@
  * A hidden input remains the source of truth submitted to Django, so all
  * values are still checked again by the server before they are stored.
  */
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
     const DAY_MS = 24 * 60 * 60 * 1000;
 
+    // This helper carries out current locale for the visitor-facing interaction managed by this script.
     const currentLocale = () => (
         document.documentElement.lang?.toLowerCase().startsWith("el")
             ? "el-GR"
             : "en-GB"
     );
 
+    // This helper carries out activate div button for the visitor-facing interaction managed by this script.
     const activateDivButton = (element, callback) => {
         if (!element) {
             return;
         }
 
+        // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
         element.addEventListener("click", callback);
+        // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
         element.addEventListener("keydown", (event) => {
             if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -31,11 +41,13 @@
         });
     };
 
+    // This helper carries out dispatch value change for the visitor-facing interaction managed by this script.
     const dispatchValueChange = (input) => {
         input.dispatchEvent(new Event("input", { bubbles: true }));
         input.dispatchEvent(new Event("change", { bubbles: true }));
     };
 
+    // This helper changes other popovers while keeping keyboard focus and visible state in step for accessibility.
     const closeOtherPopovers = (currentRoot) => {
         document.querySelectorAll("[data-custom-popover-open='true']").forEach((root) => {
             if (root !== currentRoot) {
@@ -44,6 +56,7 @@
         });
     };
 
+    // This helper carries out parse date for the visitor-facing interaction managed by this script.
     const parseDate = (value) => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) {
             return null;
@@ -63,6 +76,7 @@
         return parsed;
     };
 
+    // This helper carries out format date value for the visitor-facing interaction managed by this script.
     const formatDateValue = (date) => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -70,6 +84,7 @@
         return `${year}-${month}-${day}`;
     };
 
+    // This helper controls of day so background work runs only while it is useful to the visitor.
     const startOfDay = (date) => new Date(
         date.getFullYear(),
         date.getMonth(),
@@ -80,6 +95,7 @@
         0
     );
 
+    // This helper carries out custom select for the visitor-facing interaction managed by this script.
     class CustomSelect {
         constructor(root) {
             this.root = root;
@@ -98,15 +114,21 @@
         }
 
         bindEvents() {
+            // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("click", () => this.toggle());
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("keydown", (event) => this.onTriggerKeydown(event));
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.listbox.addEventListener("keydown", (event) => this.onListboxKeydown(event));
 
             this.options.forEach((option) => {
+                // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
                 option.addEventListener("click", () => this.select(option, true));
             });
 
+            // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
             this.input.addEventListener("change", () => this.syncFromInput());
+            // This listener responds to the popadoo:close-control event and keeps the enhanced interface aligned with the visitor’s action.
             this.root.addEventListener("popadoo:close-control", () => this.close());
         }
 
@@ -221,6 +243,7 @@
         }
     }
 
+    // This helper carries out date picker for the visitor-facing interaction managed by this script.
     class DatePicker {
         constructor(root) {
             this.root = root;
@@ -250,11 +273,15 @@
         }
 
         bindEvents() {
+            // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("click", () => this.toggle());
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("keydown", (event) => this.onTriggerKeydown(event));
             activateDivButton(this.previous, () => this.changeMonth(-1));
             activateDivButton(this.next, () => this.changeMonth(1));
+            // This listener responds to the popadoo:close-control event and keeps the enhanced interface aligned with the visitor’s action.
             this.root.addEventListener("popadoo:close-control", () => this.close());
+            // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
             this.input.addEventListener("change", () => {
                 this.selectedDate = parseDate(this.input.value);
                 this.focusDate = this.selectedDate || this.focusDate;
@@ -394,7 +421,9 @@
                 cell.classList.toggle("is-today", isToday);
                 cell.classList.toggle("is-disabled", !allowed);
 
+                // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
                 cell.addEventListener("click", () => this.selectDate(date));
+                // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
                 cell.addEventListener("keydown", (event) => this.onDayKeydown(event, date));
                 this.grid.appendChild(cell);
             }
@@ -460,6 +489,7 @@
         }
     }
 
+    // This helper carries out time picker for the visitor-facing interaction managed by this script.
     class TimePicker {
         constructor(root) {
             this.root = root;
@@ -526,6 +556,7 @@
                 option.tabIndex = -1;
                 option.dataset.value = entry.value;
                 option.textContent = entry.label;
+                // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
                 option.addEventListener("click", () => this.select(option, true));
                 this.listbox.appendChild(option);
             });
@@ -534,10 +565,15 @@
         }
 
         bindEvents() {
+            // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("click", () => this.toggle());
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.trigger.addEventListener("keydown", (event) => this.onTriggerKeydown(event));
+            // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
             this.listbox.addEventListener("keydown", (event) => this.onListboxKeydown(event));
+            // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
             this.input.addEventListener("change", () => this.syncFromInput());
+            // This listener responds to the popadoo:close-control event and keeps the enhanced interface aligned with the visitor’s action.
             this.root.addEventListener("popadoo:close-control", () => this.close());
         }
 
@@ -596,6 +632,7 @@
         }
 
         syncFromInput() {
+            // This helper carries out option for the visitor-facing interaction managed by this script.
             const option = this.options.find((item) => item.dataset.value === this.input.value)
                 || (this.optional ? this.options[0] : null);
             if (option) {
@@ -644,6 +681,7 @@
         }
     }
 
+    // This helper carries out date time composite for the visitor-facing interaction managed by this script.
     class DateTimeComposite {
         constructor(root) {
             this.root = root;
@@ -656,7 +694,9 @@
             }
 
             this.populateParts();
+            // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
             this.dateInput.addEventListener("change", () => this.combineParts());
+            // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
             this.timeInput.addEventListener("change", () => this.combineParts());
         }
 
@@ -690,6 +730,7 @@
         (root) => new TimePicker(root)
     );
 
+    // This listener responds to the click event and keeps the enhanced interface aligned with the visitor’s action.
     document.addEventListener("click", (event) => {
         document.querySelectorAll("[data-custom-popover-open='true']").forEach((root) => {
             if (!root.contains(event.target)) {
@@ -698,6 +739,7 @@
         });
     });
 
+    // This listener responds to the keydown event and keeps the enhanced interface aligned with the visitor’s action.
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
             document.querySelectorAll("[data-custom-popover-open='true']").forEach((root) => {
@@ -707,6 +749,7 @@
     });
 
     /* Refresh language labels and formatted dates/times after the site language changes. */
+    // This listener responds to the popadoo:language-applied event and keeps the enhanced interface aligned with the visitor’s action.
     document.addEventListener("popadoo:language-applied", () => {
         document.querySelectorAll("[data-custom-select-input]").forEach((input) => {
             input.dispatchEvent(new Event("change", { bubbles: false }));

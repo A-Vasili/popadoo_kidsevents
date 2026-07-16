@@ -1,9 +1,14 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the list screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load management_tags %}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
+    {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "operations/management/includes/page_header.html" with eyebrow="Read-only security record" title="Audit history" description="Important catalogue, role, booking, and assignment changes are listed newest first." only %}
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form class="management-filter-toolbar" method="get" role="search">
         <label><span>Search</span><input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Summary, object type, or ID"></label>
         <label><span>Action</span><select class="form-select" name="event_type"><option value="">All</option>{% for event_type in event_type_options %}<option value="{{ event_type }}" {% if request.GET.event_type == event_type %}selected{% endif %}>{{ event_type|audit_event_label }}</option>{% endfor %}</select></label>

@@ -1,10 +1,15 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the list screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     {% url 'management:management_category_create' as page_action_url %}
+    {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "operations/management/includes/page_header.html" with eyebrow="Catalogue structure" title="Categories and subcategories" description="Organize packages and add-ons without breaking records already used by bookings." action_url=page_action_url action_label="Create category" only %}
 
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form class="management-filter-toolbar" method="get" role="search">
         <label><span>Search</span><input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Name, slug, or description"></label>
         <label><span>Status</span><select class="form-select" name="status"><option value="">All</option><option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option><option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactive</option></select></label>
@@ -17,10 +22,12 @@
     {% if categories %}
         <div class="management-result-summary">{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}</div>
         <div class="management-table-wrap">
+            {# This table lets staff compare structured records while headings and responsive styles preserve context. #}
             <table class="management-table">
                 <caption class="visually-hidden">Catalogue categories</caption>
                 <thead><tr><th>Category</th><th>Parent</th><th>Items</th><th>Status</th><th>Order</th><th>Actions</th></tr></thead>
                 <tbody>
+                    {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                     {% for category in categories %}
                         <tr>
                             <td data-label="Category">

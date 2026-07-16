@@ -1,4 +1,9 @@
 /*
+ * This stylesheet presents the custom date and time controls while preserving visible labels, keyboard focus, and touch-friendly targets.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * Shared presentation for the custom language, date, and time controls.
  * The colours use the same design tokens as the rest of Popadoo, so these
  * components remain readable in both light and dark modes.
@@ -196,6 +201,9 @@
 }
 
 .custom-icon-action:hover,
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .custom-icon-action:focus-visible {
     outline: none;
     background: var(--color-primary-soft);
@@ -263,6 +271,9 @@
 }
 
 html[data-theme="dark"] .custom-control-trigger,
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .custom-control-popover {
     background-color: var(--color-surface-raised);
     color: var(--color-text);
@@ -272,6 +283,9 @@ html[data-theme="dark"] .custom-language-picker .custom-control-trigger {
     background: linear-gradient(135deg, var(--surface-lavender), var(--surface-pink));
 }
 
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 72rem) {
     .custom-language-picker,
     .custom-language-picker .custom-control-trigger {

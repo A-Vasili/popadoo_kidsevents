@@ -3,6 +3,11 @@
 Only the Testimonials page needs application data. Other public information
 pages remain simple TemplateView routes in ``core.urls``.
 """
+# This file coordinates page requests for this area of Popadoo.
+# Each view checks who is making the request, gathers only the records they are allowed to see,
+# and chooses the template or response to return.
+# Multi-step business changes are delegated to services so page handling remains separate from
+# data rules.
 
 from django.db.models import F
 from django.db.models.functions import Trim
@@ -11,6 +16,9 @@ from django.views.generic import ListView
 from party_builder.models import PartyBuild, PartyReview
 
 
+# This view coordinates the testimonials view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class TestimonialsView(ListView):
     """Publish only explicitly consented feedback from completed parties."""
 
@@ -18,6 +26,8 @@ class TestimonialsView(ListView):
     context_object_name = "testimonials"
     paginate_by = 9
 
+    # This query defines the complete set of records the current person may see, so later lookups
+    # cannot accidentally expose another customer or staff area.
     def get_queryset(self):
         return (
             PartyReview.objects.filter(

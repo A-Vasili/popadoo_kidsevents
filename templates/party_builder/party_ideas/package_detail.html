@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents package detail within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {% block title %}{{ package.name }} | Party Ideas{% endblock %}
@@ -6,9 +8,12 @@
 {% block page_name %}partyIdeas{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/party-ideas.css' %}">{% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="party-idea-detail">
     <div class="container">
+        {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
         <nav class="party-ideas-breadcrumbs" aria-label="Breadcrumb">
             <a href="{% url 'party_ideas:list' %}">Party Ideas</a>
             <a href="{% url 'party_ideas:category_detail' package.category.slug %}">
@@ -52,6 +57,7 @@
 
                 <h2>Included experiences</h2>
                 <ul class="included-experience-list">
+                    {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                     {% for experience in package.included_experiences_list %}
                         <li>{{ experience }}</li>
                     {% empty %}
@@ -66,6 +72,7 @@
                 </div>
 
                 <div class="party-detail-actions">
+                    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
                     <form method="post" action="{% url 'party_ideas:start_package' package.slug %}">
                         {% csrf_token %}
                         <button class="button" type="submit" data-i18n="partyIdeas.usePackage">

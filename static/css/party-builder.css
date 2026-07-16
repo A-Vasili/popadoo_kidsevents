@@ -1,4 +1,9 @@
 /*
+ * This stylesheet organises the multi-step party builder, wide package choices, experience cards, live summary, and checkout forms.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * This stylesheet presents the multi-step builder, option cards, cart summary, checkout forms, and confirmation pages.
  * The comments explain visual sections without changing the styles applied by the browser.
  */
@@ -85,6 +90,9 @@
 }
 
 /* These rules make form fields and validation feedback clear and consistent. */
+/*
+ * This section keeps labels, fields, help text, errors, and actions visually connected so forms remain understandable.
+ */
 .checkout-form {
     padding-bottom: clamp(4rem, 8vw, 7rem);
 }
@@ -104,6 +112,9 @@
 }
 
 /* These rules present each item as a clear, reusable content card. */
+/*
+ * This section shapes the chat panel and keeps its header, history, and composer usable within the available screen height.
+ */
 .checkout-panel {
     min-width: 0;
     padding: clamp(1.35rem, 3vw, 2.25rem);
@@ -141,6 +152,9 @@
 }
 
 /* These rules present each item as a clear, reusable content card. */
+/*
+ * This section presents package choices as complete, comparable starting points with capacity, price, and action information kept together.
+ */
 .base-package-card {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.35fr);
@@ -198,6 +212,9 @@
 
 /* These rules control spacing and the page layout for this group of content. */
 /* These rules style this group of related page elements. */
+/*
+ * This section presents optional experiences as selectable cards while keeping labels and selected state clear.
+ */
 .addon-option {
     position: relative;
     min-width: 0;
@@ -236,6 +253,9 @@
 }
 
 /* These rules make keyboard focus visible so controls are easier to use without a mouse. */
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .addon-checkbox:focus-visible + .addon-card {
     outline: 0.22rem solid var(--color-focus);
     outline-offset: 0.22rem;
@@ -350,6 +370,9 @@
 }
 
 /* These rules style this group of related page elements. */
+/*
+ * This section presents ratings and testimonial choices with visible labels, feedback, and keyboard focus.
+ */
 .price-breakdown, .saved-build-details, .saved-price-breakdown, .review-details {
     margin: 0;
 }
@@ -516,6 +539,9 @@ textarea.form-control {
 }
 
 /* These reusable values define the colours and measurements used by the selected theme. */
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
     color: #ffb4ab;
 }
@@ -679,6 +705,9 @@ html[data-theme="dark"] .field-errors, html[data-theme="dark"] .errorlist {
 }
 
 /* The following rules adjust the layout for this screen size. */
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 64rem) {
     /* These rules control spacing and the page layout for this group of content. */
     .checkout-layout {

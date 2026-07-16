@@ -1,3 +1,5 @@
+{# This reusable template presents custom time field wherever the shared site layout includes it. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% comment %}
 Reusable custom time control.
   The visible list is keyboard accessible and writes an HH:MM value to the
@@ -52,6 +54,7 @@ Reusable custom time control.
         {{ help_text|default:field.help_text }}
     </p>
     <div class="form-error" id="{{ field.id_for_label }}_error" aria-live="polite">
+        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
         {% for error in field.errors %}<p role="alert">{{ error }}</p>{% endfor %}
     </div>
 </div>

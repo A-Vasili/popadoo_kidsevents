@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This worker template presents availability for active staff using the operations area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 {% block title %}
     My Availability | Popadoo Kids Events
@@ -12,9 +14,12 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/operations.css' %}">
 {% endblock %}
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+    {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
     <section class="operations-page" aria-labelledby="availability-heading">
         <div class="container">
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "operations/includes/nav.html" %}
             <div class="operations-two-column">
                 <section class="operations-panel">
@@ -24,8 +29,10 @@
                     <p>
                         Add the full periods when you can work. Use unavailable periods for exceptions.
                     </p>
+                    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
                     <form method="post" novalidate>
                         {% csrf_token %}
+                        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                         {% for field in form %}
                             {% if field.name == "start_at" or field.name == "end_at" %}
                                 {% include "includes/custom_datetime_field.html" with field=field only %}

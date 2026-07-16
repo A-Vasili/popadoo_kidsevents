@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents details within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 
@@ -11,6 +13,7 @@
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
     {# This header introduces the page and gives visitors the main context before they continue. #}
     <header class="checkout-hero" aria-labelledby="party-details-heading">
@@ -18,11 +21,13 @@
             <p class="section-kicker">Step two</p>
             <h1 id="party-details-heading">Tell us about your event</h1>
             <p class="lead">Your selections are saved in this browser while you complete the checkout.</p>
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "party_builder/includes/progress.html" %}
         </div>
     </header>
 
     {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form
         class="checkout-form"
         method="post"
@@ -31,6 +36,7 @@
     >
         {% csrf_token %}
         <div class="container checkout-layout">
+                        {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
                         <section class="checkout-panel" aria-labelledby="details-form-heading">
                 <div class="panel-heading">
                     <span class="panel-step" aria-hidden="true">2</span>
@@ -60,6 +66,7 @@
                 </div>
 
                 {# This navigation groups related links so users can move through this part of the website. #}
+                {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
                 <nav class="checkout-actions" aria-label="Event details actions">
                     <a class="button button-outline" href="{% url 'party_builder:party_builder_package_options' %}">
                         Back to package

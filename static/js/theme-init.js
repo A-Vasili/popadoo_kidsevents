@@ -1,3 +1,8 @@
+/*
+ * This early script applies the saved light or dark preference before the page is drawn, reducing a distracting flash of the wrong theme.
+ * Django remains responsible for permissions, trusted prices, identities, and saved records; this file only improves the browser experience.
+ * The comments describe the interaction without changing any statement, selector, translation key, or request address.
+ */
 "use strict";
 
 /*
@@ -6,6 +11,7 @@
  */
 
 /* Apply the saved theme before the page paints to reduce theme flashing. */
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
     /* The same key is used by main.js when visitors change the theme. */
     const storageKey = "popadoo-theme";

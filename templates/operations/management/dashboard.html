@@ -1,6 +1,9 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the dashboard screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header">
         <div>
@@ -18,6 +21,7 @@
 
     <div class="management-stat-grid">
         {% url 'management:management_package_list' as packages_url %}
+        {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
         {% include "operations/management/includes/stat_card.html" with url=packages_url|add:"?status=active" label="Active packages" value=stats.active_packages only %}
         {% url 'management:management_addon_list' as addons_url %}
         {% include "operations/management/includes/stat_card.html" with url=addons_url|add:"?status=active" label="Active add-ons" value=stats.active_addons only %}
@@ -31,6 +35,8 @@
         {% include "operations/management/includes/stat_card.html" with url=users_url|add:"?role=worker&status=active" label="Active workers" value=stats.active_workers only %}
         {% url 'management:management_schedule' as schedule_url %}
         {% include "operations/management/includes/stat_card.html" with url=schedule_url label="Pending offers" value=stats.pending_offers only %}
+        {% url 'communications:management_inbox' as messages_url %}
+        {% include "operations/management/includes/stat_card.html" with url=messages_url|add:"?unread_only=1" label="Unread messages" value=stats.unread_customer_chats only %}
     </div>
 </section>
 
@@ -39,6 +45,7 @@
         <div class="management-panel-header"><h2>Bookings needing attention</h2><a href="{% url 'management:management_booking_list' %}?assignment=manual_review">View filtered list</a></div>
         {% if attention_bookings %}
             <div class="management-compact-list">
+                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                 {% for booking in attention_bookings %}
                     <a href="{% url 'management:management_booking_detail' booking.public_id %}">
                         <span><strong>{{ booking.contact_name }}</strong><small>{{ booking.event_date }} · {{ booking.package.name }}</small></span>

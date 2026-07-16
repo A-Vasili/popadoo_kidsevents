@@ -1,4 +1,9 @@
 /*
+ * This stylesheet presents sign-in, registration, profile, and customer dashboard pages while keeping forms readable on small screens and in both themes.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * This stylesheet presents sign-in, sign-up, profile, and customer dashboard pages.
  * The comments explain visual sections without changing the styles applied by the browser.
  */
@@ -31,6 +36,9 @@
 }
 
 /* These rules present each item as a clear, reusable content card. */
+/*
+ * This section presents summary figures as distinct cards that remain readable when the grid wraps.
+ */
 .account-card, .booking-card, .empty-state {
     background: var(--surface, #fff);
     border: 1px solid var(--border-color, #ded7e3);
@@ -40,6 +48,9 @@
 }
 
 /* These rules make form fields and validation feedback clear and consistent. */
+/*
+ * This section keeps labels, fields, help text, errors, and actions visually connected so forms remain understandable.
+ */
 .account-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -135,12 +146,18 @@
 }
 
 /* These rules make status and validation messages easy to notice and understand. */
+/*
+ * This section presents ratings and testimonial choices with visible labels, feedback, and keyboard focus.
+ */
 .status-manual_review {
     background: #fff0cf;
     color: #714c00;
 }
 
 /* The following rules adjust the layout for this screen size. */
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 720px) {
     /* These rules make form fields and validation feedback clear and consistent. */
     .account-form-grid, .booking-card dl {
@@ -184,6 +201,9 @@
     padding-left: 1.2rem;
 }
 
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .account-card .form-control:focus {
     border-color: var(--color-primary);
     background: var(--color-surface-raised);
@@ -202,6 +222,9 @@
 
 html[data-theme="dark"] .account-card,
 html[data-theme="dark"] .booking-card,
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .empty-state {
     background: var(--color-surface);
     border-color: var(--color-border);

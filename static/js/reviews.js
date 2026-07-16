@@ -1,5 +1,11 @@
+/*
+ * This script improves the review experience with clearer live feedback while the normal form remains available and the server still decides what may be published.
+ * Django remains responsible for permissions, trusted prices, identities, and saved records; this file only improves the browser experience.
+ * The comments describe the interaction without changing any statement, selector, translation key, or request address.
+ */
 "use strict";
 
+// This private setup runs once for the page and avoids placing temporary interface state on the global window object.
 (() => {
     const form = document.querySelector("[data-review-form]");
     if (!form) return;
@@ -12,10 +18,12 @@
         form.querySelectorAll("input[name='visibility']")
     );
 
+    // This helper carries out selected visibility for the visitor-facing interaction managed by this script.
     const selectedVisibility = () => (
         visibilityInputs.find((input) => input.checked)?.value || "private"
     );
 
+    // This helper updates name section while keeping the underlying server-owned data unchanged.
     const updateNameSection = () => {
         if (!nameSection) return;
         const isTestimonial = selectedVisibility() === "testimonial";
@@ -24,12 +32,14 @@
     };
 
     visibilityInputs.forEach((input) => {
+        // This listener responds to the change event and keeps the enhanced interface aligned with the visitor’s action.
         input.addEventListener("change", updateNameSection);
     });
     updateNameSection();
 
     if (!window.fetch) return;
 
+    // This helper updates status while keeping the underlying server-owned data unchanged.
     const showStatus = (message, kind) => {
         status.hidden = false;
         status.className = `review-alert ${kind}`;
@@ -37,6 +47,7 @@
         status.focus();
     };
 
+    // This helper carries out clear errors for the visitor-facing interaction managed by this script.
     const clearErrors = () => {
         form.querySelectorAll("[data-error-for]").forEach((node) => {
             node.replaceChildren();
@@ -46,6 +57,7 @@
         });
     };
 
+    // This listener responds to the submit event and keeps the enhanced interface aligned with the visitor’s action.
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         clearErrors();

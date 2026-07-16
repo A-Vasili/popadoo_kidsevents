@@ -1,3 +1,8 @@
+# This file maps readable website addresses to the part of Popadoo responsible for answering each
+# request.
+# The route order also protects specialised management and messaging paths from being swallowed by
+# broader URL groups.
+# It contains no page logic; the matched view performs the actual work.
 
 from django.urls import path
 
@@ -5,6 +10,9 @@ from . import views
 
 app_name = "party_builder"
 
+# These named routes connect stable website addresses to the views that handle each customer or
+# staff request.
+# Permission checks remain inside the views, so knowing an address never grants access by itself.
 urlpatterns = [
     path(
         "",

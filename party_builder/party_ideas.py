@@ -4,6 +4,11 @@ The management panel remains the source of catalogue data. These views expose
 only active records, calculate public rating summaries, and keep every cart
 change behind a CSRF-protected POST request.
 """
+# This file prepares the searchable Party Ideas catalogue used before a customer enters the
+# builder.
+# It validates filters and sorting, combines package and experience results, and prepares
+# recommendation information without trusting raw query-string values.
+# The resulting records are still governed by the active and public catalogue rules.
 
 from __future__ import annotations
 
@@ -27,6 +32,9 @@ from .services import add_addon_to_session, resolve_active_package, select_packa
 VISIBLE_CATEGORY_FILTER = Q(parent__isnull=True) | Q(parent__is_active=True)
 
 
+# This helper prepares visible categories for the page or service that called it.
+# It returns a consistent, permission-aware result so callers do not need to repeat the same
+# selection rules.
 def visible_categories():
     """Return categories customers may browse, including safe parent details."""
 
@@ -38,6 +46,9 @@ def visible_categories():
     )
 
 
+# This function handles public package queryset as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def public_package_queryset():
     """Return active packages with one query-friendly public rating summary."""
 
@@ -62,6 +73,9 @@ def public_package_queryset():
     )
 
 
+# This function handles public addon queryset as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def public_addon_queryset():
     """Return active experiences with verified completed-party rating totals."""
 
@@ -89,6 +103,9 @@ def public_addon_queryset():
     )
 
 
+# This function handles duration filter as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _duration_filter(value: str) -> Q:
     if value == "short":
         return Q(duration_minutes__lte=30)
@@ -99,6 +116,9 @@ def _duration_filter(value: str) -> Q:
     return Q()
 
 
+# This function handles category ids as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _category_ids(category: Category | None) -> list[int]:
     if category is None:
         return []
@@ -110,6 +130,9 @@ def _category_ids(category: Category | None) -> list[int]:
     ]
 
 
+# This function handles normalise card as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _normalise_card(item, kind: str) -> dict:
     """Give package and experience templates one small, shared card shape."""
 
@@ -129,28 +152,46 @@ def _normalise_card(item, kind: str) -> dict:
     }
 
 
+# This function handles name sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _name_sort_key(card: dict) -> tuple:
     return card["name"].casefold(), card["kind"]
 
 
+# This function handles price ascending sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _price_ascending_sort_key(card: dict) -> tuple:
     return card["price"], card["name"].casefold()
 
 
+# This function handles price descending sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _price_descending_sort_key(card: dict) -> tuple:
     return -card["price"], card["name"].casefold()
 
 
+# This function handles capacity ascending sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _capacity_ascending_sort_key(card: dict) -> tuple:
     capacity = card["capacity"] if card["capacity"] is not None else 10_000
     return capacity, card["name"].casefold()
 
 
+# This function handles capacity descending sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _capacity_descending_sort_key(card: dict) -> tuple:
     capacity = card["capacity"] if card["capacity"] is not None else -1
     return -capacity, card["name"].casefold()
 
 
+# This function handles rating sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _rating_sort_key(card: dict) -> tuple:
     return (
         -float(card["average_rating"] or 0),
@@ -159,6 +200,9 @@ def _rating_sort_key(card: dict) -> tuple:
     )
 
 
+# This function handles review count sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _review_count_sort_key(card: dict) -> tuple:
     return (
         -card["rating_count"],
@@ -167,6 +211,9 @@ def _review_count_sort_key(card: dict) -> tuple:
     )
 
 
+# This function handles recommended sort key as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _recommended_sort_key(card: dict) -> tuple:
     return (
         0 if card["kind"] == "package" else 1,
@@ -175,6 +222,9 @@ def _recommended_sort_key(card: dict) -> tuple:
     )
 
 
+# This function handles sort cards as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _sort_cards(cards: list[dict], ordering: str) -> None:
     sort_keys = {
         "name": _name_sort_key,
@@ -188,6 +238,9 @@ def _sort_cards(cards: list[dict], ordering: str) -> None:
     cards.sort(key=sort_keys.get(ordering, _recommended_sort_key))
 
 
+# This function handles query string as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _query_string(querydict, **changes) -> str:
     values = querydict.copy()
     values.pop("page", None)
@@ -199,15 +252,24 @@ def _query_string(querydict, **changes) -> str:
     return urlencode(values, doseq=True)
 
 
+# This view coordinates the party ideas list view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class PartyIdeasListView(TemplateView):
     """Search, filter and paginate public packages and experiences together."""
 
     template_name = "party_builder/party_ideas/list.html"
     forced_category: Category | None = None
 
+    # This helper retrieves forced category for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_forced_category(self):
         return self.forced_category
 
+    # This method handles validated filters for the surrounding party ideas list view.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def _validated_filters(self):
         data = self.request.GET.copy()
         category = self.get_forced_category()
@@ -231,6 +293,8 @@ class PartyIdeasListView(TemplateView):
             "sort": "recommended",
         }
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         form, filters = self._validated_filters()
@@ -384,9 +448,14 @@ class PartyIdeasListView(TemplateView):
         return context
 
 
+# This view coordinates the party ideas category view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class PartyIdeasCategoryView(PartyIdeasListView):
     """Reuse the catalogue results while fixing the scope to one category."""
 
+    # This entry check decides whether the signed-in person may reach any method on the view,
+    # preventing direct URLs from bypassing role restrictions.
     def dispatch(self, request, *args, **kwargs):
         self.forced_category = get_object_or_404(
             visible_categories(), slug=kwargs["slug"]
@@ -394,6 +463,9 @@ class PartyIdeasCategoryView(PartyIdeasListView):
         return super().dispatch(request, *args, **kwargs)
 
 
+# This view coordinates the party package detail view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class PartyPackageDetailView(DetailView):
     """Present an active package as a flexible starting point."""
 
@@ -402,9 +474,13 @@ class PartyPackageDetailView(DetailView):
     slug_field = "slug"
     slug_url_kwarg = "slug"
 
+    # This query defines the complete set of records the current person may see, so later lookups
+    # cannot accidentally expose another customer or staff area.
     def get_queryset(self):
         return public_package_queryset()
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["recommendations"] = recommend_addons(
@@ -413,6 +489,9 @@ class PartyPackageDetailView(DetailView):
         return context
 
 
+# This view coordinates the party addon detail view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class PartyAddonDetailView(DetailView):
     """Show one active experience and related ideas without private feedback."""
 
@@ -421,9 +500,13 @@ class PartyAddonDetailView(DetailView):
     slug_field = "slug"
     slug_url_kwarg = "slug"
 
+    # This query defines the complete set of records the current person may see, so later lookups
+    # cannot accidentally expose another customer or staff area.
     def get_queryset(self):
         return public_addon_queryset()
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         package = resolve_active_package(self.request.session)
@@ -437,11 +520,15 @@ class PartyAddonDetailView(DetailView):
         return context
 
 
+# This view coordinates the start package view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class StartPackageView(View):
     """Put an active package into the builder through a protected POST action."""
 
     http_method_names = ["post"]
 
+    # This request method processes the submitted action after validation and permission checks.
     def post(self, request, *args, **kwargs):
         package = get_object_or_404(
             public_package_queryset(), slug=kwargs["slug"]
@@ -454,11 +541,15 @@ class StartPackageView(View):
         return redirect("party_builder:party_builder_package_options")
 
 
+# This view coordinates the add addon view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class AddAddonView(View):
     """Add an active experience to the same session cart used at checkout."""
 
     http_method_names = ["post"]
 
+    # This request method processes the submitted action after validation and permission checks.
     def post(self, request, *args, **kwargs):
         addon = get_object_or_404(
             public_addon_queryset(), slug=kwargs["slug"]

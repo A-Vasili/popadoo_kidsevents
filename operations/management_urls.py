@@ -1,4 +1,9 @@
 """Named routes for the custom business management panel."""
+# This file lists the addresses available inside Popadoo’s custom management area.
+# Routes are grouped by business area so the sidebar, views, and permission checks can refer to
+# stable names.
+# The presence of a route does not grant access; each management view still checks the signed-in
+# account.
 
 from django.urls import path
 
@@ -6,6 +11,9 @@ from . import management_views as views
 
 app_name = "management"
 
+# These named routes connect stable website addresses to the views that handle each customer or
+# staff request.
+# Permission checks remain inside the views, so knowing an address never grants access by itself.
 urlpatterns = [
     path("", views.ManagementDashboardView.as_view(), name="management_dashboard"),
     path("catalogue/", views.CatalogueIndexView.as_view(), name="management_catalogue"),

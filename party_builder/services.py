@@ -3,6 +3,10 @@
 Browser sessions may outlive catalogue changes, so this module is the single
 place that cleans stale selections and creates trusted price snapshots.
 """
+# This file contains the trusted business actions for this feature.
+# Keeping these actions outside views means the same permission, validation, history, and
+# all-or-nothing database rules apply wherever the action is used.
+# The surrounding pages collect intent, while these services decide what may safely change.
 
 from __future__ import annotations
 
@@ -28,6 +32,9 @@ CHECKOUT_SESSION_KEY = "party_builder_checkout"
 AUTHORIZED_BUILD_SESSION_KEY = "party_builder_builds"
 
 
+# This function handles positive integer as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _positive_integer(value: object) -> int | None:
     """Convert a session value to a database ID without accepting booleans."""
 
@@ -41,6 +48,9 @@ def _positive_integer(value: object) -> int | None:
     return None
 
 
+# This function handles public packages as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def public_packages():
     """Return packages that are safe to show or select on the public website.
 
@@ -56,6 +66,9 @@ def public_packages():
     ).filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
 
 
+# This function handles public addons as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def public_addons():
     """Return experiences that are safe to show or keep in a public cart."""
 
@@ -65,6 +78,9 @@ def public_addons():
     ).filter(Q(category__parent__isnull=True) | Q(category__parent__is_active=True))
 
 
+# This function handles checkout state as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def checkout_state(session: MutableMapping) -> dict[str, Any]:
     """Return a safe copy of the in-progress party stored in this browser.
 
@@ -85,6 +101,9 @@ def checkout_state(session: MutableMapping) -> dict[str, Any]:
     return clean_state
 
 
+# This function handles save checkout state as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def save_checkout_state(session: MutableMapping, state: Mapping[str, Any]) -> None:
     """Store only the small set of choices needed to continue the builder.
 
@@ -99,6 +118,9 @@ def save_checkout_state(session: MutableMapping, state: Mapping[str, Any]) -> No
         session.modified = True
 
 
+# This function handles clear checkout state as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def clear_checkout_state(session: MutableMapping) -> None:
     """Remove the unfinished party without affecting login or other session data."""
 
@@ -107,6 +129,9 @@ def clear_checkout_state(session: MutableMapping) -> None:
         session.modified = True
 
 
+# This helper prepares resolve active package for the page or service that called it.
+# It returns a consistent, permission-aware result so callers do not need to repeat the same
+# selection rules.
 def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
     """Resolve the selected package, with a predictable public fallback.
 
@@ -136,6 +161,9 @@ def resolve_active_package(session: MutableMapping) -> PartyPackage | None:
     return package
 
 
+# This function handles active session addons as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def active_session_addons(session: MutableMapping) -> list[AddonExperience]:
     """Return active selected experiences and remove stale or duplicate IDs."""
 
@@ -158,6 +186,9 @@ def active_session_addons(session: MutableMapping) -> list[AddonExperience]:
     return addons
 
 
+# This function handles select package as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def select_package(session: MutableMapping, package: PartyPackage) -> dict[str, Any]:
     """Use a capacity-based package without losing valid extras or details."""
 
@@ -176,6 +207,9 @@ def select_package(session: MutableMapping, package: PartyPackage) -> dict[str, 
     return checkout_state(session)
 
 
+# This business action carries out add addon to session.
+# It validates the live records and permissions before changing anything, then keeps related
+# updates together so partial results are not left behind.
 def add_addon_to_session(
     session: MutableMapping, addon: AddonExperience
 ) -> dict[str, Any]:
@@ -192,6 +226,8 @@ def add_addon_to_session(
     return state
 
 
+# This class groups the information and behaviour needed for party quote.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 @dataclass(frozen=True, slots=True)
 class PartyQuote:
     """Immutable price result used by every checkout step."""
@@ -201,6 +237,8 @@ class PartyQuote:
     total_price: Decimal
 
 
+# This class groups the information and behaviour needed for safe payment result.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 @dataclass(frozen=True, slots=True)
 class SafePaymentResult:
     """Non-sensitive payment metadata that may safely be persisted."""
@@ -209,6 +247,9 @@ class SafePaymentResult:
     card_last_four: str
 
 
+# This helper prepares calculate party quote for the page or service that called it.
+# It returns a consistent, permission-aware result so callers do not need to repeat the same
+# selection rules.
 def calculate_party_quote(
     package: PartyPackage,
     addons: Iterable[AddonExperience],
@@ -223,6 +264,9 @@ def calculate_party_quote(
     )
 
 
+# This business action carries out create completed party build.
+# It validates the live records and permissions before changing anything, then keeps related
+# updates together so partial results are not left behind.
 @transaction.atomic
 def create_completed_party_build(
     *,

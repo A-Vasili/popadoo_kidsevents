@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This account template presents dashboard for sign-in, registration, profile, or the customer dashboard. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 
@@ -8,7 +10,9 @@
 {% block page_name %}accountDashboard{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/accounts.css' %}">{% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="account-page" aria-labelledby="dashboard-heading">
     <div class="container account-shell">
         {# This header introduces the page and gives visitors the main context before they continue. #}
@@ -20,6 +24,7 @@
             <a class="button" href="{% url 'party_builder:party_builder_package_options' %}">Build another party</a>
         </header>
         <div class="booking-list">
+                        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                         {% for booking in bookings %}
                 {# This article represents one self-contained item that can be understood on its own. #}
                 <article class="booking-card">

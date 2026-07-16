@@ -1,9 +1,17 @@
+/*
+ * This stylesheet presents customer rating controls, testimonial choices, status messages, and public review displays with accessible focus states.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
 .review-page { padding: clamp(2.5rem, 7vw, 5rem) 0; }
 .review-shell { max-width: 54rem; display: grid; gap: 1.5rem; }
 .review-shell-narrow { max-width: 36rem; }
 .review-heading { text-align: center; }
 .review-code-panel,
 .review-form,
+/*
+ * This section presents ratings and testimonial choices with visible labels, feedback, and keyboard focus.
+ */
 .review-rating-card {
     border: 1px solid var(--color-border);
     border-radius: 1.25rem;
@@ -35,6 +43,9 @@
 .review-recommendations { margin-top: 1.25rem; }
 .recommendation-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .recommendation-card { padding: 1rem; border: 1px solid var(--color-border); border-radius: 1rem; background: var(--color-surface-raised); }
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 48rem) { .recommendation-grid { grid-template-columns: 1fr; } }
 .review-average { margin: .75rem 0 0; color: var(--color-muted); font-size: .9rem; }
 
@@ -94,6 +105,9 @@
     accent-color: var(--color-primary);
 }
 
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .review-choice-card input:focus-visible {
     outline: 3px solid var(--color-focus, var(--color-primary));
     outline-offset: 3px;

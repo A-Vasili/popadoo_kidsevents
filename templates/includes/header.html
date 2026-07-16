@@ -1,3 +1,5 @@
+{# This reusable template presents header wherever the shared site layout includes it. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {% comment %}
@@ -7,10 +9,12 @@ The shared header has two clear levels:
 Keeping these areas separate makes the header easier to understand and update.
 {% endcomment %}
 <header class="site-header">
+    {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "includes/header_utility_stripe.html" %}
 
     <div class="header-main-row">
         <div class="container">
+            {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
             <nav class="site-navigation" aria-label="Primary navigation" data-i18n-aria-label="nav.primaryLabel">
                 <a class="site-logo" href="{% url 'core:core_home' %}" aria-label="Popadoo Kids Events home" data-i18n-aria-label="nav.logoLabel">
                     <img class="site-logo-mark" src="{% static 'assets/svg/popadoo-logo.svg' %}" alt="" width="128" height="128">
@@ -30,6 +34,7 @@ Keeping these areas separate makes the header easier to understand and update.
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_gallery' %} active{% endif %}" href="{% url 'core:core_gallery' %}" {% if request.resolver_match.url_name == 'core_gallery' %}aria-current="page"{% endif %} data-i18n="nav.gallery">Gallery</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_about' %} active{% endif %}" href="{% url 'core:core_about' %}" {% if request.resolver_match.url_name == 'core_about' %}aria-current="page"{% endif %} data-i18n="nav.about">About Us</a></li>
                         <li><a class="site-navigation-link{% if request.resolver_match.url_name == 'core_testimonials' %} active{% endif %}" href="{% url 'core:core_testimonials' %}" {% if request.resolver_match.url_name == 'core_testimonials' %}aria-current="page"{% endif %} data-i18n="nav.testimonials">Testimonials</a></li>
+                        {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
                         {% if nav_can_access_full_management %}
                             <li><a class="site-navigation-link" href="{% url 'management:management_dashboard' %}">Management</a></li>
                         {% elif nav_can_manage_pricing %}

@@ -3,6 +3,12 @@
 Authentication remains Django's responsibility; this module stores only the
 extra contact and operational details Popadoo needs.
 """
+# This file describes the business records stored by this part of Popadoo and the relationships
+# between them.
+# The models preserve important history and enforce rules that must remain true no matter which
+# page changes the data.
+# Views, forms, and services build on these records rather than keeping important information only
+# in the browser.
 
 from __future__ import annotations
 
@@ -21,9 +27,14 @@ postal_code_validator = RegexValidator(
 )
 
 
+# This model represents customer profile as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class CustomerProfile(models.Model):
     """Saved customer details used to prefill future party bookings."""
 
+    # These named choices keep the allowed preferred language values consistent in the database,
+    # forms, and page labels.
     class PreferredLanguage(models.TextChoices):
         ENGLISH = "en", "English"
         GREEK = "el", "Greek"
@@ -48,13 +59,21 @@ class CustomerProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("user__last_name", "user__first_name", "user__username")
 
+    # This method handles str for the surrounding customer profile.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"Customer profile: {self.user.get_full_name() or self.user.username}"
 
 
+# This model represents worker profile as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class WorkerProfile(models.Model):
     """Operational settings for users who can receive party assignments."""
 
@@ -81,6 +100,8 @@ class WorkerProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("display_name", "user__username")
         permissions = [
@@ -89,5 +110,8 @@ class WorkerProfile(models.Model):
             ("view_all_worker_schedules", "Can view all worker schedules"),
         ]
 
+    # This method handles str for the surrounding worker profile.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return self.display_name or self.user.get_full_name() or self.user.username

@@ -1,7 +1,10 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the detail screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load management_tags %}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header">
         <div>
@@ -10,6 +13,7 @@
             <p>{{ managed_user.email|default:"No email address" }} · {{ managed_user|management_role }}</p>
         </div>
         <div class="management-quick-actions">
+            {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
             {% if can_edit_worker %}
                 <a class="management-button" href="{% url 'management:management_user_update' managed_user.pk %}">Edit worker settings</a>
             {% endif %}
@@ -31,6 +35,7 @@
                 <div><dt>Role</dt><dd>{{ managed_user|management_role }}</dd></div>
                 <div><dt>Status</dt><dd>{{ managed_user.is_active|yesno:"Active,Banned" }}</dd></div>
                 <div><dt>Pricing access</dt><dd>{{ managed_user|has_pricing_access|yesno:"Granted,Not granted" }}</dd></div>
+                <div><dt>Chat responder access</dt><dd>{{ managed_user|has_chat_access|yesno:"Granted,Not granted" }}</dd></div>
                 <div><dt>Date joined</dt><dd>{{ managed_user.date_joined|date:"d M Y H:i" }}</dd></div>
                 <div><dt>Last sign in</dt><dd>{{ managed_user.last_login|date:"d M Y H:i"|default:"Never" }}</dd></div>
             </dl>
@@ -64,6 +69,11 @@
                         <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'revoke_pricing' %}">Revoke pricing access</a>
                     {% else %}
                         <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'grant_pricing' %}">Grant pricing access</a>
+                    {% endif %}
+                    {% if managed_user|has_chat_access %}
+                        <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'revoke_chat' %}">Revoke chat responder access</a>
+                    {% else %}
+                        <a class="management-button secondary" href="{% url 'management:management_user_action' managed_user.pk 'grant_chat' %}">Grant chat responder access</a>
                     {% endif %}
                 {% endif %}
 

@@ -5,6 +5,12 @@ separate roles. Only an Administrator can create or change an Owner. Customer
 profile details stay under the customer's control; management actions here are
 limited to account status, safe deletion, and staff operations.
 """
+# This service manages sensitive account and staff-role changes requested from the management
+# area.
+# It protects historical records, keeps delegated roles independent, and records important changes
+# in the audit history.
+# Centralising these actions prevents a page from accidentally bypassing worker, pricing, or
+# chat-access rules.
 
 from __future__ import annotations
 
@@ -15,6 +21,7 @@ from django.db import transaction
 
 from accounts.models import WorkerProfile
 from accounts.permissions import (
+    CHAT_RESPONDER_GROUP,
     OWNER_GROUP,
     PRICING_GROUP,
     WORKER_GROUP,
@@ -28,27 +35,42 @@ from .audit import record_audit
 User = get_user_model()
 
 
+# This function handles require business manager as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _require_business_manager(actor) -> None:
     if not can_access_full_management(actor):
         raise PermissionDenied("Administrator or Owner access is required.")
 
 
+# This function handles require worker manager as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _require_worker_manager(actor) -> None:
     _require_business_manager(actor)
     if not actor.has_perm("accounts.manage_worker_roles"):
         raise PermissionDenied("Worker-management permission is required.")
 
 
+# This role check answers whether the current account qualifies as owner account.
+# Callers use the answer for navigation and convenience, while protected views and services still
+# enforce access themselves.
 def is_owner_account(user) -> bool:
     """Return true for a protected Owner account, never for a superuser."""
 
     return bool(not user.is_superuser and user.groups.filter(name=OWNER_GROUP).exists())
 
 
+# This role check answers whether the current account qualifies as worker account.
+# Callers use the answer for navigation and convenience, while protected views and services still
+# enforce access themselves.
 def is_worker_account(user) -> bool:
     return user.groups.filter(name=WORKER_GROUP).exists()
 
 
+# This role check answers whether the current account qualifies as customer account.
+# Callers use the answer for navigation and convenience, while protected views and services still
+# enforce access themselves.
 def is_customer_account(user) -> bool:
     """Customers have no protected business role."""
 
@@ -59,6 +81,9 @@ def is_customer_account(user) -> bool:
     )
 
 
+# This safeguard verifies manager can view before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 def ensure_manager_can_view(actor, target) -> None:
     """Protect system accounts and stop Owners inspecting other Owners."""
 
@@ -69,6 +94,9 @@ def ensure_manager_can_view(actor, target) -> None:
         raise PermissionDenied("Owners cannot view another Owner account.")
 
 
+# This safeguard verifies manager can manage before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 def ensure_manager_can_manage(actor, target) -> None:
     """Protect Administrators and Owners from ordinary account mutations."""
 
@@ -81,11 +109,17 @@ def ensure_manager_can_manage(actor, target) -> None:
 ensure_owner_can_manage = ensure_manager_can_manage
 
 
+# This function handles reject worker role target as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _reject_worker_role_target(user) -> None:
     if user.is_superuser or is_owner_account(user):
         raise PermissionDenied("Owner and Administrator accounts cannot be changed here.")
 
 
+# This business action carries out create owner account.
+# It validates the live records and permissions before changing anything, then keeps related
+# updates together so partial results are not left behind.
 @transaction.atomic
 def create_owner_account(
     *,
@@ -125,6 +159,9 @@ def create_owner_account(
     return user
 
 
+# This protected service carries out the “promote to worker” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
 @transaction.atomic
 def promote_to_worker(user, actor):
     """Create worker access for the dedicated staff-account workflow."""
@@ -151,6 +188,9 @@ def promote_to_worker(user, actor):
     return profile
 
 
+# This protected service carries out the “demote worker” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
 @transaction.atomic
 def demote_worker(user, actor):
     """Remove worker and pricing access without deleting staff history."""
@@ -161,12 +201,16 @@ def demote_worker(user, actor):
         raise ValidationError("This account is not currently a worker.")
 
     had_pricing = user.groups.filter(name=PRICING_GROUP).exists()
+    had_chat = user.groups.filter(name=CHAT_RESPONDER_GROUP).exists()
     worker_group = Group.objects.filter(name=WORKER_GROUP).first()
     pricing_group = Group.objects.filter(name=PRICING_GROUP).first()
+    chat_group = Group.objects.filter(name=CHAT_RESPONDER_GROUP).first()
     if worker_group:
         worker_group.user_set.remove(user)
     if pricing_group:
         pricing_group.user_set.remove(user)
+    if chat_group:
+        chat_group.user_set.remove(user)
 
     profile = getattr(user, "worker_profile", None)
     if profile:
@@ -178,11 +222,14 @@ def demote_worker(user, actor):
         event_type="worker_demoted",
         target=user,
         summary=f"{actor} removed worker access from {user}.",
-        before={"worker": True, "pricing": had_pricing},
-        after={"worker": False, "pricing": False},
+        before={"worker": True, "pricing": had_pricing, "chat_responder": had_chat},
+        after={"worker": False, "pricing": False, "chat_responder": False},
     )
 
 
+# This protected service carries out the “grant pricing management” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
 @transaction.atomic
 def grant_pricing_management(user, actor):
     """Grant catalogue access only to an existing worker."""
@@ -206,6 +253,66 @@ def grant_pricing_management(user, actor):
     )
 
 
+# This protected service carries out the “grant chat responder access” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
+@transaction.atomic
+def grant_chat_responder_access(user, actor):
+    """Grant chat access only to an existing active worker account."""
+
+    _require_worker_manager(actor)
+    _reject_worker_role_target(user)
+    profile = getattr(user, "worker_profile", None)
+    if (
+        not user.is_active
+        or not user.groups.filter(name=WORKER_GROUP).exists()
+        or not profile
+        or not profile.is_active_worker
+    ):
+        raise ValidationError("Chat access can be granted only to an active worker.")
+    if user.groups.filter(name=CHAT_RESPONDER_GROUP).exists():
+        raise ValidationError("This worker already has chat responder access.")
+
+    group, _ = Group.objects.get_or_create(name=CHAT_RESPONDER_GROUP)
+    group.user_set.add(user)
+    record_audit(
+        actor=actor,
+        event_type="chat_responder_access_granted",
+        target=user,
+        summary=f"{actor} granted customer-chat access to {user}.",
+        before={"chat_responder": False},
+        after={"chat_responder": True},
+    )
+
+
+# This protected service carries out the “revoke chat responder access” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
+@transaction.atomic
+def revoke_chat_responder_access(user, actor):
+    """Remove chat delegation without changing worker or pricing access."""
+
+    _require_worker_manager(actor)
+    _reject_worker_role_target(user)
+    if not user.groups.filter(name=CHAT_RESPONDER_GROUP).exists():
+        raise ValidationError("This worker does not currently have chat responder access.")
+
+    group = Group.objects.filter(name=CHAT_RESPONDER_GROUP).first()
+    if group:
+        group.user_set.remove(user)
+    record_audit(
+        actor=actor,
+        event_type="chat_responder_access_revoked",
+        target=user,
+        summary=f"{actor} revoked customer-chat access from {user}.",
+        before={"chat_responder": True},
+        after={"chat_responder": False},
+    )
+
+
+# This protected service carries out the “revoke pricing management” role change.
+# It rechecks the acting account and target eligibility, keeps combined roles consistent, and
+# records the sensitive change for accountability.
 @transaction.atomic
 def revoke_pricing_management(user, actor):
     """Remove delegated catalogue access while preserving worker access."""
@@ -228,6 +335,9 @@ def revoke_pricing_management(user, actor):
     )
 
 
+# This safeguard verifies owner status change before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 def _validate_owner_status_change(*, actor, target, active: bool) -> None:
     if not is_owner_account(target):
         return
@@ -243,6 +353,9 @@ def _validate_owner_status_change(*, actor, target, active: bool) -> None:
             raise ValidationError("At least one other active Owner must remain.")
 
 
+# This function handles set account banned as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def set_account_banned(*, target, banned: bool, actor):
     """Ban or unban an eligible account while preserving all business history."""
@@ -277,10 +390,17 @@ def set_account_banned(*, target, banned: bool, actor):
 
 
 # Kept as a small compatibility wrapper for existing internal callers.
+# This function handles set account active as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def set_account_active(*, target, active: bool, actor):
     return set_account_banned(target=target, banned=not active, actor=actor)
 
 
+# This safeguard lists the historical records that must be preserved before a customer account can
+# be removed permanently.
+# When protected history exists, management users are directed toward the safer account-ban
+# workflow instead.
 def customer_delete_blockers(user) -> list[str]:
     """List the historical records that make destructive deletion unsafe."""
 
@@ -295,9 +415,16 @@ def customer_delete_blockers(user) -> list[str]:
         blockers.append("created assignments")
     if user.popadoo_audit_events.exists():
         blockers.append("audit actions")
+    # Support messages are immutable business history, so the customer account
+    # is banned rather than deleted once a chat exists.
+    if hasattr(user, "customer_chat"):
+        blockers.append("customer chat history")
     return blockers
 
 
+# This business action carries out delete unused customer.
+# It validates the live records and permissions before changing anything, then keeps related
+# updates together so partial results are not left behind.
 @transaction.atomic
 def delete_unused_customer(*, target, actor) -> None:
     """Delete only an unused customer; historical accounts must be banned instead."""

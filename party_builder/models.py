@@ -3,6 +3,12 @@
 Historical booking values are stored alongside live catalogue relationships so
 future catalogue edits never rewrite what a customer originally selected.
 """
+# This file describes the business records stored by this part of Popadoo and the relationships
+# between them.
+# The models preserve important history and enforce rules that must remain true no matter which
+# page changes the data.
+# Views, forms, and services build on these records rather than keeping important information only
+# in the browser.
 
 from __future__ import annotations
 
@@ -25,6 +31,9 @@ from .validators import (
 )
 
 
+# This safeguard verifies constraints except before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 def _validate_constraints_except(instance, excluded_names: set[str], exclude=None) -> None:
     """Validate model constraints except defaults switched by a transaction.
 
@@ -59,6 +68,8 @@ def _validate_constraints_except(instance, excluded_names: set[str], exclude=Non
         raise ValidationError(errors)
 
 
+# These named choices keep the allowed category values consistent in the database, forms, and page
+# labels.
 class Category(models.Model):
     """A catalogue category; assigning a parent creates a subcategory."""
 
@@ -87,6 +98,8 @@ class Category(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("display_order", "name")
         verbose_name_plural = "categories"
@@ -95,9 +108,14 @@ class Category(models.Model):
             models.Index(fields=("parent", "is_active")),
         ]
 
+    # This method handles str for the surrounding category.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return self.name if self.parent_id is None else f"{self.parent.name} / {self.name}"
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         """Reject self-parenting and parent choices underneath this category."""
 
@@ -126,6 +144,9 @@ class Category(models.Model):
             raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
 
 
+# This model represents party package as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class PartyPackage(models.Model):
     """The essential Popadoo experience used as the checkout foundation."""
 
@@ -167,6 +188,8 @@ class PartyPackage(models.Model):
     )
     image_alt_text = models.CharField(max_length=180, blank=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("display_order", "name")
         indexes = [models.Index(fields=("is_active", "display_order", "name"))]
@@ -184,6 +207,8 @@ class PartyPackage(models.Model):
             ),
         ]
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         """Keep text tidy and ensure default records remain selectable."""
 
@@ -197,6 +222,9 @@ class PartyPackage(models.Model):
         if self.image and not self.image_alt_text:
             raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
 
+    # This safeguard verifies constraints before the surrounding workflow continues.
+    # When the rule is not met, it stops the action with a controlled error rather than allowing
+    # an inconsistent record.
     def validate_constraints(self, exclude=None) -> None:
         _validate_constraints_except(
             self,
@@ -204,9 +232,15 @@ class PartyPackage(models.Model):
             exclude=exclude,
         )
 
+    # This method handles str for the surrounding party package.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return self.name
 
+    # This method handles included experiences list for the surrounding party package.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @property
     def included_experiences_list(self) -> list[str]:
         """Return clean list items for semantic template rendering."""
@@ -217,10 +251,16 @@ class PartyPackage(models.Model):
             if item.strip()
         ]
 
+    # This helper retrieves absolute url for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_absolute_url(self) -> str:
         return reverse("party_ideas:package_detail", kwargs={"slug": self.slug})
 
 
+# This model represents guest price tier as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class GuestPriceTier(models.Model):
     """A fixed package price for a clearly defined children-count bracket."""
 
@@ -245,6 +285,8 @@ class GuestPriceTier(models.Model):
     is_active = models.BooleanField(default=True)
     display_order = models.PositiveSmallIntegerField(default=0)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("display_order", "min_guests")
         constraints = [
@@ -267,6 +309,8 @@ class GuestPriceTier(models.Model):
             ),
         ]
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         """Validate active ranges before they reach checkout pricing."""
 
@@ -290,6 +334,9 @@ class GuestPriceTier(models.Model):
                     "This active guest range overlaps another active tier for the package."
                 )
 
+    # This safeguard verifies constraints before the surrounding workflow continues.
+    # When the rule is not met, it stops the action with a controlled error rather than allowing
+    # an inconsistent record.
     def validate_constraints(self, exclude=None) -> None:
         _validate_constraints_except(
             self,
@@ -297,9 +344,15 @@ class GuestPriceTier(models.Model):
             exclude=exclude,
         )
 
+    # This method handles str for the surrounding guest price tier.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"{self.package.name}: {self.label}"
 
+    # This method handles price per child at capacity for the surrounding guest price tier.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @property
     def price_per_child_at_capacity(self) -> Decimal:
         """Show the effective rate when the bracket is filled to capacity."""
@@ -310,10 +363,16 @@ class GuestPriceTier(models.Model):
             Decimal("0.01")
         )
 
+    # This method handles contains guest count for the surrounding guest price tier.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def contains_guest_count(self, guest_count: int) -> bool:
         return self.min_guests <= guest_count <= self.max_guests
 
 
+# This model represents addon experience as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class AddonExperience(models.Model):
     """An optional paid experience that can be added to the base package."""
 
@@ -350,6 +409,8 @@ class AddonExperience(models.Model):
     )
     image_alt_text = models.CharField(max_length=180, blank=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("display_order", "name")
         indexes = [models.Index(fields=("is_active", "is_featured", "display_order"))]
@@ -360,6 +421,8 @@ class AddonExperience(models.Model):
             )
         ]
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         super().clean()
         self.name = (self.name or "").strip()
@@ -368,9 +431,15 @@ class AddonExperience(models.Model):
         if self.image and not self.image_alt_text:
             raise ValidationError({"image_alt_text": "Add meaningful alternative text for this image."})
 
+    # This method handles str for the surrounding addon experience.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return self.name
 
+    # This helper retrieves absolute url for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_absolute_url(self) -> str:
         return reverse("party_ideas:addon_detail", kwargs={"slug": self.slug})
 
@@ -378,6 +447,9 @@ class AddonExperience(models.Model):
 REVIEW_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 
 
+# This function handles format review code as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def format_review_code(raw: str) -> str:
     """Return a normalized human-readable code without ambiguous characters."""
 
@@ -389,6 +461,9 @@ def format_review_code(raw: str) -> str:
     return f"POP-{compact[:4]}-{compact[4:]}"
 
 
+# This function handles generate review code candidate as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def generate_review_code_candidate() -> str:
     """Create one readable candidate; database uniqueness is checked separately."""
 
@@ -396,6 +471,9 @@ def generate_review_code_candidate() -> str:
     return f"POP-{body[:4]}-{body[4:]}"
 
 
+# This function handles generate unique review code as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def generate_unique_review_code() -> str:
     """Return a code not currently stored in the booking table."""
 
@@ -408,9 +486,14 @@ def generate_unique_review_code() -> str:
     raise RuntimeError("Unable to allocate a unique party review code.")
 
 
+# This model represents party build as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class PartyBuild(models.Model):
     """A completed simulated order with trusted server-side price snapshots."""
 
+    # These named choices keep the allowed status values consistent in the database, forms, and
+    # page labels.
     class Status(models.TextChoices):
         SUBMITTED = "submitted", "Submitted"
         CONTACTED = "contacted", "Contacted"
@@ -418,10 +501,14 @@ class PartyBuild(models.Model):
         COMPLETED = "completed", "Completed"
         CANCELLED = "cancelled", "Cancelled"
 
+    # These named choices keep the allowed payment status values consistent in the database,
+    # forms, and page labels.
     class PaymentStatus(models.TextChoices):
         SIMULATED = "simulated", "Simulated payment accepted"
         NOT_REQUIRED = "not_required", "No payment data"
 
+    # These named choices keep the allowed assignment state values consistent in the database,
+    # forms, and page labels.
     class AssignmentState(models.TextChoices):
         UNASSIGNED = "unassigned", "Unassigned"
         PENDING = "pending_acceptance", "Awaiting worker response"
@@ -532,6 +619,8 @@ class PartyBuild(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("-created_at",)
         indexes = [
@@ -541,6 +630,8 @@ class PartyBuild(models.Model):
             models.Index(fields=("status", "completed_at")),
         ]
 
+    # This save step preserves the model’s business rules whenever the record is written, not only
+    # when it comes from one particular form.
     def save(self, *args, **kwargs):
         if self.review_code:
             normalized = format_review_code(self.review_code)
@@ -549,15 +640,24 @@ class PartyBuild(models.Model):
             self.review_code = normalized
         super().save(*args, **kwargs)
 
+    # This method handles str for the surrounding party build.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"{self.contact_name} — {self.package.name} ({self.event_date})"
 
+    # This method handles party size display for the surrounding party build.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @property
     def party_size_display(self) -> str:
         """Describe capacity without presenting it as confirmed attendance."""
 
         return self.guest_tier_label or f"Up to {self.guest_count} children"
 
+    # This helper retrieves absolute url for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_absolute_url(self) -> str:
         return reverse(
             "party_builder:party_builder_order_success",
@@ -565,6 +665,9 @@ class PartyBuild(models.Model):
         )
 
 
+# This model represents party build addon as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class PartyBuildAddon(models.Model):
     """Join model preserving the addon price used for a completed checkout."""
 
@@ -584,6 +687,8 @@ class PartyBuildAddon(models.Model):
         validators=[MinValueValidator(Decimal("0.00"))],
     )
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("addon__display_order", "addon__name")
         constraints = [
@@ -593,10 +698,16 @@ class PartyBuildAddon(models.Model):
             )
         ]
 
+    # This method handles str for the surrounding party build addon.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"{self.build.public_id}: {self.addon.name}"
 
 
+# This model represents party review as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class PartyReview(models.Model):
     """Verified feedback for one completed customer booking.
 
@@ -605,10 +716,14 @@ class PartyReview(models.Model):
     withdrawn by the booking customer at any time.
     """
 
+    # These named choices keep the allowed visibility values consistent in the database, forms,
+    # and page labels.
     class Visibility(models.TextChoices):
         PRIVATE = "private", "Private feedback"
         TESTIMONIAL = "testimonial", "Public testimonial"
 
+    # These named choices keep the allowed testimonial name display values consistent in the
+    # database, forms, and page labels.
     class TestimonialNameDisplay(models.TextChoices):
         ANONYMOUS = "anonymous", "Anonymous"
         FIRST_NAME = "first_name", "First name only"
@@ -642,6 +757,8 @@ class PartyReview(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("-updated_at",)
         constraints = [
@@ -676,6 +793,8 @@ class PartyReview(models.Model):
             models.Index(fields=("visibility", "updated_at")),
         ]
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         super().clean()
         self.comment = (self.comment or "").strip()
@@ -692,6 +811,9 @@ class PartyReview(models.Model):
             if self.booking.status != PartyBuild.Status.COMPLETED:
                 raise ValidationError("Only completed parties can be reviewed.")
 
+    # This role check answers whether the current account qualifies as public testimonial.
+    # Callers use the answer for navigation and convenience, while protected views and services
+    # still enforce access themselves.
     @property
     def is_public_testimonial(self) -> bool:
         """Return whether this review currently has active publication consent."""
@@ -703,6 +825,9 @@ class PartyReview(models.Model):
             and self.booking.status == PartyBuild.Status.COMPLETED
         )
 
+    # This method handles public display name for the surrounding party review.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @property
     def public_display_name(self) -> str:
         """Return the only customer identity allowed on the public page."""
@@ -713,10 +838,16 @@ class PartyReview(models.Model):
                 return first_name
         return "Verified customer"
 
+    # This method handles str for the surrounding party review.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"Review for {self.booking.public_id} by {self.reviewer}"
 
 
+# This model represents addon rating as a stored Popadoo business record.
+# Its relationships and validation keep the record meaningful when it is used by customer, worker,
+# and management pages.
 class AddonRating(models.Model):
     """A verified score for an add-on that appears in the reviewed booking."""
 
@@ -737,6 +868,8 @@ class AddonRating(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # This inner configuration tells Django how the surrounding record should be ordered,
+    # labelled, indexed, or constrained.
     class Meta:
         ordering = ("build_addon__addon__display_order", "build_addon__addon__name")
         constraints = [
@@ -754,6 +887,8 @@ class AddonRating(models.Model):
             models.Index(fields=("review", "updated_at")),
         ]
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self) -> None:
         super().clean()
         self.comment = (self.comment or "").strip()
@@ -763,5 +898,8 @@ class AddonRating(models.Model):
                     "The add-on rating must belong to the same booking as the review."
                 )
 
+    # This method handles str for the surrounding addon rating.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __str__(self) -> str:
         return f"{self.build_addon.addon.name}: {self.score}/5"

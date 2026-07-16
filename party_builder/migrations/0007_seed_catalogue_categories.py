@@ -1,6 +1,14 @@
+# This historical migration records the database change identified as
+# 0007_seed_catalogue_categories.
+# It allows new and existing installations to reach the same stored structure or seed data in a
+# repeatable order.
+# Only explanatory comments belong here because changing a past migration could make databases
+# disagree.
 from django.db import migrations
 
 
+# This forward migration prepares the historical records required by this release while preserving
+# existing customised data where the migration allows it.
 def seed_categories(apps, schema_editor):
     Category = apps.get_model("party_builder", "Category")
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
@@ -29,12 +37,16 @@ def seed_categories(apps, schema_editor):
     AddonExperience.objects.filter(category__isnull=True).update(category=experience_category)
 
 
+# This reverse step removes or restores only what can be changed safely, avoiding damage to
+# records that later activity may already reference.
 def reverse_seed(apps, schema_editor):
     # Existing records keep their category assignments if this migration is
     # reversed; removing them would discard useful user data.
     pass
 
 
+# This class groups the information and behaviour needed for migration.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class Migration(migrations.Migration):
     dependencies = [
         ("party_builder", "0006_addonexperience_image_addonexperience_image_alt_text_and_more"),

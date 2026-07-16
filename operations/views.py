@@ -3,6 +3,11 @@
 Worker pages expose only the signed-in worker's records. Owner administration
 lives under /management/ so the two private experiences remain clearly separate.
 """
+# This file coordinates page requests for this area of Popadoo.
+# Each view checks who is making the request, gathers only the records they are allowed to see,
+# and chooses the template or response to return.
+# Multi-step business changes are delegated to services so page handling remains separate from
+# data rules.
 
 from __future__ import annotations
 
@@ -28,20 +33,33 @@ from .models import PartyAssignment, WorkerAvailability
 from .services.assignment import accept_assignment, decline_assignment
 
 
+# This class groups the information and behaviour needed for operations access mixin.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class OperationsAccessMixin(LoginRequiredMixin, UserPassesTestMixin):
     raise_exception = True
 
+    # This test protects the business rule described by “func”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_func(self):
         return can_access_operations(self.request.user)
 
 
+# This class groups the information and behaviour needed for worker required mixin.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class WorkerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     raise_exception = True
 
+    # This test protects the business rule described by “func”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_func(self):
         user = self.request.user
         return is_worker(user)
 
+    # This helper retrieves worker profile for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_worker_profile(self):
         return get_object_or_404(
             WorkerProfile,
@@ -50,14 +68,21 @@ class WorkerRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
         )
 
 
+# This view coordinates the operations dashboard view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class OperationsDashboardView(OperationsAccessMixin, TemplateView):
     template_name = "operations/dashboard.html"
 
+    # This entry check decides whether the signed-in person may reach any method on the view,
+    # preventing direct URLs from bypassing role restrictions.
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and can_access_full_management(request.user):
             return redirect("management:management_dashboard")
         return super().dispatch(request, *args, **kwargs)
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         worker = get_object_or_404(
@@ -80,11 +105,16 @@ class OperationsDashboardView(OperationsAccessMixin, TemplateView):
         return context
 
 
+# This view coordinates the worker assignment list view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAssignmentListView(WorkerRequiredMixin, ListView):
     template_name = "operations/assignment_list.html"
     context_object_name = "assignments"
     paginate_by = 20
 
+    # This query defines the complete set of records the current person may see, so later lookups
+    # cannot accidentally expose another customer or staff area.
     def get_queryset(self):
         return PartyAssignment.objects.filter(
             worker=self.get_worker_profile()
@@ -93,11 +123,16 @@ class WorkerAssignmentListView(WorkerRequiredMixin, ListView):
         ).prefetch_related("party_build__addon_items__addon")
 
 
+# This view coordinates the worker assignment detail view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAssignmentDetailView(WorkerRequiredMixin, DetailView):
     model = PartyAssignment
     template_name = "operations/assignment_detail.html"
     context_object_name = "assignment"
 
+    # This query defines the complete set of records the current person may see, so later lookups
+    # cannot accidentally expose another customer or staff area.
     def get_queryset(self):
         return PartyAssignment.objects.filter(
             worker=self.get_worker_profile()
@@ -105,15 +140,21 @@ class WorkerAssignmentDetailView(WorkerRequiredMixin, DetailView):
             "party_build__package", "party_build__guest_tier", "worker__user"
         ).prefetch_related("party_build__addon_items__addon")
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["decline_form"] = DeclineAssignmentForm()
         return context
 
 
+# This view coordinates the worker assignment accept view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAssignmentAcceptView(WorkerRequiredMixin, View):
     http_method_names = ["post"]
 
+    # This request method processes the submitted action after validation and permission checks.
     def post(self, request, pk):
         try:
             assignment = accept_assignment(
@@ -128,10 +169,15 @@ class WorkerAssignmentAcceptView(WorkerRequiredMixin, View):
         return redirect("operations:operations_worker_assignment_detail", pk=assignment.pk)
 
 
+# This view coordinates the worker assignment decline view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAssignmentDeclineView(WorkerRequiredMixin, FormView):
     form_class = DeclineAssignmentForm
     template_name = "operations/assignment_detail.html"
 
+    # This entry check decides whether the signed-in person may reach any method on the view,
+    # preventing direct URLs from bypassing role restrictions.
     def dispatch(self, request, *args, **kwargs):
         self.assignment = get_object_or_404(
             PartyAssignment,
@@ -140,11 +186,16 @@ class WorkerAssignmentDeclineView(WorkerRequiredMixin, FormView):
         )
         return super().dispatch(request, *args, **kwargs)
 
+    # This method handles form invalid for the surrounding worker assignment decline view.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def form_invalid(self, form):
         return self.render_to_response(
             {"assignment": self.assignment, "decline_form": form}
         )
 
+    # This step applies the validated form through the trusted business workflow and then sends
+    # the person to the appropriate success page.
     def form_valid(self, form):
         try:
             decline_assignment(
@@ -160,27 +211,40 @@ class WorkerAssignmentDeclineView(WorkerRequiredMixin, FormView):
         return redirect("operations:operations_worker_assignments")
 
 
+# This view coordinates the worker profile view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerProfileView(WorkerRequiredMixin, FormView):
     template_name = "operations/worker_profile.html"
     form_class = WorkerProfileForm
     success_url = reverse_lazy("operations:operations_worker_profile")
 
+    # This helper retrieves form kwargs for the page or service that called it.
+    # It returns a consistent, permission-aware result so callers do not need to repeat the same
+    # selection rules.
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = self.get_worker_profile()
         return kwargs
 
+    # This step applies the validated form through the trusted business workflow and then sends
+    # the person to the appropriate success page.
     def form_valid(self, form):
         form.save()
         messages.success(self.request, "Your worker profile was updated.")
         return super().form_valid(form)
 
 
+# This view coordinates the worker availability view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
     template_name = "operations/availability.html"
     form_class = WorkerAvailabilityForm
     success_url = reverse_lazy("operations:operations_worker_availability")
 
+    # This step applies the validated form through the trusted business workflow and then sends
+    # the person to the appropriate success page.
     def form_valid(self, form):
         availability = form.save(commit=False)
         availability.worker = self.get_worker_profile()
@@ -189,6 +253,8 @@ class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
         messages.success(self.request, "Your availability was saved.")
         return super().form_valid(form)
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["availability_periods"] = self.get_worker_profile().availability_periods.filter(
@@ -197,9 +263,13 @@ class WorkerAvailabilityView(WorkerRequiredMixin, FormView):
         return context
 
 
+# This view coordinates the worker availability delete view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerAvailabilityDeleteView(WorkerRequiredMixin, View):
     http_method_names = ["post"]
 
+    # This request method processes the submitted action after validation and permission checks.
     def post(self, request, pk):
         period = get_object_or_404(
             WorkerAvailability,
@@ -212,9 +282,14 @@ class WorkerAvailabilityDeleteView(WorkerRequiredMixin, View):
         return redirect("operations:operations_worker_availability")
 
 
+# This view coordinates the worker schedule view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class WorkerScheduleView(WorkerRequiredMixin, TemplateView):
     template_name = "operations/worker_schedule.html"
 
+    # This step gathers the additional labels, forms, and summary information the template needs
+    # to explain the page clearly.
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         worker = self.get_worker_profile()
@@ -226,14 +301,21 @@ class WorkerScheduleView(WorkerRequiredMixin, TemplateView):
         return context
 
 
+# This view coordinates the legacy owner booking assignment redirect view page or action.
+# It prepares only the records allowed for the signed-in person before choosing the response shown
+# in the browser.
 class LegacyOwnerBookingAssignmentRedirectView(LoginRequiredMixin, UserPassesTestMixin, View):
     """Translate the old integer booking URL to the canonical UUID route."""
 
     raise_exception = True
 
+    # This test protects the business rule described by “func”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_func(self):
         return can_access_full_management(self.request.user)
 
+    # This request method displays the current page and its permitted records.
     def get(self, request, booking_id):
         booking = get_object_or_404(PartyBuild, pk=booking_id)
         return redirect(

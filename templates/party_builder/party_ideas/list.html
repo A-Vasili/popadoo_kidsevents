@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents list within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {% block title %}{% if current_category %}{{ current_category.name }} Party Ideas{% else %}Party Ideas{% endif %} | Popadoo Kids Events{% endblock %}
@@ -6,10 +8,12 @@
 {% block page_name %}partyIdeas{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/party-ideas.css' %}">{% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
 <header class="party-ideas-hero" aria-labelledby="party-ideas-heading">
     <div class="container narrow-content">
         {% if current_category %}
+            {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
             <nav aria-label="Breadcrumb" class="party-ideas-breadcrumbs">
                 <a href="{% url 'party_ideas:list' %}">Party Ideas</a>
                 {% if current_category.parent %}<a href="{% url 'party_ideas:category_detail' current_category.parent.slug %}">{{ current_category.parent.name }}</a>{% endif %}
@@ -33,9 +37,11 @@
     </div>
 </header>
 
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="party-ideas-section" aria-labelledby="party-ideas-results-heading">
     <div class="container">
         <nav class="party-idea-tabs" aria-label="Party idea types">
+            {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
             {% for tab in type_tabs %}
                 <a href="?{{ tab.query }}" class="party-idea-tab{% if tab.active %} active{% endif %}" {% if tab.active %}aria-current="page"{% endif %} data-i18n="{{ tab.translation_key }}">{{ tab.label }}</a>
             {% endfor %}
@@ -85,6 +91,7 @@
 
         <div class="party-ideas-layout">
             <aside class="party-ideas-filters" aria-labelledby="advanced-filters-heading">
+                {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
                 <form method="get" action="{% url 'party_ideas:list' %}" novalidate>
                     <input type="hidden" name="type" value="{{ filters.type|default:'all' }}">
                     <h2 id="advanced-filters-heading" data-i18n="partyIdeas.search">Search party ideas</h2>

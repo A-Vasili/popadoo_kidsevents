@@ -1,3 +1,5 @@
+{# This template presents order summary within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 <aside class="checkout-summary" aria-labelledby="checkout-summary-heading">
     <div class="checkout-summary-inner">
         <p class="section-kicker">Your cart</p>
@@ -11,6 +13,7 @@
                 <dt data-i18n="builder.packageCapacity">Package capacity</dt>
                 <dd data-i18n-template="builder.upToChildren" data-i18n-value-count="{{ package.included_guest_count }}">Up to {{ package.included_guest_count }} children</dd>
             </div>
+            {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
             {% for addon in selected_addons %}
                 <div><dt>{{ addon.name }}</dt><dd>€{{ addon.price|floatformat:2 }}</dd></div>
             {% empty %}

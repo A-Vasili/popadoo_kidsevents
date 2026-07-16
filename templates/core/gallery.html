@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This public template presents the gallery page as part of the Popadoo customer website. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 
@@ -12,6 +14,7 @@
     >
 {% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
     <div class="page-main">
         <div class="container">
@@ -39,6 +42,7 @@
                 </p>
             </header>
 
+                        {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
                         <section aria-labelledby="gallery-grid-heading">
                 <div class="section-heading-group">
                     <h2

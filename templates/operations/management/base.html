@@ -1,3 +1,5 @@
+{# This is the shared frame for the custom management area. It combines the authorised sidebar, page header, feedback messages, and per-page content without using Django Admin. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static management_tags %}
 <!doctype html>
 <html lang="en" data-theme="light">
@@ -18,6 +20,7 @@
     <a class="visually-hidden-focusable" href="#management-main">Skip to management content</a>
 
     <div class="management-shell" data-management-shell>
+        {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
         {% include "operations/management/includes/sidebar.html" %}
 
         <div class="management-workspace">
@@ -36,9 +39,20 @@
 
                 <div class="management-topbar-heading">
                     {% if management_breadcrumbs %}
+                        {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
                         <nav aria-label="Breadcrumb">
                             <ol class="management-breadcrumbs">
-                                <li><a href="{% url 'management:management_dashboard' %}">Management</a></li>
+                                <li>
+                                    {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
+                                    {% if nav_can_access_full_management %}
+                                        <a href="{% url 'management:management_dashboard' %}">Management</a>
+                                    {% elif nav_can_manage_pricing %}
+                                        <a href="{% url 'management:management_catalogue' %}">Management</a>
+                                    {% else %}
+                                        <a href="{% url 'communications:management_inbox' %}">Management</a>
+                                    {% endif %}
+                                </li>
+                                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                                 {% for label, target in management_breadcrumbs %}
                                     <li>
                                         {% if target %}<a href="{{ target }}">{{ label }}</a>{% else %}<span aria-current="page">{{ label }}</span>{% endif %}
@@ -66,6 +80,7 @@
                         <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
                         <span>{{ request.user|management_role }}</span>
                     </div>
+                    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
                     <form method="post" action="{% url 'accounts:accounts_sign_out' %}">
                         {% csrf_token %}
                         <button class="management-link-button" type="submit">Sign out</button>

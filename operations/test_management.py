@@ -1,4 +1,9 @@
 """Integration tests for the custom management panel."""
+# This file protects worker tasks and the custom management area used by Owners and Administrators
+# with automated regression checks.
+# The scenarios describe what customers and staff should be allowed to do, and what must remain
+# inaccessible or unchanged.
+# Temporary test data is discarded after the checks, so real Popadoo records are not affected.
 
 from __future__ import annotations
 
@@ -35,7 +40,12 @@ from .services.catalogue import remove_tier
 User = get_user_model()
 
 
+# This group of tests protects the management panel tests behaviour as one related customer or
+# staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class ManagementPanelTests(TestCase):
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.administrator = User.objects.create_superuser(
@@ -54,9 +64,14 @@ class ManagementPanelTests(TestCase):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
         cls.tier = GuestPriceTier.objects.filter(package=cls.package).order_by("min_guests").first()
 
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     def setUp(self):
         self.client.force_login(self.owner)
 
+    # This method handles make booking for the surrounding management panel tests.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def make_booking(self, *, package=None, tier=None, name="Parent One"):
         package = package or self.package
         tier = tier or GuestPriceTier.objects.filter(package=package).first()
@@ -77,10 +92,16 @@ class ManagementPanelTests(TestCase):
             total_price=Decimal("180.00"),
         )
 
+    # This test protects the business rule described by “admin route is unavailable”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_admin_route_is_unavailable(self):
         response = self.client.get("/admin/")
         self.assertEqual(response.status_code, 404)
 
+    # This test protects the business rule described by “management access is role protected”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_management_access_is_role_protected(self):
         self.client.logout()
         response = self.client.get(reverse("management:management_dashboard"))
@@ -103,6 +124,10 @@ class ManagementPanelTests(TestCase):
         self.client.force_login(self.administrator)
         self.assertEqual(self.client.get(reverse("management:management_dashboard")).status_code, 200)
 
+    # This test protects the business rule described by “active catalogue details link to public
+    # party ideas”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_active_catalogue_details_link_to_public_party_ideas(self):
         package_response = self.client.get(
             reverse("management:management_package_detail", args=[self.package.pk])
@@ -133,6 +158,10 @@ class ManagementPanelTests(TestCase):
             reverse("party_ideas:addon_detail", args=[addon.slug]),
         )
 
+    # This test protects the business rule described by “owner can create category and
+    # subcategory”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_can_create_category_and_subcategory(self):
         response = self.client.post(
             reverse("management:management_category_create"),
@@ -162,6 +191,9 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(Category.objects.get(slug="craft-workshops").parent, parent)
         self.assertTrue(AuditEvent.objects.filter(event_type="category_created").exists())
 
+    # This test protects the business rule described by “category circular parent is rejected”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_category_circular_parent_is_rejected(self):
         parent = Category.objects.create(name="Parent", slug="parent")
         child = Category.objects.create(name="Child", slug="child", parent=parent)
@@ -180,6 +212,10 @@ class ManagementPanelTests(TestCase):
         parent.refresh_from_db()
         self.assertIsNone(parent.parent)
 
+    # This test protects the business rule described by “unused category is deleted and used
+    # category is archived”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_unused_category_is_deleted_and_used_category_is_archived(self):
         unused = Category.objects.create(name="Unused", slug="unused")
         response = self.client.post(
@@ -199,6 +235,9 @@ class ManagementPanelTests(TestCase):
         used.refresh_from_db()
         self.assertFalse(used.is_active)
 
+    # This test protects the business rule described by “package crud and default switch”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_crud_and_default_switch(self):
         response = self.client.post(
             reverse("management:management_package_create"),
@@ -243,6 +282,9 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(premium.name, "Premium Party Plus")
         self.assertEqual(premium.base_price, Decimal("280.00"))
 
+    # This test protects the business rule described by “referenced package is archived”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_referenced_package_is_archived(self):
         replacement = PartyPackage.objects.create(
             name="Replacement",
@@ -276,6 +318,10 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(self.package.is_active)
         self.assertTrue(replacement.is_default)
 
+    # This test protects the business rule described by “package management uses capacity and
+    # hides tier crud”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_package_management_uses_capacity_and_hides_tier_crud(self):
         catalogue = self.client.get(
             reverse("management:management_catalogue")
@@ -294,6 +340,10 @@ class ManagementPanelTests(TestCase):
         self.assertNotContains(package_detail, "Add tier")
         self.assertNotContains(package_detail, "Edit tier")
 
+    # This test protects the business rule described by “legacy tier management urls are read only
+    # redirects”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_tier_management_urls_are_read_only_redirects(self):
         original_count = GuestPriceTier.objects.count()
         list_response = self.client.get(
@@ -341,6 +391,9 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “referenced addon is archived”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_referenced_addon_is_archived(self):
         addon = AddonExperience.objects.first()
         build = self.make_booking()
@@ -354,6 +407,9 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(addon.is_active)
         self.assertTrue(build.addon_items.filter(addon=addon).exists())
 
+    # This test protects the business rule described by “fake image upload is rejected”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_fake_image_upload_is_rejected(self):
         fake = SimpleUploadedFile("fake.png", b"not a real image", content_type="image/png")
         response = self.client.post(
@@ -372,6 +428,10 @@ class ManagementPanelTests(TestCase):
         self.assertContains(response, "Upload a valid image")
         self.assertFalse(Category.objects.filter(slug="image-category").exists())
 
+    # This test protects the business rule described by “owner can ban customer but not view other
+    # owner or administrator”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_can_ban_customer_but_not_view_other_owner_or_administrator(self):
         other_owner = User.objects.create_user("other-management-owner", password="Owner-pass-456!")
         Group.objects.get(name="Owners").user_set.add(other_owner)
@@ -394,6 +454,9 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(self.customer.is_active)
         self.assertTrue(AuditEvent.objects.filter(event_type="user_banned", object_id=str(self.customer.pk)).exists())
 
+    # This test protects the business rule described by “booking filter detail and status update”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_booking_filter_detail_and_status_update(self):
         booking = self.make_booking(name="Searchable Parent")
         response = self.client.get(reverse("management:management_booking_list"), {"q": "Searchable"})
@@ -411,6 +474,9 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(booking.status, PartyBuild.Status.CONTACTED)
         self.assertTrue(AuditEvent.objects.filter(event_type="booking_status_changed", object_id=str(booking.pk)).exists())
 
+    # This test protects the business rule described by “mutation endpoints reject get”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_mutation_endpoints_reject_get(self):
         booking = self.make_booking()
         self.assertEqual(
@@ -422,6 +488,10 @@ class ManagementPanelTests(TestCase):
             405,
         )
 
+    # This test protects the business rule described by “dashboard totals can exceed recent list
+    # limit”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_dashboard_totals_can_exceed_recent_list_limit(self):
         category = self.package.category
         for index in range(12):
@@ -440,6 +510,9 @@ class ManagementPanelTests(TestCase):
         self.assertGreaterEqual(response.context["stats"]["active_packages"], 13)
         self.assertLessEqual(len(response.context["attention_bookings"]), 8)
 
+    # This test protects the business rule described by “audit page is owner only and paginated”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_audit_page_is_owner_only_and_paginated(self):
         for index in range(55):
             AuditEvent.objects.create(
@@ -456,6 +529,10 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(self.client.get(reverse("management:management_audit")).status_code, 403)
 
 
+    # This test protects the business rule described by “valid image upload uses generated
+    # catalogue path”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_valid_image_upload_uses_generated_catalogue_path(self):
         image_bytes = BytesIO()
         Image.new("RGB", (12, 12), color=(240, 80, 140)).save(image_bytes, format="PNG")
@@ -485,6 +562,10 @@ class ManagementPanelTests(TestCase):
             self.assertNotIn("parent-controlled-name", category.image.name)
             self.assertTrue(category.image.storage.exists(category.image.name))
 
+    # This test protects the business rule described by “unused catalogue records are permanently
+    # deleted”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_unused_catalogue_records_are_permanently_deleted(self):
         package = PartyPackage.objects.create(
             name="Temporary Package",
@@ -530,6 +611,10 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(PartyPackage.objects.filter(pk=package.pk).exists())
         self.assertFalse(GuestPriceTier.objects.filter(pk=tier.pk).exists())
 
+    # This test protects the business rule described by “legacy tier service archives without
+    # losing booking”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_tier_service_archives_without_losing_booking(self):
         tier = GuestPriceTier.objects.create(
             package=self.package,
@@ -550,6 +635,9 @@ class ManagementPanelTests(TestCase):
         self.assertFalse(tier.is_active)
         self.assertEqual(booking.guest_tier_id, tier.pk)
 
+    # This test protects the business rule described by “last default package cannot be removed”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_last_default_package_cannot_be_removed(self):
         PartyPackage.objects.exclude(pk=self.package.pk).update(
             is_active=False,
@@ -569,6 +657,10 @@ class ManagementPanelTests(TestCase):
         self.package.refresh_from_db()
         self.assertTrue(self.package.is_default)
 
+    # This test protects the business rule described by “invalid catalogue form preserves values
+    # and field errors”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_invalid_catalogue_form_preserves_values_and_field_errors(self):
         response = self.client.post(
             reverse("management:management_package_create"),
@@ -591,6 +683,10 @@ class ManagementPanelTests(TestCase):
         self.assertContains(response, "greater than or equal to")
         self.assertFalse(PartyPackage.objects.filter(slug="preserved-invalid-package").exists())
 
+    # This test protects the business rule described by “owner can create worker through
+    # management namespace”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_can_create_worker_through_management_namespace(self):
         response = self.client.post(
             reverse("management:management_user_create_worker"),
@@ -618,6 +714,10 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “crafted user action must match current
+    # role state”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_crafted_user_action_must_match_current_role_state(self):
         response = self.client.post(
             reverse(
@@ -629,6 +729,10 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertFalse(self.customer.groups.filter(name="Workers").exists())
 
+    # This test protects the business rule described by “state changing management actions require
+    # csrf”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_state_changing_management_actions_require_csrf(self):
         csrf_client = Client(enforce_csrf_checks=True)
         csrf_client.force_login(self.owner)
@@ -643,6 +747,10 @@ class ManagementPanelTests(TestCase):
         self.customer.refresh_from_db()
         self.assertTrue(self.customer.is_active)
 
+    # This test protects the business rule described by “price and default changes have filterable
+    # audit events”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_price_and_default_changes_have_filterable_audit_events(self):
         response = self.client.post(
             reverse("management:management_package_update", args=[self.package.pk]),
@@ -669,6 +777,10 @@ class ManagementPanelTests(TestCase):
         )
 
 
+    # This test protects the business rule described by “manual reassignment replaces confirmed
+    # schedule entry”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_manual_reassignment_replaces_confirmed_schedule_entry(self):
         second_user = User.objects.create_user(
             "second-management-worker",
@@ -715,6 +827,10 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “manual assignment service rejects non
+    # owner”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_manual_assignment_service_rejects_non_owner(self):
         booking = self.make_booking()
 
@@ -728,6 +844,10 @@ class ManagementPanelTests(TestCase):
 
         self.assertFalse(booking.assignments.exists())
 
+    # This test protects the business rule described by “manual review removes confirmed schedule
+    # entry”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_manual_review_removes_confirmed_schedule_entry(self):
         booking = self.make_booking()
         assignment = PartyAssignment.objects.create(
@@ -759,6 +879,9 @@ class ManagementPanelTests(TestCase):
             PartyBuild.AssignmentState.MANUAL_REVIEW,
         )
 
+    # This test protects the business rule described by “manual review service rejects non owner”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_manual_review_service_rejects_non_owner(self):
         booking = self.make_booking()
 
@@ -775,6 +898,10 @@ class ManagementPanelTests(TestCase):
             PartyBuild.AssignmentState.UNASSIGNED,
         )
 
+    # This test protects the business rule described by “terminal booking cannot return to manual
+    # review”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_terminal_booking_cannot_return_to_manual_review(self):
         booking = self.make_booking()
         booking.status = PartyBuild.Status.CANCELLED
@@ -800,6 +927,10 @@ class ManagementPanelTests(TestCase):
             PartyBuild.AssignmentState.UNASSIGNED,
         )
 
+    # This test protects the business rule described by “administrator can create owner without
+    # system privileges”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_administrator_can_create_owner_without_system_privileges(self):
         self.client.force_login(self.administrator)
         response = self.client.post(
@@ -830,6 +961,10 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “only administrator can open owner
+    # creation”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_only_administrator_can_open_owner_creation(self):
         url = reverse("management:management_user_create_owner")
 
@@ -843,6 +978,10 @@ class ManagementPanelTests(TestCase):
         self.client.force_login(self.administrator)
         self.assertEqual(self.client.get(url).status_code, 200)
 
+    # This test protects the business rule described by “customer information is read only in
+    # management”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_customer_information_is_read_only_in_management(self):
         detail_url = reverse(
             "management:management_user_detail", args=[self.customer.pk]
@@ -868,6 +1007,10 @@ class ManagementPanelTests(TestCase):
             403,
         )
 
+    # This test protects the business rule described by “worker settings do not change customer
+    # profile defaults”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_worker_settings_do_not_change_customer_profile_defaults(self):
         profile = self.worker_user.customer_profile
         profile.phone = "+306911111111"
@@ -900,6 +1043,10 @@ class ManagementPanelTests(TestCase):
         self.assertEqual(profile.default_address, "Customer-controlled address")
         self.assertEqual(profile.default_postal_code, "10558")
 
+    # This test protects the business rule described by “customer can be banned and unbanned with
+    # audit history”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_customer_can_be_banned_and_unbanned_with_audit_history(self):
         ban_url = reverse(
             "management:management_user_action", args=[self.customer.pk, "ban"]
@@ -937,6 +1084,9 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “unused customer can be deleted”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_unused_customer_can_be_deleted(self):
         unused = User.objects.create_user(
             "unused-customer",
@@ -957,6 +1107,10 @@ class ManagementPanelTests(TestCase):
             ).exists()
         )
 
+    # This test protects the business rule described by “customer with booking history cannot be
+    # deleted”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_customer_with_booking_history_cannot_be_deleted(self):
         booking = self.make_booking()
         booking.customer = self.customer
@@ -973,6 +1127,10 @@ class ManagementPanelTests(TestCase):
         self.assertTrue(User.objects.filter(pk=self.customer.pk).exists())
         self.assertTrue(PartyBuild.objects.filter(pk=booking.pk).exists())
 
+    # This test protects the business rule described by “administrator can manage owner status
+    # when another owner remains”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_administrator_can_manage_owner_status_when_another_owner_remains(self):
         other_owner = User.objects.create_user(
             "remaining-owner", password="Remaining-owner-pass-2026!"
@@ -999,6 +1157,9 @@ class ManagementPanelTests(TestCase):
         self.owner.refresh_from_db()
         self.assertFalse(self.owner.is_active)
 
+    # This test protects the business rule described by “final active owner cannot be banned”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_final_active_owner_cannot_be_banned(self):
         self.client.force_login(self.administrator)
         response = self.client.post(
@@ -1012,6 +1173,10 @@ class ManagementPanelTests(TestCase):
         self.owner.refresh_from_db()
         self.assertTrue(self.owner.is_active)
 
+    # This test protects the business rule described by “management pages share one content
+    # frame”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_management_pages_share_one_content_frame(self):
         response = self.client.get(reverse("management:management_user_list"))
         self.assertContains(
@@ -1023,6 +1188,10 @@ class ManagementPanelTests(TestCase):
             'class="management-main management-content-frame"',
         )
 
+    # This test protects the business rule described by “user list shows role appropriate
+    # actions”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_user_list_shows_role_appropriate_actions(self):
         response = self.client.get(reverse("management:management_user_list"))
         html = response.content.decode("utf-8")
@@ -1031,6 +1200,10 @@ class ManagementPanelTests(TestCase):
         self.assertNotIn("Edit worker settings", customer_row)
         self.assertIn("Edit worker settings", worker_row)
 
+    # This test protects the business rule described by “management css defines readable theme
+    # button states”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_management_css_defines_readable_theme_button_states(self):
         css = (settings.BASE_DIR / "static/css/management.css").read_text()
         for token in (

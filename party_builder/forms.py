@@ -3,6 +3,11 @@
 Forms clean untrusted browser input.  Prices and catalogue relationships are
 always resolved again from database records before a booking is created.
 """
+# This file defines the information people may submit through Popadoo forms and the checks applied
+# before it is accepted.
+# The forms keep browser input separate from trusted database values and return clear errors when
+# information is incomplete or unsafe.
+# Views use these forms so the same validation applies to normal pages and enhanced interactions.
 
 from __future__ import annotations
 
@@ -19,6 +24,9 @@ from .models import AddonExperience, Category, PartyPackage, PartyReview
 from .services import SafePaymentResult
 
 
+# This function handles apply accessible attributes as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _apply_accessible_attributes(form: forms.BaseForm) -> None:
     """Connect every control to predictable help and error containers."""
 
@@ -36,6 +44,9 @@ def _apply_accessible_attributes(form: forms.BaseForm) -> None:
                 form.fields[field_name].widget.attrs["aria-invalid"] = "true"
 
 
+# This form collects and validates the information needed for party ideas filter form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PartyIdeasFilterForm(forms.Form):
     """Validate public catalogue search and filter values from the URL."""
 
@@ -148,6 +159,9 @@ class PartyIdeasFilterForm(forms.Form):
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 
+    # This method handles init for the surrounding party ideas filter form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Category.objects.filter(
@@ -155,9 +169,13 @@ class PartyIdeasFilterForm(forms.Form):
         ).filter(Q(parent__isnull=True) | Q(parent__is_active=True))
         _apply_accessible_attributes(self)
 
+    # This validation prepares the submitted q and rejects values that would make the form
+    # misleading or unsafe.
     def clean_q(self) -> str:
         return self.cleaned_data["q"].strip()
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned = super().clean()
         minimum = cleaned.get("min_price")
@@ -167,6 +185,9 @@ class PartyIdeasFilterForm(forms.Form):
         return cleaned
 
 
+# This form collects and validates the information needed for package options form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PackageOptionsForm(forms.Form):
     """Validate one capacity-based package and its optional experiences."""
 
@@ -183,6 +204,9 @@ class PackageOptionsForm(forms.Form):
         label="Optional experiences",
     )
 
+    # This method handles init for the surrounding package options form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, package: PartyPackage | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         visible_category = Q(category__parent__isnull=True) | Q(
@@ -204,6 +228,9 @@ class PackageOptionsForm(forms.Form):
         _apply_accessible_attributes(self)
 
 
+# This form collects and validates the information needed for party details form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PartyDetailsForm(forms.Form):
     """Step two: collect customer and event details without saving yet."""
 
@@ -301,6 +328,9 @@ class PartyDetailsForm(forms.Form):
         ),
     )
 
+    # This method handles init for the surrounding party details form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, show_save_profile=False, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
@@ -309,6 +339,8 @@ class PartyDetailsForm(forms.Form):
         self.fields["event_date"].widget.attrs["data-min"] = date.today().isoformat()
         _apply_accessible_attributes(self)
 
+    # This validation prepares the submitted contact phone and rejects values that would make the
+    # form misleading or unsafe.
     def clean_contact_phone(self) -> str:
         phone = self.cleaned_data["contact_phone"].strip()
         digits = re.sub(r"\D", "", phone)
@@ -316,6 +348,8 @@ class PartyDetailsForm(forms.Form):
             raise forms.ValidationError("Enter a valid phone number.")
         return phone
 
+    # This validation prepares the submitted event date and rejects values that would make the
+    # form misleading or unsafe.
     def clean_event_date(self):
         event_date = self.cleaned_data["event_date"]
         if event_date < timezone.localdate():
@@ -323,12 +357,16 @@ class PartyDetailsForm(forms.Form):
         return event_date
 
 
+    # This validation prepares the submitted postal code and rejects values that would make the
+    # form misleading or unsafe.
     def clean_postal_code(self) -> str:
         postal_code = self.cleaned_data["postal_code"].strip()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\s-]{2,9}", postal_code):
             raise forms.ValidationError("Enter a valid postal code.")
         return postal_code
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned_data = super().clean()
         if (
@@ -347,6 +385,9 @@ class PartyDetailsForm(forms.Form):
         return cleaned_data
 
 
+# This form collects and validates the information needed for simulated payment form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class SimulatedPaymentForm(forms.Form):
     """Step three: validate test card details and discard sensitive values."""
 
@@ -418,6 +459,9 @@ class SimulatedPaymentForm(forms.Form):
         ),
     )
 
+    # This method handles init for the surrounding simulated payment form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         current_year = timezone.localdate().year
@@ -426,6 +470,9 @@ class SimulatedPaymentForm(forms.Form):
         ]
         _apply_accessible_attributes(self)
 
+    # This method handles passes luhn for the surrounding simulated payment form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @staticmethod
     def _passes_luhn(number: str) -> bool:
         digits = [int(character) for character in number]
@@ -439,6 +486,9 @@ class SimulatedPaymentForm(forms.Form):
             checksum += digit
         return checksum % 10 == 0
 
+    # This method handles detect brand for the surrounding simulated payment form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @staticmethod
     def _detect_brand(number: str) -> str:
         if number.startswith("4"):
@@ -449,6 +499,8 @@ class SimulatedPaymentForm(forms.Form):
             return "American Express"
         return "Test card"
 
+    # This validation prepares the submitted card number and rejects values that would make the
+    # form misleading or unsafe.
     def clean_card_number(self) -> str:
         number = re.sub(r"\D", "", self.cleaned_data["card_number"])
         approved_test_numbers = {
@@ -462,18 +514,24 @@ class SimulatedPaymentForm(forms.Form):
             )
         return number
 
+    # This validation prepares the submitted security code and rejects values that would make the
+    # form misleading or unsafe.
     def clean_security_code(self) -> str:
         code = self.cleaned_data["security_code"].strip()
         if not re.fullmatch(r"\d{3,4}", code):
             raise forms.ValidationError("Enter a 3 or 4 digit security code.")
         return code
 
+    # This validation prepares the submitted billing postal code and rejects values that would
+    # make the form misleading or unsafe.
     def clean_billing_postal_code(self) -> str:
         postal_code = self.cleaned_data["billing_postal_code"].strip()
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9\s-]{2,9}", postal_code):
             raise forms.ValidationError("Enter a valid billing postal code.")
         return postal_code
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned_data = super().clean()
         month = cleaned_data.get("expiry_month")
@@ -484,6 +542,9 @@ class SimulatedPaymentForm(forms.Form):
                 self.add_error("expiry_month", "Choose a future expiry date.")
         return cleaned_data
 
+    # This method handles safe payment result for the surrounding simulated payment form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def safe_payment_result(self) -> SafePaymentResult:
         """Return only metadata safe to store after the form is valid."""
 
@@ -494,6 +555,9 @@ class SimulatedPaymentForm(forms.Form):
         )
 
 
+# This form collects and validates the information needed for review code form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class ReviewCodeForm(forms.Form):
     """Collect a private party code before opening the verified review form."""
 
@@ -512,11 +576,17 @@ class ReviewCodeForm(forms.Form):
         ),
     )
 
+    # This method handles init for the surrounding review code form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         _apply_accessible_attributes(self)
 
 
+# This form collects and validates the information needed for party review form.
+# It accepts only the fields shown to the person using the page and leaves trusted identities,
+# prices, and permissions to the server.
 class PartyReviewForm(forms.Form):
     """Rate the package and exactly the add-ons recorded in one booking."""
 
@@ -559,6 +629,9 @@ class PartyReviewForm(forms.Form):
         help_text="Only your first name can be shown. Your surname and account details stay private.",
     )
 
+    # This method handles init for the surrounding party review form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def __init__(self, *args, booking, **kwargs):
         self.booking = booking
         self.build_addons = list(booking.addon_items.all())
@@ -609,6 +682,8 @@ class PartyReviewForm(forms.Form):
 
         _apply_accessible_attributes(self)
 
+    # This validation checks the record as a whole so combinations of fields cannot describe an
+    # impossible or unsafe business state.
     def clean(self):
         cleaned = super().clean()
         comment = (cleaned.get("comment") or "").strip()
@@ -647,6 +722,9 @@ class PartyReviewForm(forms.Form):
             )
         return cleaned
 
+    # This method handles addon rating rows for the surrounding party review form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def addon_rating_rows(self):
         """Pair each selected add-on with its bound star field for the template."""
 
@@ -655,6 +733,9 @@ class PartyReviewForm(forms.Form):
             for build_addon in self.build_addons
         ]
 
+    # This method handles addon scores for the surrounding party review form.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def addon_scores(self) -> dict[int, int]:
         """Return validated scores keyed by the selected booking-add-on row."""
 

@@ -1,4 +1,9 @@
 """Worker portal, role access, and compatibility-route tests."""
+# This file protects worker tasks and the custom management area used by Owners and Administrators
+# with automated regression checks.
+# The scenarios describe what customers and staff should be allowed to do, and what must remain
+# inaccessible or unchanged.
+# Temporary test data is discarded after the checks, so real Popadoo records are not affected.
 
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -19,7 +24,12 @@ from .services.assignment import accept_assignment, offer_assignment
 User = get_user_model()
 
 
+# This group of tests protects the operations permission tests behaviour as one related customer
+# or staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class OperationsPermissionTests(TestCase):
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.customer = User.objects.create_user("customer", password="pass-12345")
@@ -33,6 +43,9 @@ class OperationsPermissionTests(TestCase):
         cls.package = PartyPackage.objects.get(slug="basic-popadoo-party")
         cls.tier = GuestPriceTier.objects.filter(package=cls.package).first()
 
+    # This method handles make build for the surrounding operations permission tests.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     def make_build(self, event_date=None):
         return PartyBuild.objects.create(
             package=self.package,
@@ -51,6 +64,9 @@ class OperationsPermissionTests(TestCase):
             total_price=Decimal("180.00"),
         )
 
+    # This business action carries out add availability.
+    # It validates the live records and permissions before changing anything, then keeps related
+    # updates together so partial results are not left behind.
     def add_availability(self, worker, build):
         tz = timezone.get_current_timezone()
         start = timezone.make_aware(datetime.combine(build.event_date, build.event_time), tz)
@@ -61,11 +77,17 @@ class OperationsPermissionTests(TestCase):
             availability_type=WorkerAvailability.AvailabilityType.AVAILABLE,
         )
 
+    # This test protects the business rule described by “customer cannot access operations”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_customer_cannot_access_operations(self):
         self.client.force_login(self.customer)
         response = self.client.get(reverse("operations:operations_dashboard"))
         self.assertEqual(response.status_code, 403)
 
+    # This test protects the business rule described by “worker sees only own assignment”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_worker_sees_only_own_assignment(self):
         build = self.make_build()
         assignment = PartyAssignment.objects.create(party_build=build, worker=self.other_worker)
@@ -75,6 +97,10 @@ class OperationsPermissionTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    # This test protects the business rule described by “available worker receives and accepts
+    # offer”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_available_worker_receives_and_accepts_offer(self):
         build = self.make_build()
         self.add_availability(self.worker, build)
@@ -87,6 +113,10 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(assignment.status, PartyAssignment.Status.ACCEPTED)
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.ASSIGNED)
 
+    # This test protects the business rule described by “no available worker requires owner
+    # review”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_no_available_worker_requires_owner_review(self):
         build = self.make_build()
         self.assertIsNone(offer_assignment(build.pk))
@@ -94,6 +124,10 @@ class OperationsPermissionTests(TestCase):
         self.assertEqual(build.assignment_state, PartyBuild.AssignmentState.MANUAL_REVIEW)
 
 
+    # This test protects the business rule described by “worker accounts use dedicated creation
+    # workflow”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_worker_accounts_use_dedicated_creation_workflow(self):
         self.client.force_login(self.owner)
         self.assertEqual(
@@ -127,6 +161,10 @@ class OperationsPermissionTests(TestCase):
         self.assertTrue(worker.groups.filter(name="Workers").exists())
         self.assertTrue(worker.worker_profile.is_active_worker)
 
+    # This test protects the business rule described by “pricing manager can access catalogue
+    # only”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_pricing_manager_can_access_catalogue_only(self):
         Group.objects.get(name="Pricing Managers").user_set.add(self.worker_user)
         self.client.force_login(self.worker_user)
@@ -139,6 +177,10 @@ class OperationsPermissionTests(TestCase):
             403,
         )
 
+    # This test protects the business rule described by “normal worker cannot open catalogue
+    # management”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_normal_worker_cannot_open_catalogue_management(self):
         self.client.force_login(self.other_worker_user)
         self.assertEqual(
@@ -146,6 +188,10 @@ class OperationsPermissionTests(TestCase):
             403,
         )
 
+    # This test protects the business rule described by “owner and superuser use management not
+    # worker dashboard”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_and_superuser_use_management_not_worker_dashboard(self):
         for user in (
             self.owner,
@@ -165,6 +211,10 @@ class OperationsPermissionTests(TestCase):
                     200,
                 )
 
+    # This test protects the business rule described by “legacy owner get routes redirect to
+    # management”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_owner_get_routes_redirect_to_management(self):
         self.client.force_login(self.owner)
         routes = {
@@ -183,6 +233,10 @@ class OperationsPermissionTests(TestCase):
                     status_code=301,
                 )
 
+    # This test protects the business rule described by “legacy integer assignment route redirects
+    # to uuid management route”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_legacy_integer_assignment_route_redirects_to_uuid_management_route(self):
         booking = self.make_build()
         self.client.force_login(self.owner)
@@ -201,6 +255,10 @@ class OperationsPermissionTests(TestCase):
             status_code=301,
         )
 
+    # This test protects the business rule described by “availability form uses custom datetime
+    # controls”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_availability_form_uses_custom_datetime_controls(self):
         self.client.force_login(self.worker_user)
         response = self.client.get(
@@ -213,9 +271,14 @@ class OperationsPermissionTests(TestCase):
         self.assertNotContains(response, 'type="datetime-local"')
 
 
+# This group of tests protects the owner account management tests behaviour as one related
+# customer or staff workflow.
+# Shared setup keeps each scenario focused on the business rule being checked.
 class OwnerAccountManagementTests(TestCase):
     """Checks for the owner-only worker account workflow and account isolation."""
 
+    # This setup prepares the shared accounts and business records used by the following scenarios
+    # without touching real project data.
     @classmethod
     def setUpTestData(cls):
         cls.owner = User.objects.create_user(
@@ -231,6 +294,9 @@ class OwnerAccountManagementTests(TestCase):
         owners = Group.objects.get(name="Owners")
         owners.user_set.add(cls.owner, cls.other_owner)
 
+    # This test protects the business rule described by “owner can create worker account”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_can_create_worker_account(self):
         self.client.force_login(self.owner)
         response = self.client.post(
@@ -257,6 +323,9 @@ class OwnerAccountManagementTests(TestCase):
         self.assertFalse(worker.is_staff)
         self.assertFalse(worker.is_superuser)
 
+    # This test protects the business rule described by “owner list hides all owner accounts”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_list_hides_all_owner_accounts(self):
         customer = User.objects.create_user(
             "visible-customer",
@@ -271,6 +340,10 @@ class OwnerAccountManagementTests(TestCase):
         self.assertContains(response, self.owner.username)
         self.assertNotContains(response, self.other_owner.username)
 
+    # This test protects the business rule described by “owner cannot change another owner through
+    # permission url”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_owner_cannot_change_another_owner_through_permission_url(self):
         self.client.force_login(self.owner)
         response = self.client.post(
@@ -282,6 +355,10 @@ class OwnerAccountManagementTests(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    # This test protects the business rule described by “worker schedule contains only the signed
+    # in worker assignments”.
+    # It guards against a future change silently weakening the expected customer, staff, or data
+    # behaviour.
     def test_worker_schedule_contains_only_the_signed_in_worker_assignments(self):
         worker_one_user = User.objects.create_user(
             "schedule-worker-one",
@@ -306,6 +383,9 @@ class OwnerAccountManagementTests(TestCase):
         package = PartyPackage.objects.get(slug="basic-popadoo-party")
         tier = GuestPriceTier.objects.filter(package=package).first()
 
+        # This function handles booking as part of this module’s workflow.
+        # It keeps the repeated decision in one place so callers receive the same result and
+        # controlled failure behaviour.
         def booking(name):
             return PartyBuild.objects.create(
                 package=package,

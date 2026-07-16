@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents build success within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 {# This template confirms that the simulated checkout was completed and summarizes the booking. #}
@@ -12,7 +14,9 @@
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
+        {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
         <section class="checkout-success" aria-labelledby="success-heading">
         <div class="container narrow-content">
             <p class="success-icon" aria-hidden="true">✓</p>
@@ -43,6 +47,7 @@
                                 <section aria-labelledby="saved-addons-heading">
                     <h3 id="saved-addons-heading">Optional experiences</h3>
                     <ul class="saved-addon-list">
+                                                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                                                 {% for item in party_build.addon_items.all %}
                             <li><span>{{ item.addon.name }}</span><strong>€{{ item.unit_price|floatformat:2 }}</strong></li>
                         {% empty %}
@@ -57,6 +62,7 @@
                     <div class="saved-price-total"><dt>Simulated total</dt><dd>€{{ party_build.total_price|floatformat:2 }}</dd></div>
                 </dl>
 
+                {# This conditional changes what is shown for the current role; the corresponding view still enforces access even when a link is hidden. #}
                 {% if request.user.is_authenticated and party_build.customer_id == request.user.id %}
                     <aside class="review-code-panel" role="note" aria-labelledby="review-code-success-heading">
                         <h3 id="review-code-success-heading">Your private party review code</h3>
@@ -89,6 +95,7 @@
             {% endif %}
 
             {# This navigation groups related links so users can move through this part of the website. #}
+            {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
             <nav class="success-actions" aria-label="Completed checkout actions">
                 <a class="button" href="{% url 'party_builder:party_builder_package_options' %}">Plan another party</a>
                 <a class="button button-outline" href="{% url 'core:core_home' %}">Return home</a>

@@ -1,6 +1,9 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the assign screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header"><div><p class="management-eyebrow">Schedule-aware assignment</p><h2>Assign {{ booking.contact_name }}’s party</h2><p>{{ booking.event_date }}{% if booking.event_time %} at {{ booking.event_time|time:"H:i" }}{% endif %}. Conflicts are checked by the existing scheduling service.</p></div></div>
     <div class="management-detail-grid">

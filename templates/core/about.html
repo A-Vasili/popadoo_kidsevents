@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This public template presents the about page as part of the Popadoo customer website. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 
@@ -9,8 +11,10 @@
     <link rel="stylesheet" href="{% static 'css/content-pages.css' %}">
 {% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
 Page introduction: explains the real service rather than a software concept.
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section aria-labelledby="about-heading" class="content-section">
 <div class="container narrow-content">
 <p class="section-kicker" data-i18n="about.kicker">Mobile children’s event planning</p>

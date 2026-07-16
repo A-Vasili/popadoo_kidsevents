@@ -1,4 +1,9 @@
 """Worker portal routes and temporary redirects from retired owner pages."""
+# This file maps readable website addresses to the part of Popadoo responsible for answering each
+# request.
+# The route order also protects specialised management and messaging paths from being swallowed by
+# broader URL groups.
+# It contains no page logic; the matched view performs the actual work.
 
 from django.urls import path
 from django.views.generic import RedirectView
@@ -7,6 +12,9 @@ from . import views
 
 app_name = "operations"
 
+# These named routes connect stable website addresses to the views that handle each customer or
+# staff request.
+# Permission checks remain inside the views, so knowing an address never grants access by itself.
 urlpatterns = [
     path("", views.OperationsDashboardView.as_view(), name="operations_dashboard"),
     path("assignments/", views.WorkerAssignmentListView.as_view(), name="operations_worker_assignments"),

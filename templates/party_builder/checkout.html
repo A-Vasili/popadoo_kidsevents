@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# This template presents checkout within the customer party-building, checkout, ideas, or review journey. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 {% load static %}
 
 
@@ -11,6 +13,7 @@
     <link rel="stylesheet" href="{% static 'css/party-builder.css' %}">
 {% endblock %}
 
+{# This block supplies the page-specific content inside the shared site or management frame. #}
 {% block content %}
     {# This header introduces the page and gives visitors the main context before they continue. #}
     <header class="checkout-hero" aria-labelledby="checkout-heading">
@@ -21,11 +24,13 @@
                 No real transaction occurs. Card details are validated for demonstration
                 and discarded immediately after submission.
             </p>
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "party_builder/includes/progress.html" %}
         </div>
     </header>
 
     {# This form sends the visitor’s choices to Django, where the information is checked again on the server. #}
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form
         class="checkout-form"
         id="simulated-payment-form"
@@ -37,6 +42,7 @@
         {% csrf_token %}
         <div class="container checkout-layout">
             <div class="checkout-main-column">
+                                {# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
                                 <section class="checkout-panel" aria-labelledby="review-heading">
                     <div class="panel-heading">
                         <span class="panel-step" aria-hidden="true">3A</span>
@@ -93,6 +99,7 @@
                         <span class="field-help" id="{{ form.simulation_consent.id_for_label }}_help">Required to complete the demonstration.</span>
                                                 {% if form.simulation_consent.errors %}
                             <ul class="field-errors" id="{{ form.simulation_consent.id_for_label }}_error" role="alert">
+                                                                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                                                                 {% for error in form.simulation_consent.errors %}<li>{{ error }}</li>{% endfor %}
                             </ul>
                         {% else %}
@@ -101,6 +108,7 @@
                     </div>
 
                     {# This navigation groups related links so users can move through this part of the website. #}
+                    {# This navigation gives the current visitor the routes appropriate to this page and their signed-in role. #}
                     <nav class="checkout-actions" aria-label="Simulated checkout actions">
                         <a class="button button-outline" href="{% url 'party_builder:party_builder_customer_details' %}">Back</a>
                         <button class="button" type="submit" data-checkout-submit>

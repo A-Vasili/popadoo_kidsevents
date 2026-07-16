@@ -1,6 +1,9 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the index screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Catalogue</p><h2>Capacity-based packages and experiences</h2><p>Packages now combine capacity and fixed pricing. Historical guest tiers remain stored only for old bookings.</p></div>

@@ -1,3 +1,8 @@
+# This file performs small automatic setup steps when Django finishes preparing the project or
+# related records change.
+# It keeps role groups and permissions available without requiring an Owner to recreate them by
+# hand in every environment.
+# The receivers complement normal service checks rather than replacing them.
 
 from __future__ import annotations
 
@@ -7,9 +12,12 @@ from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 
 from .models import CustomerProfile
-from .permissions import OWNER_GROUP, PRICING_GROUP, WORKER_GROUP
+from .permissions import CHAT_RESPONDER_GROUP, OWNER_GROUP, PRICING_GROUP, WORKER_GROUP
 
 
+# This safeguard verifies customer profile before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 @receiver(post_save, sender=get_user_model())
 def ensure_customer_profile(sender, instance, created, **kwargs):
     """Every account receives an autofill profile, including staff accounts."""
@@ -61,6 +69,11 @@ ROLE_PERMISSION_CODENAMES = {
         "add_workeravailability",
         "delete_workeravailability",
     },
+    CHAT_RESPONDER_GROUP: {
+        "view_customerchat",
+        "view_chatmessage",
+        "respond_to_customer_chat",
+    },
     PRICING_GROUP: {
         "add_category",
         "change_category",
@@ -82,6 +95,9 @@ ROLE_PERMISSION_CODENAMES = {
 }
 
 
+# This safeguard verifies role groups before the surrounding workflow continues.
+# When the rule is not met, it stops the action with a controlled error rather than allowing an
+# inconsistent record.
 @receiver(post_migrate)
 def ensure_role_groups(sender, **kwargs):
     """Create business groups and attach permissions after every migration run."""

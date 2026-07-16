@@ -1,10 +1,15 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the list screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section">
     {% url 'management:management_package_create' as page_action_url %}
+    {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
     {% include "operations/management/includes/page_header.html" with eyebrow="Catalogue" title="Party packages" description="Manage the packages customers can select during checkout." action_url=page_action_url action_label="Create package" only %}
 
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form class="management-filter-toolbar" method="get" role="search">
         <label><span>Search</span><input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Name, slug, or description"></label>
         <label><span>Category</span><select class="form-select" name="category"><option value="">All</option>{% for category in category_options %}<option value="{{ category.pk }}" {% if request.GET.category == category.pk|stringformat:'s' %}selected{% endif %}>{{ category }}</option>{% endfor %}</select></label>
@@ -17,6 +22,7 @@
     {% if packages %}
         <div class="management-result-summary">{{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}</div>
         <div class="management-table-wrap"><table class="management-table"><caption class="visually-hidden">Party packages</caption><thead><tr><th>Package</th><th>Category</th><th>Fixed price</th><th>Capacity</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
         {% for package in packages %}
             <tr>
                 <td data-label="Package"><div class="management-record-cell">{% if package.image %}<img src="{{ package.image.url }}" alt="" width="54" height="54">{% else %}<span class="management-thumbnail-placeholder" aria-hidden="true">★</span>{% endif %}<span><a href="{% url 'management:management_package_detail' package.pk %}"><strong>{{ package.name }}</strong></a><small>{{ package.slug }} {% if package.is_default %}· Default{% endif %}</small></span></div></td>

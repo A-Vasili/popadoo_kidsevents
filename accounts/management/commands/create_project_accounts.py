@@ -4,6 +4,11 @@ The command generates temporary passwords at run time rather than storing them
 in source code. Passwords are printed once so the project administrator can
 record them securely and ask users to change them before real deployment.
 """
+# This module supports customer accounts, staff roles, sign-in, profile details, and permission
+# boundaries.
+# It keeps this responsibility in one place so nearby pages and services can reuse the same
+# behaviour without duplication.
+# The comments explain the business purpose while the existing code remains unchanged.
 
 from __future__ import annotations
 
@@ -23,12 +28,18 @@ from accounts.signals import ensure_role_groups
 User = get_user_model()
 
 
+# This management command carries out command from the command line.
+# It uses the same project services and safeguards as the website rather than changing records
+# through a separate shortcut.
 class Command(BaseCommand):
     help = (
         "Create one owner, five workers, and ten customers with generated "
         "temporary passwords."
     )
 
+    # This business action carries out add arguments.
+    # It validates the live records and permissions before changing anything, then keeps related
+    # updates together so partial results are not left behind.
     def add_arguments(self, parser):
         parser.add_argument(
             "--reset-passwords",
@@ -36,6 +47,9 @@ class Command(BaseCommand):
             help="Generate new passwords for matching existing demo accounts.",
         )
 
+    # This method handles temporary password for the surrounding command.
+    # It keeps that responsibility close to the object while relying on the existing validation
+    # and permission boundaries.
     @staticmethod
     def _temporary_password() -> str:
         """Return a strong, readable temporary password without hardcoding it."""
@@ -51,6 +65,9 @@ class Command(BaseCommand):
             ):
                 return password
 
+    # This business action carries out create or update user.
+    # It validates the live records and permissions before changing anything, then keeps related
+    # updates together so partial results are not left behind.
     def _create_or_update_user(
         self,
         *,
@@ -91,6 +108,8 @@ class Command(BaseCommand):
         CustomerProfile.objects.get_or_create(user=user)
         return user, password
 
+    # Django calls this method when the management command runs; it validates the requested action
+    # and reports a clear result to the operator.
     @transaction.atomic
     def handle(self, *args, **options):
         ensure_role_groups(sender=None)

@@ -1,4 +1,8 @@
 """Owner booking-state actions kept separate from request handling."""
+# This service applies management actions to customer bookings while preserving the price and
+# party-size history captured at checkout.
+# It separates operational decisions from page rendering and records sensitive changes for later
+# review.
 
 from __future__ import annotations
 
@@ -22,6 +26,9 @@ ALLOWED_STATUS_TRANSITIONS = {
 }
 
 
+# This function handles change booking status as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def change_booking_status(*, booking: PartyBuild, status: str, actor, note: str = "") -> PartyBuild:
     if not can_access_full_management(actor):
@@ -59,6 +66,9 @@ def change_booking_status(*, booking: PartyBuild, status: str, actor, note: str 
     return locked
 
 
+# This function handles send to manual review as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def send_to_manual_review(*, booking: PartyBuild, actor, reason: str) -> PartyBuild:
     """Move an active booking into the owner attention queue.

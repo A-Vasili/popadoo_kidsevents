@@ -1,6 +1,9 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the confirm action screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-confirm-card">
     <p class="management-eyebrow">{{ eyebrow }}</p>
     <h2>{{ title }}</h2>
@@ -9,6 +12,7 @@
         <p><strong>Current references:</strong> {{ usage_summary }}</p>
     {% endif %}
 
+    {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
     <form method="post" data-prevent-double-submit>
         {% csrf_token %}
         {% if form.non_field_errors %}
@@ -17,7 +21,9 @@
                 {{ form.non_field_errors }}
             </div>
         {% endif %}
+        {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
         {% for field in form %}
+            {# This include reuses a shared presentation so the same labels, errors, or status treatment remain consistent across pages. #}
             {% include "operations/management/includes/form_field.html" with field=field %}
         {% endfor %}
         <div class="management-form-actions">

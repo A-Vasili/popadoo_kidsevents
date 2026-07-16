@@ -1,4 +1,8 @@
 """Small helpers for recording sensitive management actions consistently."""
+# This small service records a plain summary of important management actions in Popadoo’s audit
+# history.
+# Callers provide only the before-and-after business facts needed for accountability; private
+# message bodies and secrets are intentionally excluded.
 
 from __future__ import annotations
 
@@ -9,6 +13,9 @@ from django.db.models.fields.files import FieldFile
 from ..models import AuditEvent
 
 
+# This function handles serialise value as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def serialise_value(value: Any) -> Any:
     """Convert common model values into JSON-safe audit information."""
 
@@ -23,12 +30,18 @@ def serialise_value(value: Any) -> Any:
     return str(value)
 
 
+# This function handles model snapshot as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def model_snapshot(instance, fields: tuple[str, ...] | list[str]) -> dict[str, Any]:
     """Capture only approved fields; passwords and unrelated data are excluded."""
 
     return {field: serialise_value(getattr(instance, field, None)) for field in fields}
 
 
+# This function handles record audit as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def record_audit(
     *,
     actor,

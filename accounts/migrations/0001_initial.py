@@ -1,3 +1,8 @@
+# This historical migration records the database change identified as 0001_initial.
+# It allows new and existing installations to reach the same stored structure or seed data in a
+# repeatable order.
+# Only explanatory comments belong here because changing a past migration could make databases
+# disagree.
 # This migration records a database change so every environment can build the same structure.
 # Comments in this file explain the purpose of each section without changing how the program works.
 
@@ -10,6 +15,8 @@ from django.db import migrations, models
 
 
 # This migration tells Django how to update the database in a repeatable way.
+# This class groups the information and behaviour needed for migration.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class Migration(migrations.Migration):
 
     initial = True

@@ -3,6 +3,11 @@
 Views call these functions instead of repeating business rules. This keeps
 historical bookings safe and makes every important change auditable.
 """
+# This service applies catalogue changes made through the management area.
+# It protects packages, experiences, and categories that are already referenced by bookings while
+# still allowing safe archive and restore actions.
+# Audit records explain important management changes without copying unnecessary customer
+# information.
 
 from __future__ import annotations
 
@@ -16,6 +21,8 @@ from party_builder.models import AddonExperience, Category, GuestPriceTier, Part
 from .audit import model_snapshot, record_audit
 
 
+# This class groups the information and behaviour needed for removal result.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 @dataclass(frozen=True)
 class RemovalResult:
     action: str
@@ -44,6 +51,9 @@ CATALOGUE_AUDIT_FIELDS = {
 }
 
 
+# This function handles fields for as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _fields_for(instance) -> tuple[str, ...]:
     for model, fields in CATALOGUE_AUDIT_FIELDS.items():
         if isinstance(instance, model):
@@ -51,6 +61,9 @@ def _fields_for(instance) -> tuple[str, ...]:
     return tuple()
 
 
+# This function handles schedule old image cleanup as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _schedule_old_image_cleanup(instance, old_image_name: str) -> None:
     """Delete a replaced file only after the database transaction succeeds."""
 
@@ -61,6 +74,9 @@ def _schedule_old_image_cleanup(instance, old_image_name: str) -> None:
     transaction.on_commit(lambda: storage.delete(old_image_name))
 
 
+# This function handles record default replacement as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _record_default_replacement(*, actor, previous, replacement) -> None:
     """Record which catalogue record took over as the default selection."""
 
@@ -80,6 +96,9 @@ def _record_default_replacement(*, actor, previous, replacement) -> None:
     )
 
 
+# This function handles save catalogue form as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def save_catalogue_form(form, *, actor):
     """Save a catalogue form while keeping default records usable and unique.
@@ -256,6 +275,9 @@ def save_catalogue_form(form, *, actor):
     return instance
 
 
+# This function handles archive as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 def _archive(instance, *, actor, reason: str) -> RemovalResult:
     before = {"is_active": instance.is_active}
     instance.is_active = False
@@ -305,6 +327,9 @@ def _archive(instance, *, actor, reason: str) -> RemovalResult:
     return RemovalResult("archived", f"{instance} was archived because {reason}")
 
 
+# This function handles remove category as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def remove_category(category: Category, *, actor) -> RemovalResult:
     locked = Category.objects.select_for_update().get(pk=category.pk)
@@ -334,6 +359,9 @@ def remove_category(category: Category, *, actor) -> RemovalResult:
     return RemovalResult("deleted", f"{label} was permanently deleted.")
 
 
+# This function handles remove package as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def remove_package(package: PartyPackage, *, actor) -> RemovalResult:
     locked = PartyPackage.objects.select_for_update().get(pk=package.pk)
@@ -372,6 +400,9 @@ def remove_package(package: PartyPackage, *, actor) -> RemovalResult:
     return RemovalResult("deleted", f"{label} was permanently deleted.")
 
 
+# This function handles remove tier as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def remove_tier(tier: GuestPriceTier, *, actor) -> RemovalResult:
     locked = GuestPriceTier.objects.select_for_update().get(pk=tier.pk)
@@ -404,6 +435,9 @@ def remove_tier(tier: GuestPriceTier, *, actor) -> RemovalResult:
     return RemovalResult("deleted", f"{label} was permanently deleted.")
 
 
+# This function handles remove addon as part of this module’s workflow.
+# It keeps the repeated decision in one place so callers receive the same result and controlled
+# failure behaviour.
 @transaction.atomic
 def remove_addon(addon: AddonExperience, *, actor) -> RemovalResult:
     locked = AddonExperience.objects.select_for_update().get(pk=addon.pk)

@@ -1,3 +1,8 @@
+# This historical migration records the database change identified as 0002_seed_party_builder.
+# It allows new and existing installations to reach the same stored structure or seed data in a
+# repeatable order.
+# Only explanatory comments belong here because changing a past migration could make databases
+# disagree.
 # This migration records a database change so every environment can build the same structure.
 # Comments in this file explain the purpose of each section without changing how the program works.
 
@@ -113,6 +118,8 @@ ADDONS = [
 
 
 # This migration helper inserts the starting package and add-ons into a new database.
+# This forward migration prepares the historical records required by this release while preserving
+# existing customised data where the migration allows it.
 def seed_party_builder(apps, schema_editor):
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
     AddonExperience = apps.get_model("party_builder", "AddonExperience")
@@ -130,6 +137,7 @@ def seed_party_builder(apps, schema_editor):
 
 
 # This helper removes seed data after the required checks.
+# This migration helper performs the data part of the historical change recorded in this file.
 def remove_seed_data(apps, schema_editor):
     PartyPackage = apps.get_model("party_builder", "PartyPackage")
     AddonExperience = apps.get_model("party_builder", "AddonExperience")
@@ -141,6 +149,8 @@ def remove_seed_data(apps, schema_editor):
 
 
 # This migration tells Django how to update the database in a repeatable way.
+# This class groups the information and behaviour needed for migration.
+# Keeping the related rules together makes the surrounding workflow easier to reuse and test.
 class Migration(migrations.Migration):
     dependencies = [("party_builder", "0001_initial")]
 

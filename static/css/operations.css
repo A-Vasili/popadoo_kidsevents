@@ -1,4 +1,9 @@
 /*
+ * This stylesheet presents worker dashboards, assignments, availability, and schedules while keeping operational details usable on narrow screens.
+ * Its rules are grouped around page components, responsive layouts, theme support, and visible keyboard focus.
+ * The comments explain those relationships without changing selectors, spacing, colours, or behaviour.
+ */
+/*
  * This stylesheet presents the private worker and owner operations pages.
  * The comments explain visual sections without changing the styles applied by the browser.
  */
@@ -31,6 +36,9 @@
 }
 
 /* These rules style this group of related page elements. */
+/*
+ * This section presents summary figures as distinct cards that remain readable when the grid wraps.
+ */
 .operations-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -53,6 +61,9 @@
 }
 
 /* These rules present each item as a clear, reusable content card. */
+/*
+ * This section shapes the chat panel and keeps its header, history, and composer usable within the available screen height.
+ */
 .operations-panel, .assignment-card, .user-role-card, .empty-state {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -154,6 +165,9 @@ dd {
 }
 
 /* These rules make form fields and validation feedback clear and consistent. */
+/*
+ * This section keeps labels, fields, help text, errors, and actions visually connected so forms remain understandable.
+ */
 .decline-form, .form-field {
     display: grid;
     gap: .4rem;
@@ -214,6 +228,9 @@ dd {
 }
 
 /* These rules keep structured records readable across different screen sizes. */
+/*
+ * This section keeps structured staff information scannable while providing a smaller-screen alternative where needed.
+ */
 .schedule-table-wrap {
     overflow-x: auto;
 }
@@ -236,6 +253,9 @@ dd {
 }
 
 /* These rules control spacing and the page layout for this group of content. */
+/*
+ * This section presents optional experiences as selectable cards while keeping labels and selected state clear.
+ */
 .tier-grid, .addon-admin-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -256,6 +276,9 @@ dd {
 }
 
 /* The following rules adjust the layout for this screen size. */
+/*
+ * This responsive section rearranges the component for narrower or wider screens without removing important actions.
+ */
 @media (max-width: 900px) {
     .operations-stats, .tier-grid, .addon-admin-grid {
         grid-template-columns: repeat(2, minmax(0,1fr));
@@ -329,6 +352,9 @@ dd {
 }
 
 .operations-subnav a:hover,
+/*
+ * These focus styles make keyboard position visible without relying on hover or colour alone.
+ */
 .operations-subnav a:focus-visible {
     background: var(--color-primary-soft);
     color: var(--color-primary-strong);
@@ -419,6 +445,9 @@ dd {
 }
 
 html[data-theme="dark"] .operations-page .form-error,
+/*
+ * These rules adapt the same components for dark mode while preserving readable contrast and familiar structure.
+ */
 html[data-theme="dark"] .operations-page .conflict-text {
     color: #ff9daf;
 }

@@ -1,12 +1,17 @@
 {% extends "operations/management/base.html" %}
+{# This management template presents the analytics screen to authorised staff inside the custom Popadoo management area. #}
+{# Permission decisions and trusted values are prepared by Django before this template is rendered. #}
 
 {% block management_content %}
+{# This main section groups the heading, guidance, and actions that belong to the current user journey. #}
 <section class="management-page-section" aria-labelledby="analytics-heading">
     <div class="management-page-header">
         <div><p class="management-eyebrow">Verified completed-party data</p><h2 id="analytics-heading">Reviews and popularity analytics</h2><p>Usage counts and recommendations are calculated from completed parties only.</p></div>
+        {# This form shows only the information the person may provide; identity, permissions, and trusted business values are resolved by the server. #}
         <form method="get" class="management-filter-inline">
             <label for="period">Reporting period</label>
             <select id="period" name="period" class="form-select">
+                {# This loop presents each permitted record using the same structure, including an empty state when no records are available. #}
                 {% for value, label in period_options %}<option value="{{ value }}"{% if period_key == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
             <button class="management-button" type="submit">Apply</button>
